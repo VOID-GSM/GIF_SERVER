@@ -1,1 +1,1 @@
-# GIF-Server-V2
+# GIF-server-v2
