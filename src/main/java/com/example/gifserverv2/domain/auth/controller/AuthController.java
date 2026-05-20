@@ -1,5 +1,11 @@
 package com.example.gifserverv2.domain.auth.controller;
 
+import com.example.gifserverv2.domain.auth.dto.request.OAuthSignInRequest;
+import com.example.gifserverv2.domain.auth.dto.response.CurrentUserResponse;
+import com.example.gifserverv2.domain.auth.dto.response.OAuthSignInResponse;
+import com.example.gifserverv2.domain.auth.service.AuthService;
+import com.example.gifserverv2.domain.auth.service.DgOAuthFlowService;
+import com.example.gifserverv2.global.security.AuthenticatedUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
