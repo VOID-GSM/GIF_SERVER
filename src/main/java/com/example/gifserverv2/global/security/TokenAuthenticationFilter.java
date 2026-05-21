@@ -83,4 +83,5 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
         return Long.valueOf(subject.trim());
     }
+
 }

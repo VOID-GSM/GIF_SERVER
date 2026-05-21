@@ -53,7 +53,7 @@ public class ProjectService {
     }
 
     public List<ProjectListResponse> getAllProjects() {
-        return projectRepository.findAllWithMembers().stream()
+        return projectRepository.findAll().stream()
                 .map(ProjectListResponse::from)
                 .toList();
     }
