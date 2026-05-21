@@ -23,7 +23,7 @@ public class ProjectService {
     private final ProjectMemberRepository projectMemberRepository;
 
     @Transactional
-    public Long createProject(Long leaderId, ProjectCreateRequest request) {
+    public Long createProject(Long leaderId, CreateProjectRequest request) {
         Project project = Project.builder()
                 .name(request.name())
                 .teamName(request.teamName())
@@ -82,28 +82,28 @@ public class ProjectService {
     }
 
     @Transactional
-    public void updateName(Long projectId, Long userId, ProjectUpdateNameRequest request) {
+    public void updateName(Long projectId, Long userId, UpdateNameProjectRequest request) {
         Project project = getProjectOrThrow(projectId);
         validateLeader(projectId, userId);
         project.updateName(request.name());
     }
 
     @Transactional
-    public void updateTeamName(Long projectId, Long userId, ProjectUpdateTeamNameRequest request) {
+    public void updateTeamName(Long projectId, Long userId, UpdateTeamNameProjectRequest request) {
         Project project = getProjectOrThrow(projectId);
         validateLeader(projectId, userId);
         project.updateTeamName(request.teamName());
     }
 
     @Transactional
-    public void updateDescription(Long projectId, Long userId, ProjectUpdateDescriptionRequest request) {
+    public void updateDescription(Long projectId, Long userId, UpdateDescriptionProjectRequest request) {
         Project project = getProjectOrThrow(projectId);
         validateLeader(projectId, userId);
         project.updateDescription(request.description());
     }
 
     @Transactional
-    public void updateMembers(Long projectId, Long userId, ProjectUpdateMembersRequest request) {
+    public void updateMembers(Long projectId, Long userId, UpdateMembersProjectRequest request) {
         Project project = getProjectOrThrow(projectId);
 
         validateLeader(projectId, userId);

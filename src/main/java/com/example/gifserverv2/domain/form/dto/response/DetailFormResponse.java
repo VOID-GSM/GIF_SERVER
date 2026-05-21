@@ -5,7 +5,7 @@ import com.example.gifserverv2.domain.form.entity.Form;
 import java.time.LocalDate;
 import java.util.List;
 
-public record FormDetailResponse(
+public record DetailFormResponse(
         Long id,
         String title,
         LocalDate deadline,
@@ -20,12 +20,12 @@ public record FormDetailResponse(
             int orderIndex
     ) {}
 
-    public static FormDetailResponse from(Form form) {
+    public static DetailFormResponse from(Form form) {
         List<FieldResponse> fieldResponses = form.getFields().stream()
                 .map(f -> new FieldResponse(f.getId(), f.getTitle(), f.getDescription(), f.getType().name(), f.getOrderIndex()))
                 .toList();
 
-        return new FormDetailResponse(
+        return new DetailFormResponse(
                 form.getId(),
                 form.getTitle(),
                 form.getDeadline(),

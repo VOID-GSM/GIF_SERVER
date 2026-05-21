@@ -25,7 +25,7 @@ public class FormService {
     private final ProjectMemberRepository projectMemberRepository;
 
     @Transactional
-    public Long createForm(FormCreateRequest request) {
+    public Long createForm(CreateFormRequest request) {
         Form form = Form.builder()
                 .title(request.title())
                 .deadline(request.deadline())
@@ -34,7 +34,7 @@ public class FormService {
         formRepository.save(form);
 
         saveFields(form, request.fields().stream()
-                .map(f -> new FormUpdateRequest.FieldRequest(
+                .map(f -> new UpdateFormRequest.FieldRequest(
                         f.title(), f.description(), f.type(), f.orderIndex()))
                 .toList());
 
@@ -42,7 +42,7 @@ public class FormService {
     }
 
     @Transactional
-    public void updateForm(Long formId, FormUpdateRequest request) {
+    public void updateForm(Long formId, UpdateFormRequest request) {
         Form form = getFormOrThrow(formId);
 
         if (form.isAnnounced()) {
@@ -73,37 +73,37 @@ public class FormService {
         formRepository.delete(form);
     }
 
-    public List<FormListResponse> getAllFormsForAdmin() {
+    public List<ListFormResponse> getAllFormsForAdmin() {
         return formRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(FormListResponse::from)
+                .map(ListFormResponse::from)
                 .toList();
     }
 
-    public List<FormSubmitDetailResponse> getSubmitListByForm(Long formId) {
+    public List<SubmitDetailFormResponse> getSubmitListByForm(Long formId) {
         getFormOrThrow(formId);
         return formSubmitRepository.findAllByFormId(formId).stream()
-                .map(FormSubmitDetailResponse::from)
+                .map(SubmitDetailFormResponse::from)
                 .toList();
     }
 
-    public List<FormListResponse> getAnnouncedForms(Long projectId) {
+    public List<ListFormResponse> getAnnouncedForms(Long projectId) {
         return formRepository.findAllByAnnouncedTrueOrderByDeadlineAsc().stream()
                 .map(form -> {
                     boolean submitted = formSubmitRepository
                             .existsByFormIdAndProjectId(form.getId(), projectId);
-                    return FormListResponse.from(form, submitted);
+                    return ListFormResponse.from(form, submitted);
                 })
                 .toList();
     }
 
-    public FormDetailResponse getForm(Long formId) {
+    public DetailFormResponse getForm(Long formId) {
         Form form = getFormOrThrow(formId);
         if (!form.isAnnounced()) throw FormException.notAnnounced();
-        return FormDetailResponse.from(form);
+        return DetailFormResponse.from(form);
     }
 
     @Transactional
-    public Long submitForm(Long userId, FormSubmitRequest request) {
+    public Long submitForm(Long userId, SubmitFormRequest request) {
         Form form = getFormOrThrow(request.formId());
 
         if (!form.isAnnounced()) throw FormException.notAnnounced();
@@ -138,10 +138,10 @@ public class FormService {
         return submit.getId();
     }
 
-    public FormSubmitDetailResponse getMySubmit(Long formId, Long projectId) {
+    public SubmitDetailFormResponse getMySubmit(Long formId, Long projectId) {
         FormSubmit submit = formSubmitRepository.findByFormIdAndProjectId(formId, projectId)
                 .orElseThrow(FormException::notSubmitted);
-        return FormSubmitDetailResponse.from(submit);
+        return SubmitDetailFormResponse.from(submit);
     }
 
     private Form getFormOrThrow(Long formId) {
@@ -149,7 +149,7 @@ public class FormService {
                 .orElseThrow(FormException::notFound);
     }
 
-    private void saveFields(Form form, List<FormUpdateRequest.FieldRequest> fields) {
+    private void saveFields(Form form, List<UpdateFormRequest.FieldRequest> fields) {
         fields.forEach(f -> formFieldRepository.save(FormField.builder()
                 .form(form)
                 .title(f.title())

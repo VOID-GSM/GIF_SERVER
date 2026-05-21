@@ -5,7 +5,7 @@ import com.example.gifserverv2.domain.form.entity.FormField;
 import java.time.LocalDate;
 import java.util.List;
 
-public record FormCreateRequest(
+public record CreateFormRequest(
         String title,
         LocalDate deadline,
         List<FieldRequest> fields

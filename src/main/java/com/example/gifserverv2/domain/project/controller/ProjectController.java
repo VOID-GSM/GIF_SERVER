@@ -22,7 +22,7 @@ public class ProjectController {
     @PostMapping
     public ResponseEntity<Long> createProject(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestBody ProjectCreateRequest request
+            @RequestBody CreateProjectRequest request
     ) {
         return ResponseEntity.ok(projectService.createProject(user.userId(), request));
     }
@@ -57,7 +57,7 @@ public class ProjectController {
     public ResponseEntity<Void> updateName(
             @AuthenticationPrincipal AuthenticatedUser user,
             @RequestParam Long projectId,
-            @RequestBody ProjectUpdateNameRequest request
+            @RequestBody UpdateNameProjectRequest request
     ) {
         projectService.updateName(projectId, user.userId(), request);
         return ResponseEntity.noContent().build();
@@ -67,7 +67,7 @@ public class ProjectController {
     public ResponseEntity<Void> updateTeamName(
             @AuthenticationPrincipal AuthenticatedUser user,
             @RequestParam Long projectId,
-            @RequestBody ProjectUpdateTeamNameRequest request
+            @RequestBody UpdateTeamNameProjectRequest request
     ) {
         projectService.updateTeamName(projectId, user.userId(), request);
         return ResponseEntity.noContent().build();
@@ -77,7 +77,7 @@ public class ProjectController {
     public ResponseEntity<Void> updateDescription(
             @AuthenticationPrincipal AuthenticatedUser user,
             @RequestParam Long projectId,
-            @RequestBody ProjectUpdateDescriptionRequest request
+            @RequestBody UpdateDescriptionProjectRequest request
     ) {
         projectService.updateDescription(projectId, user.userId(), request);
         return ResponseEntity.noContent().build();
@@ -87,7 +87,7 @@ public class ProjectController {
     public ResponseEntity<Void> updateMembers(
             @AuthenticationPrincipal AuthenticatedUser user,
             @RequestParam Long projectId,
-            @RequestBody ProjectUpdateMembersRequest request
+            @RequestBody UpdateMembersProjectRequest request
     ) {
         projectService.updateMembers(projectId, user.userId(), request);
         return ResponseEntity.noContent().build();

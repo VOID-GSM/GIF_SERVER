@@ -24,7 +24,7 @@ public class FormController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Long> createForm(@RequestBody FormCreateRequest request) {
+    public ResponseEntity<Long> createForm(@RequestBody CreateFormRequest request) {
         return ResponseEntity.ok(formService.createForm(request));
     }
 
@@ -32,7 +32,7 @@ public class FormController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> updateForm(
             @RequestParam Long formId,
-            @RequestBody FormUpdateRequest request
+            @RequestBody UpdateFormRequest request
     ) {
         formService.updateForm(formId, request);
         return ResponseEntity.noContent().build();
@@ -54,36 +54,36 @@ public class FormController {
 
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<FormListResponse>> getAllFormsForAdmin() {
+    public ResponseEntity<List<ListFormResponse>> getAllFormsForAdmin() {
         return ResponseEntity.ok(formService.getAllFormsForAdmin());
     }
 
     @GetMapping("/admin/submit")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<FormSubmitDetailResponse>> getSubmitList(@RequestParam Long formId) {
+    public ResponseEntity<List<SubmitDetailFormResponse>> getSubmitList(@RequestParam Long formId) {
         return ResponseEntity.ok(formService.getSubmitListByForm(formId));
     }
 
     @GetMapping
-    public ResponseEntity<List<FormListResponse>> getAnnouncedForms(@RequestParam Long projectId) {
+    public ResponseEntity<List<ListFormResponse>> getAnnouncedForms(@RequestParam Long projectId) {
         return ResponseEntity.ok(formService.getAnnouncedForms(projectId));
     }
 
     @GetMapping("/{formId}")
-    public ResponseEntity<FormDetailResponse> getForm(@PathVariable Long formId) {
+    public ResponseEntity<DetailFormResponse> getForm(@PathVariable Long formId) {
         return ResponseEntity.ok(formService.getForm(formId));
     }
 
     @PostMapping("/submit")
     public ResponseEntity<Long> submitForm(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestBody FormSubmitRequest request
+            @RequestBody SubmitFormRequest request
     ) {
         return ResponseEntity.ok(formService.submitForm(user.userId(), request));
     }
 
     @GetMapping("/my-submit")
-    public ResponseEntity<FormSubmitDetailResponse> getMySubmit(
+    public ResponseEntity<SubmitDetailFormResponse> getMySubmit(
             @RequestParam Long formId,
             @RequestParam Long projectId
     ) {

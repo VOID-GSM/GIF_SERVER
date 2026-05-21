@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record FormSubmitDetailResponse(
+public record SubmitDetailFormResponse(
         Long submitId,
         Long projectId,
         Long submittedByUserId,
@@ -22,7 +22,7 @@ public record FormSubmitDetailResponse(
             LocalDate dateAnswer
     ) {}
 
-    public static FormSubmitDetailResponse from(FormSubmit submit) {
+    public static SubmitDetailFormResponse from(FormSubmit submit) {
         List<AnswerResponse> answerResponses = submit.getAnswers().stream()
                 .map(a -> new AnswerResponse(
                         a.getFormField().getId(),
@@ -34,7 +34,7 @@ public record FormSubmitDetailResponse(
                 ))
                 .toList();
 
-        return new FormSubmitDetailResponse(
+        return new SubmitDetailFormResponse(
                 submit.getId(),
                 submit.getProjectId(),
                 submit.getSubmittedByUserId(),
