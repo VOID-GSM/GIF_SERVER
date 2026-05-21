@@ -4,7 +4,7 @@ import com.example.gifserverv2.domain.project.dto.request.*;
 import com.example.gifserverv2.domain.project.dto.response.ProjectDetailResponse;
 import com.example.gifserverv2.domain.project.dto.response.ProjectListResponse;
 import com.example.gifserverv2.domain.project.service.ProjectService;
-import com.example.gifserverv2.domain.global.security.AuthenticatedUser;
+import com.example.gifserverv2.global.security.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

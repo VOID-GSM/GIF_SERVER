@@ -1,4 +1,4 @@
-package com.example.gifserverv2.domain.global.security;
+package com.example.gifserverv2.global.security;
 
 import com.example.gifserverv2.domain.user.entity.Role;
 

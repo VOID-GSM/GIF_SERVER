@@ -1,4 +1,4 @@
-package com.example.gifserverv2.domain.global.config;
+package com.example.gifserverv2.global.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

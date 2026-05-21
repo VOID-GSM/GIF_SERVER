@@ -1,4 +1,4 @@
-package com.example.gifserverv2.domain.global.security;
+package com.example.gifserverv2.global.security;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
