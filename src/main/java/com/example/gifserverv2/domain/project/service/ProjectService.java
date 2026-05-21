@@ -58,9 +58,16 @@ public class ProjectService {
                 .toList();
     }
 
-    public List<ProjectListResponse> getMyProjects(Long userId) {
-        return projectMemberRepository.findAllByUserId(userId).stream()
-                .map(m -> ProjectListResponse.from(m.getProject()))
+    @Transactional(readOnly = true)
+    public List<ProjectListResponse> getProjectsByGrade(Integer grade) {
+        if (grade == null) {
+            return projectRepository.findAll().stream()
+                    .map(ProjectListResponse::from)
+                    .toList();
+        }
+
+        return projectRepository.findByGrade(grade).stream()
+                .map(ProjectListResponse::from)
                 .toList();
     }
 

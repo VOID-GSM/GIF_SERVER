@@ -50,7 +50,7 @@ public class ProjectController {
     public ResponseEntity<List<ProjectListResponse>> filterProjects(
             @RequestParam(required = false) Integer grade
     ) {
-        return ResponseEntity.ok(projectService.getAllProjects());
+        return ResponseEntity.ok(projectService.getProjectsByGrade(grade));
     }
 
     @PatchMapping("/name")

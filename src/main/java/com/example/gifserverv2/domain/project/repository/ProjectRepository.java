@@ -18,6 +18,6 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     JOIN UserEntity u ON u.id = pm.userId
     WHERE SUBSTRING(u.studentNumber, 1, 1) = :grade
     """)
-    List<Project> findAllByGrade(@Param("grade") String grade);
+    List<Project> findByGrade(Integer grade);
 
 }
