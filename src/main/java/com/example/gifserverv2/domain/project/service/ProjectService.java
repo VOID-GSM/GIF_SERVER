@@ -58,7 +58,12 @@ public class ProjectService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
+    public List<ProjectListResponse> getMyProjects(Long userId) {
+        return projectMemberRepository.findAllByUserId(userId).stream()
+                .map(projectMember -> ProjectListResponse.from(projectMember.getProject()))
+                .toList();
+    }
+
     public List<ProjectListResponse> getProjectsByGrade(Integer grade) {
         if (grade == null) {
             return projectRepository.findAll().stream()
@@ -99,7 +104,8 @@ public class ProjectService {
 
     @Transactional
     public void updateMembers(Long projectId, Long userId, ProjectUpdateMembersRequest request) {
-        getProjectOrThrow(projectId);
+        Project project = getProjectOrThrow(projectId);
+
         validateLeader(projectId, userId);
 
         if (request.addMemberIds() != null) {
@@ -107,7 +113,7 @@ public class ProjectService {
                 if (projectMemberRepository.existsByProjectIdAndUserId(projectId, memberId)) {
                     throw ProjectException.alreadyMember();
                 }
-                Project project = projectRepository.findById(projectId).orElseThrow(ProjectException::notFound);
+
                 projectMemberRepository.save(ProjectMember.builder()
                         .project(project)
                         .userId(memberId)
