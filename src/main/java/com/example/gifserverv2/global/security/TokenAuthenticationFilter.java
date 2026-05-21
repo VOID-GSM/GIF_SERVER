@@ -39,7 +39,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         if (token != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
                 Claims claims = jwtTokenProvider.parseClaims(token);
-                Long userId = Long.valueOf(claims.getSubject());
+                Long userId = parseUserId(claims.getSubject());
                 String email = claims.get("email", String.class);
                 String name = claims.get("name", String.class);
                 String studentNumber = claims.get("studentNumber", String.class);
@@ -56,6 +56,9 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                         List.of(new SimpleGrantedAuthority("ROLE_" + role.name())));
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+            } catch (NumberFormatException e) {
+                log.debug("Invalid JWT subject ignored: {}", e.getMessage());
+                SecurityContextHolder.clearContext();
             } catch (JwtException | IllegalArgumentException e) {
                 log.debug("Invalid JWT ignored: {}", e.getMessage());
                 SecurityContextHolder.clearContext();
@@ -71,5 +74,13 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
             return bearerToken.substring(7);
         }
         return null;
+    }
+
+    private Long parseUserId(String subject) {
+        if (subject == null || subject.isBlank()) {
+            throw new IllegalArgumentException("Missing subject claim");
+        }
+
+        return Long.valueOf(subject.trim());
     }
 }
