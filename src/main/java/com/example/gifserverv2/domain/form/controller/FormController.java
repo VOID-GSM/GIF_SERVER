@@ -2,8 +2,9 @@ package com.example.gifserverv2.domain.form.controller;
 
 import com.example.gifserverv2.domain.form.dto.request.*;
 import com.example.gifserverv2.domain.form.dto.response.*;
+import com.example.gifserverv2.domain.form.service.AdminFormService;
+import com.example.gifserverv2.domain.form.service.ClientFormService;
 import com.example.gifserverv2.domain.form.service.FormFileService;
-import com.example.gifserverv2.domain.form.service.FormService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,13 +20,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FormController {
 
-    private final FormService formService;
+    private final AdminFormService adminFormService;
+    private final ClientFormService clientFormService;
     private final FormFileService formFileService;
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Long> createForm(@RequestBody CreateFormRequest request) {
-        return ResponseEntity.ok(formService.createForm(request));
+        return ResponseEntity.ok(adminFormService.createForm(request));
     }
 
     @PatchMapping("/update")
@@ -34,44 +36,44 @@ public class FormController {
             @RequestParam Long formId,
             @RequestBody UpdateFormRequest request
     ) {
-        formService.updateForm(formId, request);
+        adminFormService.updateForm(formId, request);
         return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/announce")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> announceForm(@RequestParam Long formId) {
-        formService.announceForm(formId);
+        adminFormService.announceForm(formId);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/delete")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteForm(@RequestParam Long formId) {
-        formService.deleteForm(formId);
+        adminFormService.deleteForm(formId);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ListFormResponse>> getAllFormsForAdmin() {
-        return ResponseEntity.ok(formService.getAllFormsForAdmin());
+        return ResponseEntity.ok(adminFormService.getAllFormsForAdmin());
     }
 
     @GetMapping("/admin/submit")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<SubmitDetailFormResponse>> getSubmitList(@RequestParam Long formId) {
-        return ResponseEntity.ok(formService.getSubmitListByForm(formId));
+        return ResponseEntity.ok(adminFormService.getSubmitListByForm(formId));
     }
 
     @GetMapping
     public ResponseEntity<List<ListFormResponse>> getAnnouncedForms(@RequestParam Long projectId) {
-        return ResponseEntity.ok(formService.getAnnouncedForms(projectId));
+        return ResponseEntity.ok(clientFormService.getAnnouncedForms(projectId));
     }
 
     @GetMapping("/{formId}")
     public ResponseEntity<DetailFormResponse> getForm(@PathVariable Long formId) {
-        return ResponseEntity.ok(formService.getForm(formId));
+        return ResponseEntity.ok(clientFormService.getForm(formId));
     }
 
     @PostMapping("/submit")
@@ -79,7 +81,7 @@ public class FormController {
             @AuthenticationPrincipal AuthenticatedUser user,
             @RequestBody SubmitFormRequest request
     ) {
-        return ResponseEntity.ok(formService.submitForm(user.userId(), request));
+        return ResponseEntity.ok(clientFormService.submitForm(user.userId(), request));
     }
 
     @GetMapping("/my-submit")
@@ -87,7 +89,7 @@ public class FormController {
             @RequestParam Long formId,
             @RequestParam Long projectId
     ) {
-        return ResponseEntity.ok(formService.getMySubmit(formId, projectId));
+        return ResponseEntity.ok(clientFormService.getMySubmit(formId, projectId));
     }
 
     @PostMapping("/upload")

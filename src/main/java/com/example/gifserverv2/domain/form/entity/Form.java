@@ -1,6 +1,5 @@
 package com.example.gifserverv2.domain.form.entity;
 
-
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -43,9 +42,13 @@ public class Form {
         this.createdAt = LocalDateTime.now();
     }
 
-    public void update(String title, LocalDate deadline) {
+    public void update(String title, LocalDate deadline, List<FormField> newFields) {
         this.title = title;
         this.deadline = deadline;
+        this.fields.clear();
+        if (newFields != null) {
+            this.fields.addAll(newFields);
+        }
     }
 
     public void announce() {
