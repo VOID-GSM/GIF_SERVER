@@ -6,6 +6,7 @@ import com.example.gifserverv2.domain.form.dto.request.FormUpdateRequest;
 import com.example.gifserverv2.domain.form.dto.response.FormDetailResponse;
 import com.example.gifserverv2.domain.form.dto.response.FormListResponse;
 import com.example.gifserverv2.domain.form.dto.response.FormSubmitDetailResponse;
+import com.example.gifserverv2.domain.form.service.FormFileService;
 import com.example.gifserverv2.domain.form.service.FormService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import java.util.List;
 public class FormController {
 
     private final FormService formService;
+    private final FormFileService formFileService;
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -98,11 +100,22 @@ public class FormController {
 
     @PostMapping("/upload")
     public ResponseEntity<String> uploadFile(
+            @AuthenticationPrincipal AuthenticatedUser user,
             @RequestParam Long submitId,
             @RequestParam Long fieldId,
             @RequestParam MultipartFile file
     ) {
+        String fileUrl = formFileService.uploadFile(submitId, fieldId, file);
+        return ResponseEntity.ok(fileUrl);
+    }
 
-        return ResponseEntity.ok("파일 업로드 추후 구현");
+    @DeleteMapping("/upload")
+    public ResponseEntity<Void> deleteFile(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestParam Long submitId,
+            @RequestParam Long fieldId
+    ) {
+        formFileService.deleteFile(submitId, fieldId);
+        return ResponseEntity.noContent().build();
     }
 }
