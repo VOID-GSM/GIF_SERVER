@@ -1,8 +1,8 @@
 package com.example.gifserverv2.domain.project.controller;
 
 import com.example.gifserverv2.domain.project.dto.request.*;
-import com.example.gifserverv2.domain.project.dto.response.ProjectDetailResponse;
-import com.example.gifserverv2.domain.project.dto.response.ProjectListResponse;
+import com.example.gifserverv2.domain.project.dto.response.DetailProjectResponse;
+import com.example.gifserverv2.domain.project.dto.response.ListProjectResponse;
 import com.example.gifserverv2.domain.project.service.ProjectService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
@@ -22,32 +22,32 @@ public class ProjectController {
     @PostMapping
     public ResponseEntity<Long> createProject(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestBody ProjectCreateRequest request
+            @RequestBody CreateProjectRequest request
     ) {
         return ResponseEntity.ok(projectService.createProject(user.userId(), request));
     }
 
     @GetMapping("/admin")
-    public ResponseEntity<List<ProjectListResponse>> getAllProjects() {
+    public ResponseEntity<List<ListProjectResponse>> getAllProjects() {
         return ResponseEntity.ok(projectService.getAllProjects());
     }
 
     @GetMapping("/me")
-    public ResponseEntity<List<ProjectListResponse>> getMyProjects(
+    public ResponseEntity<List<ListProjectResponse>> getMyProjects(
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return ResponseEntity.ok(projectService.getMyProjects(user.userId()));
     }
 
     @GetMapping("/{projectId}")
-    public ResponseEntity<ProjectDetailResponse> getProject(
+    public ResponseEntity<DetailProjectResponse> getProject(
             @PathVariable Long projectId
     ) {
         return ResponseEntity.ok(projectService.getProject(projectId));
     }
 
     @GetMapping("/filter")
-    public ResponseEntity<List<ProjectListResponse>> filterProjects(
+    public ResponseEntity<List<ListProjectResponse>> filterProjects(
             @RequestParam(required = false) Integer grade
     ) {
         return ResponseEntity.ok(projectService.getProjectsByGrade(grade));
@@ -57,7 +57,7 @@ public class ProjectController {
     public ResponseEntity<Void> updateName(
             @AuthenticationPrincipal AuthenticatedUser user,
             @RequestParam Long projectId,
-            @RequestBody ProjectUpdateNameRequest request
+            @RequestBody UpdateNameProjectRequest request
     ) {
         projectService.updateName(projectId, user.userId(), request);
         return ResponseEntity.noContent().build();
@@ -67,7 +67,7 @@ public class ProjectController {
     public ResponseEntity<Void> updateTeamName(
             @AuthenticationPrincipal AuthenticatedUser user,
             @RequestParam Long projectId,
-            @RequestBody ProjectUpdateTeamNameRequest request
+            @RequestBody UpdateTeamNameProjectRequest request
     ) {
         projectService.updateTeamName(projectId, user.userId(), request);
         return ResponseEntity.noContent().build();
@@ -77,7 +77,7 @@ public class ProjectController {
     public ResponseEntity<Void> updateDescription(
             @AuthenticationPrincipal AuthenticatedUser user,
             @RequestParam Long projectId,
-            @RequestBody ProjectUpdateDescriptionRequest request
+            @RequestBody UpdateDescriptionProjectRequest request
     ) {
         projectService.updateDescription(projectId, user.userId(), request);
         return ResponseEntity.noContent().build();
@@ -87,7 +87,7 @@ public class ProjectController {
     public ResponseEntity<Void> updateMembers(
             @AuthenticationPrincipal AuthenticatedUser user,
             @RequestParam Long projectId,
-            @RequestBody ProjectUpdateMembersRequest request
+            @RequestBody UpdateMembersProjectRequest request
     ) {
         projectService.updateMembers(projectId, user.userId(), request);
         return ResponseEntity.noContent().build();

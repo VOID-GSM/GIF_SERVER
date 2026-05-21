@@ -1,8 +1,8 @@
 package com.example.gifserverv2.domain.project.service;
 
 import com.example.gifserverv2.domain.project.dto.request.*;
-import com.example.gifserverv2.domain.project.dto.response.ProjectDetailResponse;
-import com.example.gifserverv2.domain.project.dto.response.ProjectListResponse;
+import com.example.gifserverv2.domain.project.dto.response.DetailProjectResponse;
+import com.example.gifserverv2.domain.project.dto.response.ListProjectResponse;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
@@ -23,7 +23,7 @@ public class ProjectService {
     private final ProjectMemberRepository projectMemberRepository;
 
     @Transactional
-    public Long createProject(Long leaderId, ProjectCreateRequest request) {
+    public Long createProject(Long leaderId, CreateProjectRequest request) {
         Project project = Project.builder()
                 .name(request.name())
                 .teamName(request.teamName())
@@ -52,58 +52,58 @@ public class ProjectService {
         return project.getId();
     }
 
-    public List<ProjectListResponse> getAllProjects() {
+    public List<ListProjectResponse> getAllProjects() {
         return projectRepository.findAll().stream()
-                .map(ProjectListResponse::from)
+                .map(ListProjectResponse::from)
                 .toList();
     }
 
-    public List<ProjectListResponse> getMyProjects(Long userId) {
+    public List<ListProjectResponse> getMyProjects(Long userId) {
         return projectMemberRepository.findAllByUserId(userId).stream()
-                .map(projectMember -> ProjectListResponse.from(projectMember.getProject()))
+                .map(projectMember -> ListProjectResponse.from(projectMember.getProject()))
                 .toList();
     }
 
-    public List<ProjectListResponse> getProjectsByGrade(Integer grade) {
+    public List<ListProjectResponse> getProjectsByGrade(Integer grade) {
         if (grade == null) {
             return projectRepository.findAll().stream()
-                    .map(ProjectListResponse::from)
+                    .map(ListProjectResponse::from)
                     .toList();
         }
 
         return projectRepository.findByGrade(grade).stream()
-                .map(ProjectListResponse::from)
+                .map(ListProjectResponse::from)
                 .toList();
     }
 
-    public ProjectDetailResponse getProject(Long projectId) {
+    public DetailProjectResponse getProject(Long projectId) {
         Project project = getProjectOrThrow(projectId);
-        return ProjectDetailResponse.from(project);
+        return DetailProjectResponse.from(project);
     }
 
     @Transactional
-    public void updateName(Long projectId, Long userId, ProjectUpdateNameRequest request) {
+    public void updateName(Long projectId, Long userId, UpdateNameProjectRequest request) {
         Project project = getProjectOrThrow(projectId);
         validateLeader(projectId, userId);
         project.updateName(request.name());
     }
 
     @Transactional
-    public void updateTeamName(Long projectId, Long userId, ProjectUpdateTeamNameRequest request) {
+    public void updateTeamName(Long projectId, Long userId, UpdateTeamNameProjectRequest request) {
         Project project = getProjectOrThrow(projectId);
         validateLeader(projectId, userId);
         project.updateTeamName(request.teamName());
     }
 
     @Transactional
-    public void updateDescription(Long projectId, Long userId, ProjectUpdateDescriptionRequest request) {
+    public void updateDescription(Long projectId, Long userId, UpdateDescriptionProjectRequest request) {
         Project project = getProjectOrThrow(projectId);
         validateLeader(projectId, userId);
         project.updateDescription(request.description());
     }
 
     @Transactional
-    public void updateMembers(Long projectId, Long userId, ProjectUpdateMembersRequest request) {
+    public void updateMembers(Long projectId, Long userId, UpdateMembersProjectRequest request) {
         Project project = getProjectOrThrow(projectId);
 
         validateLeader(projectId, userId);
