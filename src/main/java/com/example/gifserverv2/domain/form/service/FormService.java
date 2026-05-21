@@ -1,20 +1,11 @@
 package com.example.gifserverv2.domain.form.service;
 
-import com.example.gifserverv2.domain.form.dto.request.FormCreateRequest;
-import com.example.gifserverv2.domain.form.dto.request.FormSubmitRequest;
-import com.example.gifserverv2.domain.form.dto.request.FormUpdateRequest;
-import com.example.gifserverv2.domain.form.dto.response.FormDetailResponse;
-import com.example.gifserverv2.domain.form.dto.response.FormListResponse;
-import com.example.gifserverv2.domain.form.dto.response.FormSubmitDetailResponse;
-import com.example.gifserverv2.domain.form.entity.Form;
-import com.example.gifserverv2.domain.form.entity.FormField;
-import com.example.gifserverv2.domain.form.entity.FormFieldAnswer;
-import com.example.gifserverv2.domain.form.entity.FormSubmit;
 import com.example.gifserverv2.domain.form.exception.FormException;
-import com.example.gifserverv2.domain.form.repository.FormFieldAnswerRepository;
-import com.example.gifserverv2.domain.form.repository.FormFieldRepository;
-import com.example.gifserverv2.domain.form.repository.FormRepository;
-import com.example.gifserverv2.domain.form.repository.FormSubmitRepository;
+import com.example.gifserverv2.domain.form.dto.request.*;
+import com.example.gifserverv2.domain.form.dto.response.*;
+import com.example.gifserverv2.domain.form.entity.*;
+import com.example.gifserverv2.domain.form.repository.*;
+import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -43,7 +34,8 @@ public class FormService {
         formRepository.save(form);
 
         saveFields(form, request.fields().stream()
-                .map(f -> new FormUpdateRequest.FieldRequest(f.title(), f.description(), f.type(), f.orderIndex()))
+                .map(f -> new FormUpdateRequest.FieldRequest(
+                        f.title(), f.description(), f.type(), f.orderIndex()))
                 .toList());
 
         return form.getId();
@@ -54,11 +46,15 @@ public class FormService {
         Form form = getFormOrThrow(formId);
 
         if (form.isAnnounced()) {
-            throw FormException.deadlinePassed();
+            throw FormException.alreadyAnnounced();
         }
 
         form.update(request.title(), request.deadline());
 
+        boolean hasAnswers = formSubmitRepository.existsByFormId(formId);
+        if (hasAnswers) {
+            throw FormException.hasSubmittedAnswers();
+        }
 
         formFieldRepository.deleteAllByFormId(formId);
         saveFields(form, request.fields());
@@ -89,10 +85,12 @@ public class FormService {
                 .map(FormSubmitDetailResponse::from)
                 .toList();
     }
+
     public List<FormListResponse> getAnnouncedForms(Long projectId) {
         return formRepository.findAllByAnnouncedTrueOrderByDeadlineAsc().stream()
                 .map(form -> {
-                    boolean submitted = formSubmitRepository.existsByFormIdAndProjectId(form.getId(), projectId);
+                    boolean submitted = formSubmitRepository
+                            .existsByFormIdAndProjectId(form.getId(), projectId);
                     return FormListResponse.from(form, submitted);
                 })
                 .toList();
@@ -106,12 +104,14 @@ public class FormService {
 
     @Transactional
     public Long submitForm(Long userId, FormSubmitRequest request) {
-        Form form = getFormOrThrow(request.answers().isEmpty() ? 0L :
-                formFieldRepository.findById(request.answers().get(0).fieldId())
-                        .orElseThrow(FormException::fieldNotFound)
-                        .getForm().getId());
+        Form form = getFormOrThrow(request.formId());
 
         if (!form.isAnnounced()) throw FormException.notAnnounced();
+
+        if (!projectMemberRepository.existsByProjectIdAndUserId(request.projectId(), userId)) {
+            throw ProjectException.notMember();
+        }
+
         if (formSubmitRepository.existsByFormIdAndProjectId(form.getId(), request.projectId())) {
             throw FormException.alreadySubmitted();
         }
@@ -160,11 +160,15 @@ public class FormService {
     }
 
     private void validateFormForAnnounce(Form form) {
-        if (form.getTitle() == null || form.getTitle().isBlank()) throw FormException.incompleteForm();
-        if (form.getDeadline() == null) throw FormException.incompleteForm();
+        if (form.getTitle() == null || form.getTitle().isBlank())
+            throw FormException.incompleteForm();
+        if (form.getDeadline() == null)
+            throw FormException.incompleteForm();
         form.getFields().forEach(field -> {
-            if (field.getTitle() == null || field.getTitle().isBlank()) throw FormException.incompleteForm();
-            if (field.getDescription() == null || field.getDescription().isBlank()) throw FormException.incompleteForm();
+            if (field.getTitle() == null || field.getTitle().isBlank())
+                throw FormException.incompleteForm();
+            if (field.getDescription() == null || field.getDescription().isBlank())
+                throw FormException.incompleteForm();
         });
     }
 }

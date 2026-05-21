@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface FormSubmitRepository extends JpaRepository<FormSubmit, Long> {
+    
+    boolean existsByFormId(Long formId);
 
     boolean existsByFormIdAndProjectId(Long formId, Long projectId);
 

@@ -32,7 +32,8 @@ public class LocalFileStorageService implements FileStorageService {
             String savedFilename = UUID.randomUUID() + "." + extension;
 
             Path filePath = dirPath.resolve(savedFilename);
-            file.transferTo(filePath.toFile());
+
+            file.transferTo(filePath);
 
             return baseUrl + "/" + directory + "/" + savedFilename;
 

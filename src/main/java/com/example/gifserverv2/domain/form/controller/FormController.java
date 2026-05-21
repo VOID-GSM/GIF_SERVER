@@ -1,11 +1,7 @@
 package com.example.gifserverv2.domain.form.controller;
 
-import com.example.gifserverv2.domain.form.dto.request.FormCreateRequest;
-import com.example.gifserverv2.domain.form.dto.request.FormSubmitRequest;
-import com.example.gifserverv2.domain.form.dto.request.FormUpdateRequest;
-import com.example.gifserverv2.domain.form.dto.response.FormDetailResponse;
-import com.example.gifserverv2.domain.form.dto.response.FormListResponse;
-import com.example.gifserverv2.domain.form.dto.response.FormSubmitDetailResponse;
+import com.example.gifserverv2.domain.form.dto.request.*;
+import com.example.gifserverv2.domain.form.dto.response.*;
 import com.example.gifserverv2.domain.form.service.FormFileService;
 import com.example.gifserverv2.domain.form.service.FormService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
@@ -28,9 +24,7 @@ public class FormController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Long> createForm(
-            @RequestBody FormCreateRequest request
-    ) {
+    public ResponseEntity<Long> createForm(@RequestBody FormCreateRequest request) {
         return ResponseEntity.ok(formService.createForm(request));
     }
 
@@ -71,9 +65,7 @@ public class FormController {
     }
 
     @GetMapping
-    public ResponseEntity<List<FormListResponse>> getAnnouncedForms(
-            @RequestParam Long projectId
-    ) {
+    public ResponseEntity<List<FormListResponse>> getAnnouncedForms(@RequestParam Long projectId) {
         return ResponseEntity.ok(formService.getAnnouncedForms(projectId));
     }
 
@@ -105,8 +97,9 @@ public class FormController {
             @RequestParam Long fieldId,
             @RequestParam MultipartFile file
     ) {
-        String fileUrl = formFileService.uploadFile(submitId, fieldId, file);
-        return ResponseEntity.ok(fileUrl);
+        return ResponseEntity.ok(
+                formFileService.uploadFile(user.userId(), submitId, fieldId, file)
+        );
     }
 
     @DeleteMapping("/upload")
@@ -115,7 +108,7 @@ public class FormController {
             @RequestParam Long submitId,
             @RequestParam Long fieldId
     ) {
-        formFileService.deleteFile(submitId, fieldId);
+        formFileService.deleteFile(user.userId(), submitId, fieldId);
         return ResponseEntity.noContent().build();
     }
 }

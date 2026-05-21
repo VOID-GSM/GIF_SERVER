@@ -21,6 +21,10 @@ public class FormException extends ResponseStatusException {
         return new FormException(HttpStatus.BAD_REQUEST, "마감일이 지난 양식은 수정할 수 없습니다.");
     }
 
+    public static FormException alreadyAnnounced() {
+        return new FormException(HttpStatus.BAD_REQUEST, "이미 공지된 양식은 수정할 수 없습니다.");
+    }
+
     public static FormException alreadySubmitted() {
         return new FormException(HttpStatus.CONFLICT, "이미 제출한 양식입니다.");
     }
@@ -35,5 +39,9 @@ public class FormException extends ResponseStatusException {
 
     public static FormException incompleteForm() {
         return new FormException(HttpStatus.BAD_REQUEST, "제목, 마감일, 양식 제목, 설명 중 공백이 있습니다.");
+    }
+
+    public static FormException hasSubmittedAnswers() {
+        return new FormException(HttpStatus.CONFLICT, "이미 제출된 답변이 있어 항목을 수정할 수 없습니다.");
     }
 }
