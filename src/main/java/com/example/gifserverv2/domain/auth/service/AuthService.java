@@ -61,11 +61,29 @@ public class AuthService {
             }
 
             Student student = userInfo.getStudent();
-            if (student == null || student.getName() == null || student.getStudentNumber() == null || userInfo.getEmail() == null) {
+            String email = userInfo.getEmail();
+
+            if (student == null) {
+                log.warn("Student info missing in UserInfo: {}", userInfo);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학생 정보가 없습니다.");
+            }
+
+            String name = student.getName();
+            String studentNumber = student.getStudentNumber() != null ? String.valueOf(student.getStudentNumber()).trim() : null;
+
+            if (email == null || email.isBlank() || name == null || name.isBlank() || studentNumber == null || studentNumber.isBlank()) {
+                log.warn("Invalid student info: email='{}', name='{}', studentNumber='{}'", email, name, studentNumber);
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학생 정보가 유효하지 않습니다.");
             }
 
-            UserEntity user = findOrCreateUser(userInfo.getEmail(), student.getName(), String.valueOf(student.getStudentNumber()));
+            try {
+                Long.parseLong(studentNumber);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid studentNumber format: {}", studentNumber);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학번 형식이 유효하지 않습니다.");
+            }
+
+            UserEntity user = findOrCreateUser(email, name, studentNumber);
             String accessToken = jwtTokenProvider.createToken(user);
 
             return new OAuthSignInResponse(
