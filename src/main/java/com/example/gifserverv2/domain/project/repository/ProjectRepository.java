@@ -16,8 +16,7 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     SELECT DISTINCT p FROM Project p
     JOIN p.members pm
     JOIN UserEntity u ON u.id = pm.userId
-    WHERE SUBSTRING(u.studentNumber, 1, 1) = :grade
+    WHERE CAST(SUBSTRING(u.studentNumber, 1, 1) AS integer) = :grade
     """)
-    List<Project> findByGrade(Integer grade);
-
+    List<Project> findByGrade(@Param("grade") Integer grade);
 }
