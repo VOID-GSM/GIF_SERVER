@@ -1,9 +1,9 @@
 package com.example.gifserverv2.domain.project.controller;
 
 import com.example.gifserverv2.domain.project.dto.request.*;
-import com.example.gifserverv2.domain.project.dto.response.ProjectDetailResponse;
-import com.example.gifserverv2.domain.project.dto.response.ProjectListResponse;
-import com.example.gifserverv2.domain.project.service.ProjectService;
+import com.example.gifserverv2.domain.project.dto.response.*;
+import com.example.gifserverv2.domain.project.service.CommandProjectService;
+import com.example.gifserverv2.domain.project.service.QueryProjectService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,40 +17,39 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ProjectController {
 
-    private final ProjectService projectService;
+    private final QueryProjectService projectQueryService;
+    private final CommandProjectService projectCommandService;
 
     @PostMapping
     public ResponseEntity<Long> createProject(
             @AuthenticationPrincipal AuthenticatedUser user,
             @RequestBody CreateProjectRequest request
     ) {
-        return ResponseEntity.ok(projectService.createProject(user.userId(), request));
+        return ResponseEntity.ok(projectCommandService.createProject(user.userId(), request));
     }
 
     @GetMapping("/admin")
-    public ResponseEntity<List<ProjectListResponse>> getAllProjects() {
-        return ResponseEntity.ok(projectService.getAllProjects());
+    public ResponseEntity<List<ListProjectResponse>> getAllProjects() {
+        return ResponseEntity.ok(projectQueryService.getAllProjects());
     }
 
     @GetMapping("/me")
-    public ResponseEntity<List<ProjectListResponse>> getMyProjects(
+    public ResponseEntity<List<ListProjectResponse>> getMyProjects(
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
-        return ResponseEntity.ok(projectService.getMyProjects(user.userId()));
+        return ResponseEntity.ok(projectQueryService.getMyProjects(user.userId()));
     }
 
     @GetMapping("/{projectId}")
-    public ResponseEntity<ProjectDetailResponse> getProject(
-            @PathVariable Long projectId
-    ) {
-        return ResponseEntity.ok(projectService.getProject(projectId));
+    public ResponseEntity<DetailProjectResponse> getProject(@PathVariable Long projectId) {
+        return ResponseEntity.ok(projectQueryService.getProject(projectId));
     }
 
     @GetMapping("/filter")
-    public ResponseEntity<List<ProjectListResponse>> filterProjects(
+    public ResponseEntity<List<ListProjectResponse>> filterProjects(
             @RequestParam(required = false) Integer grade
     ) {
-        return ResponseEntity.ok(projectService.getProjectsByGrade(grade));
+        return ResponseEntity.ok(projectQueryService.getProjectsByGrade(grade));
     }
 
     @PatchMapping("/name")
@@ -59,7 +58,7 @@ public class ProjectController {
             @RequestParam Long projectId,
             @RequestBody UpdateNameProjectRequest request
     ) {
-        projectService.updateName(projectId, user.userId(), request);
+        projectCommandService.updateName(projectId, user.userId(), request);
         return ResponseEntity.noContent().build();
     }
 
@@ -69,7 +68,7 @@ public class ProjectController {
             @RequestParam Long projectId,
             @RequestBody UpdateTeamNameProjectRequest request
     ) {
-        projectService.updateTeamName(projectId, user.userId(), request);
+        projectCommandService.updateTeamName(projectId, user.userId(), request);
         return ResponseEntity.noContent().build();
     }
 
@@ -79,7 +78,7 @@ public class ProjectController {
             @RequestParam Long projectId,
             @RequestBody UpdateDescriptionProjectRequest request
     ) {
-        projectService.updateDescription(projectId, user.userId(), request);
+        projectCommandService.updateDescription(projectId, user.userId(), request);
         return ResponseEntity.noContent().build();
     }
 
@@ -89,7 +88,7 @@ public class ProjectController {
             @RequestParam Long projectId,
             @RequestBody UpdateMembersProjectRequest request
     ) {
-        projectService.updateMembers(projectId, user.userId(), request);
+        projectCommandService.updateMembers(projectId, user.userId(), request);
         return ResponseEntity.noContent().build();
     }
 }

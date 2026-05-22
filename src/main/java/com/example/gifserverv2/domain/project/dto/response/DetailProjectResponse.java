@@ -4,7 +4,7 @@ import com.example.gifserverv2.domain.project.entity.Project;
 
 import java.util.List;
 
-public record ProjectDetailResponse(
+public record DetailProjectResponse(
         Long id,
         String name,
         String teamName,
@@ -14,12 +14,12 @@ public record ProjectDetailResponse(
 ) {
     public record MemberInfo(Long userId, String role) {}
 
-    public static ProjectDetailResponse from(Project project) {
+    public static DetailProjectResponse from(Project project) {
         List<MemberInfo> memberInfos = project.getMembers().stream()
                 .map(m -> new MemberInfo(m.getUserId(), m.getRole().name()))
                 .toList();
 
-        return new ProjectDetailResponse(
+        return new DetailProjectResponse(
                 project.getId(),
                 project.getName(),
                 project.getTeamName(),
