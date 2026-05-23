@@ -24,10 +24,10 @@ public class ScoreEntity {
     private String evaluatorId;
 
     @Column(name = "technical_score", nullable = false)
-    private Integer technicalScore;
+    private Integer technicalCompleteness;
 
     @Column(name = "social_value_score", nullable = false)
-    private Integer socialValueScore;
+    private Integer socialValueMajor;
 
     @Column(name = "ai_utility_score", nullable = false)
     private Integer aiUtilizationMajor;
@@ -47,9 +47,6 @@ public class ScoreEntity {
     @Column(name = "creativity", nullable = false)
     private Integer creativity;
 
-    @Column(name = "sub_total_score", nullable = false)
-    private Integer subTotalScore;
-
     @Column(name = "user_experience", nullable = false)
     private Integer userExperience;
 
@@ -62,15 +59,18 @@ public class ScoreEntity {
     @Column(name = "presentation_community", nullable = false)
     private Integer presentationCommunity;
 
+    @Column(name = "sub_total_score", nullable = false)
+    private Integer subTotalScore;
+
     @Column(name = "score_rank")
     private int rank;
 
     @Builder
-    public ScoreEntity (Project project, String evaluatorId, Integer technicalScore, Integer socialValueScore, Integer aiUtilizationMajor, Integer presentationMajor, Integer reportWriting, Integer reportContent, Integer aiUsagePlan, Integer creativity, Integer userExperience, Integer socialValueCommunity, Integer aiUtilizationCommunity, Integer presentationCommunity) {
+    public ScoreEntity (Project project, String evaluatorId, Integer technicalCompleteness, Integer socialValueMajor, Integer aiUtilizationMajor, Integer presentationMajor, Integer reportWriting, Integer reportContent, Integer aiUsagePlan, Integer creativity, Integer userExperience, Integer socialValueCommunity, Integer aiUtilizationCommunity, Integer presentationCommunity) {
         this.project = project;
         this.evaluatorId = evaluatorId;
-        this.technicalScore = technicalScore;
-        this.socialValueScore = socialValueScore;
+        this.technicalCompleteness = technicalCompleteness;
+        this.socialValueMajor = socialValueMajor;
         this.aiUtilizationMajor = aiUtilizationMajor;
         this.presentationMajor = presentationMajor;
         this.reportWriting = reportWriting;
@@ -84,9 +84,9 @@ public class ScoreEntity {
         calculateSubTotalScore();
     }
 
-    public void updateScore(Integer technicalScore, Integer socialValueScore, Integer aiUtilizationMajor, Integer presentationMajor, Integer reportWriting, Integer reportContent, Integer aiUsagePlan, Integer creativity, Integer userExperience, Integer socialValueCommunity, Integer aiUtilizationCommunity, Integer presentationCommunity) {
-        this.technicalScore = technicalScore;
-        this.socialValueScore = socialValueScore;
+    public void updateScore(Integer technicalCompleteness, Integer socialValueMajor, Integer aiUtilizationMajor, Integer presentationMajor, Integer reportWriting, Integer reportContent, Integer aiUsagePlan, Integer creativity, Integer userExperience, Integer socialValueCommunity, Integer aiUtilizationCommunity, Integer presentationCommunity) {
+        this.technicalCompleteness = technicalCompleteness;
+        this.socialValueMajor = socialValueMajor;
         this.aiUtilizationMajor = aiUtilizationMajor;
         this.presentationMajor = presentationMajor;
         this.reportWriting = reportWriting;
@@ -101,6 +101,6 @@ public class ScoreEntity {
     }
 
     private void calculateSubTotalScore() {
-        this.subTotalScore = this.technicalScore + this.socialValueScore + this.aiUtilizationMajor + this.presentationMajor + this.reportWriting + this.reportContent + this.aiUsagePlan + this.creativity + this.userExperience + this.socialValueCommunity + this.aiUtilizationCommunity + this.presentationCommunity;
+        this.subTotalScore = this.technicalCompleteness + this.socialValueMajor + this.aiUtilizationMajor + this.presentationMajor + this.reportWriting + this.reportContent + this.aiUsagePlan + this.creativity + this.userExperience + this.socialValueCommunity + this.aiUtilizationCommunity + this.presentationCommunity;
     }
 }
