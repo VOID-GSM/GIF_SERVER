@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ScoreEntity {
+public class Score {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -66,7 +66,7 @@ public class ScoreEntity {
     private int rank;
 
     @Builder
-    public ScoreEntity (Project project, String evaluatorId, Integer technicalCompleteness, Integer socialValueMajor, Integer aiUtilizationMajor, Integer presentationMajor, Integer reportWriting, Integer reportContent, Integer aiUsagePlan, Integer creativity, Integer userExperience, Integer socialValueCommunity, Integer aiUtilizationCommunity, Integer presentationCommunity) {
+    public Score(Project project, String evaluatorId, Integer technicalCompleteness, Integer socialValueMajor, Integer aiUtilizationMajor, Integer presentationMajor, Integer reportWriting, Integer reportContent, Integer aiUsagePlan, Integer creativity, Integer userExperience, Integer socialValueCommunity, Integer aiUtilizationCommunity, Integer presentationCommunity) {
         this.project = project;
         this.evaluatorId = evaluatorId;
         this.technicalCompleteness = technicalCompleteness;
