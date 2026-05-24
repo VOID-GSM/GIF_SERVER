@@ -23,39 +23,40 @@ public class ReportScoreService {
 
         Project project = support.getProjectOrThrow(request.getProjectId());
         final String evaluatorKey = evaluatorId.trim();
-        support.scoreRepository().findByProjectAndEvaluatorId(project, evaluatorKey)
-                .ifPresentOrElse(
-                        score -> score.updateScore(
-                                score.getTechnicalCompleteness(),
-                                score.getSocialValueMajor(),
-                                score.getAiUtilizationMajor(),
-                                score.getPresentationMajor(),
-                                request.getReportWriting(),
-                                request.getReportContent(),
-                                request.getAiUsagePlan(),
-                                request.getCreativity(),
-                                score.getUserExperience(),
-                                score.getSocialValueCommunity(),
-                                score.getAiUtilizationCommunity(),
-                                score.getPresentationCommunity()
-                        ),
-                        () -> support.scoreRepository().save(Score.builder()
-                                .project(project)
-                                .evaluatorId(evaluatorKey)
-                                .technicalCompleteness(0)
-                                .socialValueMajor(0)
-                                .aiUtilizationMajor(0)
-                                .presentationMajor(0)
-                                .reportWriting(request.getReportWriting())
-                                .reportContent(request.getReportContent())
-                                .aiUsagePlan(request.getAiUsagePlan())
-                                .creativity(request.getCreativity())
-                                .userExperience(0)
-                                .socialValueCommunity(0)
-                                .aiUtilizationCommunity(0)
-                                .presentationCommunity(0)
-                                .build())
-                );
+        support.upsertScore(
+                project,
+                evaluatorKey,
+                () -> Score.builder()
+                        .project(project)
+                        .evaluatorId(evaluatorKey)
+                        .technicalCompleteness(0)
+                        .socialValueMajor(0)
+                        .aiUtilizationMajor(0)
+                        .presentationMajor(0)
+                        .reportWriting(request.getReportWriting())
+                        .reportContent(request.getReportContent())
+                        .aiUsagePlan(request.getAiUsagePlan())
+                        .creativity(request.getCreativity())
+                        .userExperience(0)
+                        .socialValueCommunity(0)
+                        .aiUtilizationCommunity(0)
+                        .presentationCommunity(0)
+                        .build(),
+                score -> score.updateScore(
+                        score.getTechnicalCompleteness(),
+                        score.getSocialValueMajor(),
+                        score.getAiUtilizationMajor(),
+                        score.getPresentationMajor(),
+                        request.getReportWriting(),
+                        request.getReportContent(),
+                        request.getAiUsagePlan(),
+                        request.getCreativity(),
+                        score.getUserExperience(),
+                        score.getSocialValueCommunity(),
+                        score.getAiUtilizationCommunity(),
+                        score.getPresentationCommunity()
+                )
+        );
     }
 
     public void updateReport(CreateReportScoreRequest request, String evaluatorId) {

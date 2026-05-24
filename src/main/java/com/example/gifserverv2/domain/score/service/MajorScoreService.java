@@ -23,39 +23,40 @@ public class MajorScoreService {
 
         Project project = support.getProjectOrThrow(request.getProjectId());
         final String evaluatorKey = evaluatorId.trim();
-        support.scoreRepository().findByProjectAndEvaluatorId(project, evaluatorKey)
-                .ifPresentOrElse(
-                        score -> score.updateScore(
-                                request.getTechnicalCompleteness(),
-                                request.getSocialValueMajor(),
-                                request.getAiUtilityMajorScore(),
-                                request.getPresentationMajor(),
-                                score.getReportWriting(),
-                                score.getReportContent(),
-                                score.getAiUsagePlan(),
-                                score.getCreativity(),
-                                score.getUserExperience(),
-                                score.getSocialValueCommunity(),
-                                score.getAiUtilizationCommunity(),
-                                score.getPresentationCommunity()
-                        ),
-                        () -> support.scoreRepository().save(Score.builder()
-                                .project(project)
-                                .evaluatorId(evaluatorKey)
-                                .technicalCompleteness(request.getTechnicalCompleteness())
-                                .socialValueMajor(request.getSocialValueMajor())
-                                .aiUtilizationMajor(request.getAiUtilityMajorScore())
-                                .presentationMajor(request.getPresentationMajor())
-                                .reportWriting(0)
-                                .reportContent(0)
-                                .aiUsagePlan(0)
-                                .creativity(0)
-                                .userExperience(0)
-                                .socialValueCommunity(0)
-                                .aiUtilizationCommunity(0)
-                                .presentationCommunity(0)
-                                .build())
-                );
+        support.upsertScore(
+                project,
+                evaluatorKey,
+                () -> Score.builder()
+                        .project(project)
+                        .evaluatorId(evaluatorKey)
+                        .technicalCompleteness(request.getTechnicalCompleteness())
+                        .socialValueMajor(request.getSocialValueMajor())
+                        .aiUtilizationMajor(request.getAiUtilityMajorScore())
+                        .presentationMajor(request.getPresentationMajor())
+                        .reportWriting(0)
+                        .reportContent(0)
+                        .aiUsagePlan(0)
+                        .creativity(0)
+                        .userExperience(0)
+                        .socialValueCommunity(0)
+                        .aiUtilizationCommunity(0)
+                        .presentationCommunity(0)
+                        .build(),
+                score -> score.updateScore(
+                        request.getTechnicalCompleteness(),
+                        request.getSocialValueMajor(),
+                        request.getAiUtilityMajorScore(),
+                        request.getPresentationMajor(),
+                        score.getReportWriting(),
+                        score.getReportContent(),
+                        score.getAiUsagePlan(),
+                        score.getCreativity(),
+                        score.getUserExperience(),
+                        score.getSocialValueCommunity(),
+                        score.getAiUtilizationCommunity(),
+                        score.getPresentationCommunity()
+                )
+        );
     }
 
     public void updateMajor(CreateMajorScoreRequest request, String evaluatorId) {

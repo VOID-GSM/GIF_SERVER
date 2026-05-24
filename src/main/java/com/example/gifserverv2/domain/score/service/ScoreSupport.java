@@ -8,6 +8,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
 @Component
 public class ScoreSupport {
 
@@ -44,6 +47,13 @@ public class ScoreSupport {
         }
     }
 
-    public ScoreRepository scoreRepository() { return scoreRepository; }
+    public Score upsertScore(Project project, String evaluatorId, Supplier<Score> createSupplier, Consumer<Score> updateConsumer) {
+        return scoreRepository.findByProjectAndEvaluatorId(project, evaluatorId)
+                .map(score -> {
+                    updateConsumer.accept(score);
+                    return score;
+                })
+                .orElseGet(() -> scoreRepository.save(createSupplier.get()));
+    }
 }
 

@@ -23,39 +23,40 @@ public class SocialScoreService {
 
         Project project = support.getProjectOrThrow(request.getProjectId());
         final String evaluatorKey = evaluatorId.trim();
-        support.scoreRepository().findByProjectAndEvaluatorId(project, evaluatorKey)
-                .ifPresentOrElse(
-                        score -> score.updateScore(
-                                score.getTechnicalCompleteness(),
-                                score.getSocialValueMajor(),
-                                score.getAiUtilizationMajor(),
-                                score.getPresentationMajor(),
-                                score.getReportWriting(),
-                                score.getReportContent(),
-                                score.getAiUsagePlan(),
-                                score.getCreativity(),
-                                request.getUserExperience(),
-                                request.getSocialValueCommunity(),
-                                request.getAiUtilizationCommunity(),
-                                request.getPresentationCommunity()
-                        ),
-                        () -> support.scoreRepository().save(Score.builder()
-                                .project(project)
-                                .evaluatorId(evaluatorKey)
-                                .technicalCompleteness(0)
-                                .socialValueMajor(0)
-                                .aiUtilizationMajor(0)
-                                .presentationMajor(0)
-                                .reportWriting(0)
-                                .reportContent(0)
-                                .aiUsagePlan(0)
-                                .creativity(0)
-                                .userExperience(request.getUserExperience())
-                                .socialValueCommunity(request.getSocialValueCommunity())
-                                .aiUtilizationCommunity(request.getAiUtilizationCommunity())
-                                .presentationCommunity(request.getPresentationCommunity())
-                                .build())
-                );
+        support.upsertScore(
+                project,
+                evaluatorKey,
+                () -> Score.builder()
+                        .project(project)
+                        .evaluatorId(evaluatorKey)
+                        .technicalCompleteness(0)
+                        .socialValueMajor(0)
+                        .aiUtilizationMajor(0)
+                        .presentationMajor(0)
+                        .reportWriting(0)
+                        .reportContent(0)
+                        .aiUsagePlan(0)
+                        .creativity(0)
+                        .userExperience(request.getUserExperience())
+                        .socialValueCommunity(request.getSocialValueCommunity())
+                        .aiUtilizationCommunity(request.getAiUtilizationCommunity())
+                        .presentationCommunity(request.getPresentationCommunity())
+                        .build(),
+                score -> score.updateScore(
+                        score.getTechnicalCompleteness(),
+                        score.getSocialValueMajor(),
+                        score.getAiUtilizationMajor(),
+                        score.getPresentationMajor(),
+                        score.getReportWriting(),
+                        score.getReportContent(),
+                        score.getAiUsagePlan(),
+                        score.getCreativity(),
+                        request.getUserExperience(),
+                        request.getSocialValueCommunity(),
+                        request.getAiUtilizationCommunity(),
+                        request.getPresentationCommunity()
+                )
+        );
     }
 
     public void updateSocial(CreateSocialScoreRequest request, String evaluatorId) {
