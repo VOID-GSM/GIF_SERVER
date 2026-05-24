@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.Objects;
+
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -101,6 +103,21 @@ public class Score {
     }
 
     private void calculateSubTotalScore() {
-        this.subTotalScore = this.technicalCompleteness + this.socialValueMajor + this.aiUtilizationMajor + this.presentationMajor + this.reportWriting + this.reportContent + this.aiUsagePlan + this.creativity + this.userExperience + this.socialValueCommunity + this.aiUtilizationCommunity + this.presentationCommunity;
+        this.subTotalScore = safe(this.technicalCompleteness)
+                + safe(this.socialValueMajor)
+                + safe(this.aiUtilizationMajor)
+                + safe(this.presentationMajor)
+                + safe(this.reportWriting)
+                + safe(this.reportContent)
+                + safe(this.aiUsagePlan)
+                + safe(this.creativity)
+                + safe(this.userExperience)
+                + safe(this.socialValueCommunity)
+                + safe(this.aiUtilizationCommunity)
+                + safe(this.presentationCommunity);
+    }
+
+    private int safe(Integer value) {
+        return Objects.requireNonNullElse(value, 0);
     }
 }
