@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CreateMajorScoreRequest {
     private Long projectId;
-    private String evaluatorId;
     private Integer technicalCompleteness;
     private Integer socialValueMajor;
     private Integer aiUtilityMajorScore;

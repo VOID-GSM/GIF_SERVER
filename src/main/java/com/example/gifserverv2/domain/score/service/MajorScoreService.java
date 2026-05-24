@@ -14,16 +14,16 @@ public class MajorScoreService {
 
     private final ScoreSupport support;
 
-    public void createMajor(CreateMajorScoreRequest request) {
-        support.validateCommonRequest(request.getProjectId(), request.getEvaluatorId());
+    public void createMajor(CreateMajorScoreRequest request, String evaluatorId) {
+        support.validateCommonRequest(request.getProjectId(), evaluatorId);
         support.requireScore(request.getTechnicalCompleteness(), "technicalCompleteness");
         support.requireScore(request.getSocialValueMajor(), "socialValueMajor");
         support.requireScore(request.getAiUtilityMajorScore(), "aiUtilityMajorScore");
         support.requireScore(request.getPresentationMajor(), "presentationMajor");
 
         Project project = support.getProjectOrThrow(request.getProjectId());
-        String evaluatorId = request.getEvaluatorId().trim();
-        support.scoreRepository().findByProjectAndEvaluatorId(project, evaluatorId)
+        final String evaluatorKey = evaluatorId.trim();
+        support.scoreRepository().findByProjectAndEvaluatorId(project, evaluatorKey)
                 .ifPresentOrElse(
                         score -> score.updateScore(
                                 request.getTechnicalCompleteness(),
@@ -41,7 +41,7 @@ public class MajorScoreService {
                         ),
                         () -> support.scoreRepository().save(Score.builder()
                                 .project(project)
-                                .evaluatorId(evaluatorId)
+                                .evaluatorId(evaluatorKey)
                                 .technicalCompleteness(request.getTechnicalCompleteness())
                                 .socialValueMajor(request.getSocialValueMajor())
                                 .aiUtilizationMajor(request.getAiUtilityMajorScore())
@@ -58,15 +58,15 @@ public class MajorScoreService {
                 );
     }
 
-    public void updateMajor(CreateMajorScoreRequest request) {
-        support.validateCommonRequest(request.getProjectId(), request.getEvaluatorId());
+    public void updateMajor(CreateMajorScoreRequest request, String evaluatorId) {
+        support.validateCommonRequest(request.getProjectId(), evaluatorId);
         support.requireScore(request.getTechnicalCompleteness(), "technicalCompleteness");
         support.requireScore(request.getSocialValueMajor(), "socialValueMajor");
         support.requireScore(request.getAiUtilityMajorScore(), "aiUtilityMajorScore");
         support.requireScore(request.getPresentationMajor(), "presentationMajor");
 
         Project project = support.getProjectOrThrow(request.getProjectId());
-        Score score = support.getScoreOrThrow(project, request.getEvaluatorId().trim());
+        Score score = support.getScoreOrThrow(project, evaluatorId.trim());
 
         score.updateScore(
                 request.getTechnicalCompleteness(),

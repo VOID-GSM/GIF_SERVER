@@ -14,16 +14,16 @@ public class ReportScoreService {
 
     private final ScoreSupport support;
 
-    public void createReport(CreateReportScoreRequest request) {
-        support.validateCommonRequest(request.getProjectId(), request.getEvaluatorId());
+    public void createReport(CreateReportScoreRequest request, String evaluatorId) {
+        support.validateCommonRequest(request.getProjectId(), evaluatorId);
         support.requireScore(request.getReportWriting(), "reportWriting");
         support.requireScore(request.getReportContent(), "reportContent");
         support.requireScore(request.getAiUsagePlan(), "aiUsagePlan");
         support.requireScore(request.getCreativity(), "creativity");
 
         Project project = support.getProjectOrThrow(request.getProjectId());
-        String evaluatorId = request.getEvaluatorId().trim();
-        support.scoreRepository().findByProjectAndEvaluatorId(project, evaluatorId)
+        final String evaluatorKey = evaluatorId.trim();
+        support.scoreRepository().findByProjectAndEvaluatorId(project, evaluatorKey)
                 .ifPresentOrElse(
                         score -> score.updateScore(
                                 score.getTechnicalCompleteness(),
@@ -41,7 +41,7 @@ public class ReportScoreService {
                         ),
                         () -> support.scoreRepository().save(Score.builder()
                                 .project(project)
-                                .evaluatorId(evaluatorId)
+                                .evaluatorId(evaluatorKey)
                                 .technicalCompleteness(0)
                                 .socialValueMajor(0)
                                 .aiUtilizationMajor(0)
@@ -58,15 +58,15 @@ public class ReportScoreService {
                 );
     }
 
-    public void updateReport(CreateReportScoreRequest request) {
-        support.validateCommonRequest(request.getProjectId(), request.getEvaluatorId());
+    public void updateReport(CreateReportScoreRequest request, String evaluatorId) {
+        support.validateCommonRequest(request.getProjectId(), evaluatorId);
         support.requireScore(request.getReportWriting(), "reportWriting");
         support.requireScore(request.getReportContent(), "reportContent");
         support.requireScore(request.getAiUsagePlan(), "aiUsagePlan");
         support.requireScore(request.getCreativity(), "creativity");
 
         Project project = support.getProjectOrThrow(request.getProjectId());
-        Score score = support.getScoreOrThrow(project, request.getEvaluatorId().trim());
+        Score score = support.getScoreOrThrow(project, evaluatorId.trim());
 
         score.updateScore(
                 score.getTechnicalCompleteness(),

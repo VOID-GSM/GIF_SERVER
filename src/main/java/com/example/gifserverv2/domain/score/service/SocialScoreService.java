@@ -14,16 +14,16 @@ public class SocialScoreService {
 
     private final ScoreSupport support;
 
-    public void createSocial(CreateSocialScoreRequest request) {
-        support.validateCommonRequest(request.getProjectId(), request.getEvaluatorId());
+    public void createSocial(CreateSocialScoreRequest request, String evaluatorId) {
+        support.validateCommonRequest(request.getProjectId(), evaluatorId);
         support.requireScore(request.getUserExperience(), "userExperience");
         support.requireScore(request.getSocialValueCommunity(), "socialValueCommunity");
         support.requireScore(request.getAiUtilizationCommunity(), "aiUtilizationCommunity");
         support.requireScore(request.getPresentationCommunity(), "presentationCommunity");
 
         Project project = support.getProjectOrThrow(request.getProjectId());
-        String evaluatorId = request.getEvaluatorId().trim();
-        support.scoreRepository().findByProjectAndEvaluatorId(project, evaluatorId)
+        final String evaluatorKey = evaluatorId.trim();
+        support.scoreRepository().findByProjectAndEvaluatorId(project, evaluatorKey)
                 .ifPresentOrElse(
                         score -> score.updateScore(
                                 score.getTechnicalCompleteness(),
@@ -41,7 +41,7 @@ public class SocialScoreService {
                         ),
                         () -> support.scoreRepository().save(Score.builder()
                                 .project(project)
-                                .evaluatorId(evaluatorId)
+                                .evaluatorId(evaluatorKey)
                                 .technicalCompleteness(0)
                                 .socialValueMajor(0)
                                 .aiUtilizationMajor(0)
@@ -58,15 +58,15 @@ public class SocialScoreService {
                 );
     }
 
-    public void updateSocial(CreateSocialScoreRequest request) {
-        support.validateCommonRequest(request.getProjectId(), request.getEvaluatorId());
+    public void updateSocial(CreateSocialScoreRequest request, String evaluatorId) {
+        support.validateCommonRequest(request.getProjectId(), evaluatorId);
         support.requireScore(request.getUserExperience(), "userExperience");
         support.requireScore(request.getSocialValueCommunity(), "socialValueCommunity");
         support.requireScore(request.getAiUtilizationCommunity(), "aiUtilizationCommunity");
         support.requireScore(request.getPresentationCommunity(), "presentationCommunity");
 
         Project project = support.getProjectOrThrow(request.getProjectId());
-        Score score = support.getScoreOrThrow(project, request.getEvaluatorId().trim());
+        Score score = support.getScoreOrThrow(project, evaluatorId.trim());
 
         score.updateScore(
                 score.getTechnicalCompleteness(),

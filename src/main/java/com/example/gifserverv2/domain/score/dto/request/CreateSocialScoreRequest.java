@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CreateSocialScoreRequest {
     private Long projectId;
-    private String evaluatorId;
     private Integer userExperience;
     private Integer socialValueCommunity;
     private Integer aiUtilizationCommunity;
