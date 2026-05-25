@@ -51,8 +51,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/signin").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
-                        .requestMatchers("/api/notices/**").authenticated()
-                        .requestMatchers("/api/lectures/**").authenticated()
+                        .requestMatchers("/api/score/**").authenticated()
+                        .requestMatchers("/api/project/**").authenticated()
+                        .requestMatchers("/api/form/**").authenticated()
                         .anyRequest().authenticated())
                 .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
