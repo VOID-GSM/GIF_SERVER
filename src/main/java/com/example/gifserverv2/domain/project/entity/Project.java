@@ -24,7 +24,7 @@ public class Project {
     @Column(nullable = false, length = 20)
     private String teamName;
 
-    @Column(columnDefinition = "TEXT", length = 500)
+    @Column(length = 500)
     private String description;
 
     @Column
