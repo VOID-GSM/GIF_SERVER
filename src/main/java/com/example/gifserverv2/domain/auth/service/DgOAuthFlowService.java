@@ -16,7 +16,6 @@ import java.util.UUID;
 public class DgOAuthFlowService {
 
     private static final Duration STATE_TTL = Duration.ofMinutes(5);
-
     private final DataGsmOAuthClient dataGsmOAuthClient;
     private final AuthService authService;
     private final OAuthStateStore oauthStateStore;
