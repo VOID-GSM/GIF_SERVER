@@ -19,10 +19,10 @@ public class FormField {
     @JoinColumn(name = "form_id", nullable = false)
     private Form form;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private String title;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(length = 200)
     private String description;
 
     @Enumerated(EnumType.STRING)
