@@ -22,7 +22,7 @@ public class FormField {
     @Column(nullable = false, length = 50)
     private String title;
 
-    @Column(columnDefinition = "TEXT", length = 200)
+    @Column(length = 200)
     private String description;
 
     @Enumerated(EnumType.STRING)
