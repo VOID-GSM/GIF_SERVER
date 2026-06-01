@@ -41,4 +41,3 @@ public class DetailScoreResponse {
         this.rank = s.getRank();
     }
 }
-
