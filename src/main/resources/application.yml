@@ -44,3 +44,13 @@ app:
 file:
   upload-dir: ${FILE_UPLOAD_DIR}
   base-url: ${FILE_BASE_URL}
+
+springdoc:
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+  api-docs:
+    path: /api-docs
