@@ -23,6 +23,14 @@ public class UserEntity {
     @Column(nullable = false)
     private Role role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "admin_role")
+    private AdminRole adminRole;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "client_role")
+    private ClientRole clientRole;
+
     protected UserEntity() {
     }
 
@@ -53,8 +61,34 @@ public class UserEntity {
         return role;
     }
 
+    public Role getEffectiveRole() {
+        if (role == Role.USER) {
+            return Role.CLIENT;
+        }
+
+        return role;
+    }
+
+    public AdminRole getAdminRole() {
+        return adminRole;
+    }
+
+    public ClientRole getClientRole() {
+        return clientRole;
+    }
+
     public void updateProfile(String name, String studentNumber) {
         this.name = name;
         this.studentNumber = studentNumber;
+    }
+
+    public void updateAdminAdditionalInfo(AdminRole adminRole) {
+        this.adminRole = adminRole;
+        this.clientRole = null;
+    }
+
+    public void updateClientAdditionalInfo(ClientRole clientRole) {
+        this.clientRole = clientRole;
+        this.adminRole = null;
     }
 }

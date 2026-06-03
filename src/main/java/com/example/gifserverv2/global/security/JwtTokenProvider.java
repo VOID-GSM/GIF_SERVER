@@ -26,16 +26,24 @@ public class JwtTokenProvider {
         Date now = new Date();
         Date expiration = new Date(now.getTime() + validityInMinutes * 60 * 1000);
 
-        return Jwts.builder()
+        var builder = Jwts.builder()
                 .subject(user.getId().toString())
                 .claim("email", user.getEmail())
                 .claim("name", user.getName())
                 .claim("studentNumber", user.getStudentNumber())
-                .claim("role", user.getRole().name())
+                .claim("role", user.getEffectiveRole().name())
                 .issuedAt(now)
                 .expiration(expiration)
-                .signWith(secretKey)
-                .compact();
+                .signWith(secretKey);
+
+        if (user.getAdminRole() != null) {
+            builder.claim("adminRole", user.getAdminRole().name());
+        }
+        if (user.getClientRole() != null) {
+            builder.claim("clientRole", user.getClientRole().name());
+        }
+
+        return builder.compact();
     }
 
     public Claims parseClaims(String token) {

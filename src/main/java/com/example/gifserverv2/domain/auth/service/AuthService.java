@@ -92,7 +92,9 @@ public class AuthService {
                     user.getEmail(),
                     user.getName(),
                     user.getStudentNumber(),
-                    user.getRole().name());
+                    user.getEffectiveRole().name(),
+                    user.getAdminRole() != null ? user.getAdminRole().name() : null,
+                    user.getClientRole() != null ? user.getClientRole().name() : null);
         } catch (DataGsmException e) {
             log.warn("DataGSM OAuth error: status={}, message={}", e.getStatusCode(), e.getMessage());
             throw new ResponseStatusException(resolveStatus(e.getStatusCode()), "OAuth 인증에 실패했습니다.");
@@ -122,6 +124,6 @@ public class AuthService {
                     existing.updateProfile(name, studentNumber);
                     return existing;
                 })
-                .orElseGet(() -> userRepository.save(new UserEntity(email, name, studentNumber, Role.USER)));
+                .orElseGet(() -> userRepository.save(new UserEntity(email, name, studentNumber, Role.CLIENT)));
     }
 }

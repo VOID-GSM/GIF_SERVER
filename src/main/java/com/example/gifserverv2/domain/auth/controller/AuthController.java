@@ -5,6 +5,7 @@ import com.example.gifserverv2.domain.auth.dto.response.CurrentUserResponse;
 import com.example.gifserverv2.domain.auth.dto.response.OAuthSignInResponse;
 import com.example.gifserverv2.domain.auth.service.AuthService;
 import com.example.gifserverv2.domain.auth.service.DgOAuthFlowService;
+import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -46,11 +47,15 @@ public class AuthController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증 정보가 필요합니다.");
         }
 
+        UserEntity user = authService.requireUser(currentUser.userId());
+
         return new CurrentUserResponse(
-                currentUser.userId(),
-                currentUser.email(),
-                currentUser.name(),
-                currentUser.studentNumber(),
-                currentUser.role().name());
+                user.getId(),
+                user.getEmail(),
+                user.getName(),
+                user.getStudentNumber(),
+                user.getEffectiveRole().name(),
+                user.getAdminRole() != null ? user.getAdminRole().name() : null,
+                user.getClientRole() != null ? user.getClientRole().name() : null);
     }
 }
