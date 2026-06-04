@@ -56,6 +56,7 @@ public class AuthController {
                 user.getStudentNumber(),
                 user.getEffectiveRole().name(),
                 user.getAdminRole() != null ? user.getAdminRole().name() : null,
+                user.getAdminTeam(),
                 user.getClientRole() != null ? user.getClientRole().name() : null);
     }
 }

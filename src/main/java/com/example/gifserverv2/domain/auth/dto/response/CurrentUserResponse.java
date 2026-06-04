@@ -7,5 +7,6 @@ public record CurrentUserResponse(
         String studentNumber,
         String role,
         String adminRole,
+        String adminTeam,
         String clientRole) {
 }

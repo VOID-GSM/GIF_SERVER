@@ -27,6 +27,9 @@ public class UserEntity {
     @Column(name = "admin_role")
     private AdminRole adminRole;
 
+    @Column(name = "admin_team")
+    private String adminTeam;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "client_role")
     private ClientRole clientRole;
@@ -73,6 +76,10 @@ public class UserEntity {
         return adminRole;
     }
 
+    public String getAdminTeam() {
+        return adminTeam;
+    }
+
     public ClientRole getClientRole() {
         return clientRole;
     }
@@ -82,13 +89,15 @@ public class UserEntity {
         this.studentNumber = studentNumber;
     }
 
-    public void updateAdminAdditionalInfo(AdminRole adminRole) {
+    public void updateAdminAdditionalInfo(AdminRole adminRole, String adminTeam) {
         this.adminRole = adminRole;
+        this.adminTeam = adminTeam;
         this.clientRole = null;
     }
 
     public void updateClientAdditionalInfo(ClientRole clientRole) {
         this.clientRole = clientRole;
         this.adminRole = null;
+        this.adminTeam = null;
     }
 }

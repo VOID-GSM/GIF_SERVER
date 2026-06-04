@@ -39,6 +39,9 @@ public class JwtTokenProvider {
         if (user.getAdminRole() != null) {
             builder.claim("adminRole", user.getAdminRole().name());
         }
+        if (user.getAdminTeam() != null) {
+            builder.claim("adminTeam", user.getAdminTeam());
+        }
         if (user.getClientRole() != null) {
             builder.claim("clientRole", user.getClientRole().name());
         }

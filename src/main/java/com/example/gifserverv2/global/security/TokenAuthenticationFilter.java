@@ -51,9 +51,10 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                 }
                 Role role = parseRole(roleClaim);
                 AdminRole adminRole = parseAdminRole(claims.get("adminRole", String.class));
+                String adminTeam = claims.get("adminTeam", String.class);
                 ClientRole clientRole = parseClientRole(claims.get("clientRole", String.class));
 
-                AuthenticatedUser principal = new AuthenticatedUser(userId, email, name, studentNumber, role, adminRole, clientRole);
+                AuthenticatedUser principal = new AuthenticatedUser(userId, email, name, studentNumber, role, adminRole, adminTeam, clientRole);
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         principal,
                         null,

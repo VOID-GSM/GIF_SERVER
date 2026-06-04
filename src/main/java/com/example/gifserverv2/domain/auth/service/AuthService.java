@@ -96,6 +96,7 @@ public class AuthService {
                     user.getStudentNumber(),
                     effectiveRoleName,
                     user.getAdminRole() != null ? user.getAdminRole().name() : null,
+                    user.getAdminTeam(),
                     user.getClientRole() != null ? user.getClientRole().name() : null);
         } catch (DataGsmException e) {
             log.warn("DataGSM OAuth error: status={}, message={}", e.getStatusCode(), e.getMessage());

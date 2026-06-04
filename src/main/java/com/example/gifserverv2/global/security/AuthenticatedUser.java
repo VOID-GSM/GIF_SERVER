@@ -11,5 +11,6 @@ public record AuthenticatedUser(
         String studentNumber,
         Role role,
         AdminRole adminRole,
+        String adminTeam,
         ClientRole clientRole) {
 }

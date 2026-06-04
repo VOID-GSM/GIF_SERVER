@@ -4,5 +4,6 @@ import com.example.gifserverv2.domain.user.entity.AdminRole;
 import jakarta.validation.constraints.NotNull;
 
 public record AdminAdditionalInfoRequest(
-        @NotNull AdminRole adminRole) {
+        @NotNull AdminRole adminRole,
+        String adminTeam) {
 }

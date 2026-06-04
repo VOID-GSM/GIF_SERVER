@@ -8,5 +8,6 @@ public record OAuthSignInResponse(
         String studentNumber,
         String role,
         String adminRole,
+        String adminTeam,
         String clientRole) {
 }
