@@ -37,7 +37,7 @@ jwt:
 
 app:
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
   oauth-state:
     store: ${OAUTH_STATE_STORE:memory}
 

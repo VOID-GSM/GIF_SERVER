@@ -86,13 +86,15 @@ public class AuthService {
             UserEntity user = findOrCreateUser(email, name, studentNumber);
             String accessToken = jwtTokenProvider.createToken(user);
 
+            String effectiveRoleName = (user.getEffectiveRole() != null) ? user.getEffectiveRole().name() : "GENERAL_STUDENT";
+
             return new OAuthSignInResponse(
                     accessToken,
                     user.getId(),
                     user.getEmail(),
                     user.getName(),
                     user.getStudentNumber(),
-                    user.getEffectiveRole().name(),
+                    effectiveRoleName,
                     user.getAdminRole() != null ? user.getAdminRole().name() : null,
                     user.getClientRole() != null ? user.getClientRole().name() : null);
         } catch (DataGsmException e) {
