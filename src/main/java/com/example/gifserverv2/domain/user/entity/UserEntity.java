@@ -57,8 +57,4 @@ public class UserEntity {
         this.name = name;
         this.studentNumber = studentNumber;
     }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
 }
