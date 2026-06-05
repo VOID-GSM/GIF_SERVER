@@ -23,17 +23,6 @@ public class UserEntity {
     @Column(nullable = false)
     private Role role;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "admin_role")
-    private AdminRole adminRole;
-
-    @Column(name = "admin_team")
-    private String adminTeam;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "client_role")
-    private ClientRole clientRole;
-
     protected UserEntity() {
     }
 
@@ -64,40 +53,12 @@ public class UserEntity {
         return role;
     }
 
-    public Role getEffectiveRole() {
-        if (role == Role.USER) {
-            return Role.CLIENT;
-        }
-
-        return role;
-    }
-
-    public AdminRole getAdminRole() {
-        return adminRole;
-    }
-
-    public String getAdminTeam() {
-        return adminTeam;
-    }
-
-    public ClientRole getClientRole() {
-        return clientRole;
-    }
-
     public void updateProfile(String name, String studentNumber) {
         this.name = name;
         this.studentNumber = studentNumber;
     }
 
-    public void updateAdminAdditionalInfo(AdminRole adminRole, String adminTeam) {
-        this.adminRole = adminRole;
-        this.adminTeam = adminTeam;
-        this.clientRole = null;
-    }
-
-    public void updateClientAdditionalInfo(ClientRole clientRole) {
-        this.clientRole = clientRole;
-        this.adminRole = null;
-        this.adminTeam = null;
+    public void setRole(Role role) {
+        this.role = role;
     }
 }
