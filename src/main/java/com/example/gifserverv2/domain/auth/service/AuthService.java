@@ -104,7 +104,10 @@ public class AuthService {
                     user.getEmail(),
                     user.getName(),
                     user.getStudentNumber(),
-                    user.getRole().name());
+                    user.getRole().name(),
+                    null,
+                    null,
+                    null);
         } catch (DataGsmException e) {
             log.warn("DataGSM OAuth error: status={}, message={}", e.getStatusCode(), e.getMessage());
             throw new ResponseStatusException(resolveStatus(e.getStatusCode()), "OAuth 인증에 실패했습니다.");
