@@ -1,6 +1,7 @@
 package com.example.gifserverv2.domain.form.service;
 
 import com.example.gifserverv2.domain.form.dto.request.SubmitFormRequest;
+import com.example.gifserverv2.domain.form.dto.request.UpdateSubmitRequest;
 import com.example.gifserverv2.domain.form.dto.response.DetailFormResponse;
 import com.example.gifserverv2.domain.form.dto.response.ListFormResponse;
 import com.example.gifserverv2.domain.form.dto.response.SubmitDetailFormResponse;
@@ -16,6 +17,7 @@ import com.example.gifserverv2.domain.form.repository.FormSubmitRepository;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -90,5 +92,37 @@ public class ClientFormService {
                 .findByFormIdAndProjectId(formId, projectId)
                 .orElseThrow(FormException::notSubmitted);
         return SubmitDetailFormResponse.from(submit);
+    }
+    @Transactional
+    public void updateSubmit(Long userId, UpdateSubmitRequest request) {
+        FormSubmit submit = formSubmitRepository.findById(request.submitId())
+                .orElseThrow(FormException::notSubmitted);
+
+        if (!submit.getSubmittedByUserId().equals(userId)) {
+            throw new FormException(HttpStatus.FORBIDDEN, "본인이 제출한 양식만 수정할 수 있습니다.");
+        }
+
+        if (submit.getForm().isDeadlinePassed()) {
+            throw FormException.deadlinePassed();
+        }
+
+        List<FormFieldAnswer> existing = formFieldAnswerRepository.findAllByFormSubmitId(request.submitId());
+        existing.stream()
+                .filter(a -> a.getFormField().getType() != FormField.FieldType.FILE)
+                .forEach(formFieldAnswerRepository::delete);
+
+        request.answers().forEach(answerReq -> {
+            FormField field = formFieldRepository.findById(answerReq.fieldId())
+                    .orElseThrow(FormException::fieldNotFound);
+
+            if (field.getType() == FormField.FieldType.FILE) return;
+
+            formFieldAnswerRepository.save(FormFieldAnswer.builder()
+                    .formSubmit(submit)
+                    .formField(field)
+                    .textAnswer(answerReq.textAnswer())
+                    .dateAnswer(answerReq.dateAnswer())
+                    .build());
+        });
     }
 }
