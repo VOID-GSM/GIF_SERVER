@@ -20,15 +20,7 @@ public class ProjectController {
     private final QueryProjectService projectQueryService;
     private final CommandProjectService projectCommandService;
 
-    @PostMapping
-    public ResponseEntity<Long> createProject(
-            @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestBody CreateProjectRequest request
-    ) {
-        return ResponseEntity.ok(projectCommandService.createProject(user.userId(), request));
-    }
-
-    @GetMapping("/admin")
+    @GetMapping("/check")
     public ResponseEntity<List<ListProjectResponse>> getAllProjects() {
         return ResponseEntity.ok(projectQueryService.getAllProjects());
     }
@@ -52,43 +44,13 @@ public class ProjectController {
         return ResponseEntity.ok(projectQueryService.getProjectsByGrade(grade));
     }
 
-    @PatchMapping("/name")
-    public ResponseEntity<Void> updateName(
+    @PutMapping("/{projectId}/update")
+    public ResponseEntity<Void> updateProject(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestParam Long projectId,
-            @RequestBody UpdateNameProjectRequest request
+            @PathVariable Long projectId,
+            @RequestBody UpdateProjectRequest request
     ) {
-        projectCommandService.updateName(projectId, user.userId(), request);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PatchMapping("/team-name")
-    public ResponseEntity<Void> updateTeamName(
-            @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestParam Long projectId,
-            @RequestBody UpdateTeamNameProjectRequest request
-    ) {
-        projectCommandService.updateTeamName(projectId, user.userId(), request);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PatchMapping("/description")
-    public ResponseEntity<Void> updateDescription(
-            @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestParam Long projectId,
-            @RequestBody UpdateDescriptionProjectRequest request
-    ) {
-        projectCommandService.updateDescription(projectId, user.userId(), request);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PatchMapping("/members")
-    public ResponseEntity<Void> updateMembers(
-            @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestParam Long projectId,
-            @RequestBody UpdateMembersProjectRequest request
-    ) {
-        projectCommandService.updateMembers(projectId, user.userId(), request);
+        projectCommandService.updateProject(projectId, user.userId(), request);
         return ResponseEntity.noContent().build();
     }
 }
