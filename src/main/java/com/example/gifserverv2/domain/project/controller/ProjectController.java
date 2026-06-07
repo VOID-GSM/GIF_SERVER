@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -20,15 +21,7 @@ public class ProjectController {
     private final QueryProjectService projectQueryService;
     private final CommandProjectService projectCommandService;
 
-    @PostMapping
-    public ResponseEntity<Long> createProject(
-            @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestBody CreateProjectRequest request
-    ) {
-        return ResponseEntity.ok(projectCommandService.createProject(user.userId(), request));
-    }
-
-    @GetMapping("/admin")
+    @GetMapping("/check")
     public ResponseEntity<List<ListProjectResponse>> getAllProjects() {
         return ResponseEntity.ok(projectQueryService.getAllProjects());
     }
@@ -52,43 +45,23 @@ public class ProjectController {
         return ResponseEntity.ok(projectQueryService.getProjectsByGrade(grade));
     }
 
-    @PatchMapping("/name")
-    public ResponseEntity<Void> updateName(
+    @PutMapping("/{projectId}/update")
+    public ResponseEntity<Void> updateProject(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestParam Long projectId,
-            @RequestBody UpdateNameProjectRequest request
+            @PathVariable Long projectId,
+            @RequestBody UpdateProjectRequest request
     ) {
-        projectCommandService.updateName(projectId, user.userId(), request);
+        projectCommandService.updateProject(projectId, user.userId(), request);
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/team-name")
-    public ResponseEntity<Void> updateTeamName(
+    @PostMapping("/{projectId}/logo")
+    public ResponseEntity<Void> uploadLogo(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestParam Long projectId,
-            @RequestBody UpdateTeamNameProjectRequest request
+            @PathVariable Long projectId,
+            @RequestParam("file") MultipartFile file
     ) {
-        projectCommandService.updateTeamName(projectId, user.userId(), request);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PatchMapping("/description")
-    public ResponseEntity<Void> updateDescription(
-            @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestParam Long projectId,
-            @RequestBody UpdateDescriptionProjectRequest request
-    ) {
-        projectCommandService.updateDescription(projectId, user.userId(), request);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PatchMapping("/members")
-    public ResponseEntity<Void> updateMembers(
-            @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestParam Long projectId,
-            @RequestBody UpdateMembersProjectRequest request
-    ) {
-        projectCommandService.updateMembers(projectId, user.userId(), request);
+        projectCommandService.uploadLogo(projectId, user.userId(), file);
         return ResponseEntity.noContent().build();
     }
 }
