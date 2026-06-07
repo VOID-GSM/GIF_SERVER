@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -51,6 +52,16 @@ public class ProjectController {
             @RequestBody UpdateProjectRequest request
     ) {
         projectCommandService.updateProject(projectId, user.userId(), request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{projectId}/logo")
+    public ResponseEntity<Void> uploadLogo(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long projectId,
+            @RequestParam("file") MultipartFile file
+    ) {
+        projectCommandService.uploadLogo(projectId, user.userId(), file);
         return ResponseEntity.noContent().build();
     }
 }
