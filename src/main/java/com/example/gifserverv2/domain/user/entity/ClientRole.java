@@ -1,7 +1,6 @@
 package com.example.gifserverv2.domain.user.entity;
 
-public enum Role {
-    USER,
-    CLIENT,
-    ADMIN
+public enum ClientRole {
+    LEADER,
+    MEMBER
 }
