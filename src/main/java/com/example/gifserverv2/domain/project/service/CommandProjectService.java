@@ -104,20 +104,14 @@ public class CommandProjectService {
             if (!Files.exists(dir)) Files.createDirectories(dir);
 
             if (project.getLogoPath() != null) {
-                Files.deleteIfExists(dir.resolve(project.getLogoPath()));
+                Files.deleteIfExists(Paths.get(project.getLogoPath()));
             }
 
-            String originalFilename = file.getOriginalFilename();
-            String extension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
+            String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+            Path filePath = dir.resolve(fileName);
+            file.transferTo(filePath.toFile());
 
-            String fileName = UUID.randomUUID() + extension;
-            Path filePath = dir.resolve(fileName).normalize();
-            file.transferTo(filePath.toAbsolutePath().toFile());
-
-            project.updateLogoPath(fileName);
+            project.updateLogoPath(filePath.toString());
 
         } catch (IOException e) {
             throw new RuntimeException("로고 업로드 중 오류가 발생했습니다.", e);
