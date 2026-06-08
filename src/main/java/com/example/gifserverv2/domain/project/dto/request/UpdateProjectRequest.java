@@ -1,11 +1,18 @@
 package com.example.gifserverv2.domain.project.dto.request;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.util.List;
 
-public record UpdateProjectRequest(
-        String name,
-        String teamName,
-        String description,
-        List<Long> addMemberIds,
-        List<Long> removeMemberIds
-) {}
+@Getter
+@Setter
+@NoArgsConstructor
+public class UpdateProjectRequest {
+    private String name;
+    private String teamName;
+    private String description;
+    private List<Long> addMemberIds;
+    private List<Long> removeMemberIds;
+}
