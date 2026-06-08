@@ -1,6 +1,5 @@
 package com.example.gifserverv2.domain.project.service;
 
-
 import com.example.gifserverv2.domain.project.dto.request.*;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.entity.ProjectMember;
@@ -8,8 +7,16 @@ import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +26,9 @@ public class CommandProjectService {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final QueryProjectService projectQueryService;
+
+    @Value("${file.upload-dir:uploads/logos}")
+    private String uploadDir;
 
     public Long createProject(Long leaderId, CreateProjectRequest request) {
         Project project = Project.builder()
@@ -49,27 +59,14 @@ public class CommandProjectService {
         return project.getId();
     }
 
-    public void updateName(Long projectId, Long userId, UpdateNameProjectRequest request) {
-        Project project = projectQueryService.getProjectOrThrow(projectId);
-        validateLeader(projectId, userId);
-        project.updateName(request.name());
-    }
 
-    public void updateTeamName(Long projectId, Long userId, UpdateTeamNameProjectRequest request) {
+    public void updateProject(Long projectId, Long userId, UpdateProjectRequest request) {
         Project project = projectQueryService.getProjectOrThrow(projectId);
         validateLeader(projectId, userId);
-        project.updateTeamName(request.teamName());
-    }
 
-    public void updateDescription(Long projectId, Long userId, UpdateDescriptionProjectRequest request) {
-        Project project = projectQueryService.getProjectOrThrow(projectId);
-        validateLeader(projectId, userId);
-        project.updateDescription(request.description());
-    }
-
-    public void updateMembers(Long projectId, Long userId, UpdateMembersProjectRequest request) {
-        Project project = projectQueryService.getProjectOrThrow(projectId);
-        validateLeader(projectId, userId);
+        if (request.name() != null) project.updateName(request.name());
+        if (request.teamName() != null) project.updateTeamName(request.teamName());
+        if (request.description() != null) project.updateDescription(request.description());
 
         if (request.addMemberIds() != null) {
             request.addMemberIds().forEach(memberId -> {
@@ -95,6 +92,29 @@ public class CommandProjectService {
                 }
                 projectMemberRepository.delete(member);
             });
+        }
+    }
+
+    public void uploadLogo(Long projectId, Long userId, MultipartFile file) {
+        Project project = projectQueryService.getProjectOrThrow(projectId);
+        validateLeader(projectId, userId);
+
+        try {
+            Path dir = Paths.get(uploadDir);
+            if (!Files.exists(dir)) Files.createDirectories(dir);
+
+            if (project.getLogoPath() != null) {
+                Files.deleteIfExists(Paths.get(project.getLogoPath()));
+            }
+
+            String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+            Path filePath = dir.resolve(fileName);
+            file.transferTo(filePath.toFile());
+
+            project.updateLogoPath(filePath.toString());
+
+        } catch (IOException e) {
+            throw new RuntimeException("로고 업로드 중 오류가 발생했습니다.", e);
         }
     }
 
