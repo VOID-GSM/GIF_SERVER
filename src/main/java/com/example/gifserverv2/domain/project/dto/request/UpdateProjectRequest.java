@@ -3,6 +3,7 @@ package com.example.gifserverv2.domain.project.dto.request;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -15,4 +16,5 @@ public class UpdateProjectRequest {
     private String description;
     private List<Long> addMemberIds;
     private List<Long> removeMemberIds;
+    private MultipartFile logo;
 }

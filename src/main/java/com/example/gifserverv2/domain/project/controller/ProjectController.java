@@ -5,6 +5,9 @@ import com.example.gifserverv2.domain.project.dto.response.*;
 import com.example.gifserverv2.domain.project.service.CommandProjectService;
 import com.example.gifserverv2.domain.project.service.QueryProjectService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +25,15 @@ public class ProjectController {
     private final QueryProjectService projectQueryService;
     private final CommandProjectService projectCommandService;
 
-    @GetMapping("/check")
+    @PostMapping
+    public ResponseEntity<Long> createProject(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestBody CreateProjectRequest request
+    ) {
+        return ResponseEntity.ok(projectCommandService.createProject(user.userId(), request));
+    }
+
+    @GetMapping("/admin")
     public ResponseEntity<List<ListProjectResponse>> getAllProjects() {
         return ResponseEntity.ok(projectQueryService.getAllProjects());
     }
@@ -46,14 +57,15 @@ public class ProjectController {
         return ResponseEntity.ok(projectQueryService.getProjectsByGrade(grade));
     }
 
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+            schema = @Schema(implementation = UpdateProjectRequest.class)))
     @PutMapping(value = "/{projectId}/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> updateProject(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId,
-            @ModelAttribute UpdateProjectRequest request,
-            @RequestPart(value = "logo", required = false) MultipartFile logo
+            @ModelAttribute UpdateProjectRequest request
     ) {
-        projectCommandService.updateProject(projectId, user.userId(), request, logo);
+        projectCommandService.updateProject(projectId, user.userId(), request, request.getLogo());
         return ResponseEntity.noContent().build();
     }
 
@@ -66,6 +78,7 @@ public class ProjectController {
         projectCommandService.uploadLogo(projectId, user.userId(), file);
         return ResponseEntity.noContent().build();
     }
+
     @GetMapping("/users/search")
     public ResponseEntity<List<UserSearchResponse>> searchUsers(
             @RequestParam String keyword
