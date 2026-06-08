@@ -28,12 +28,12 @@ public class ProjectController {
     @PostMapping
     public ResponseEntity<Long> createProject(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @org.springframework.web.bind.annotation.RequestBody CreateProjectRequest request
+            @RequestBody CreateProjectRequest request
     ) {
         return ResponseEntity.ok(projectCommandService.createProject(user.userId(), request));
     }
 
-    @GetMapping
+    @GetMapping("/admin")
     public ResponseEntity<List<ListProjectResponse>> getAllProjects() {
         return ResponseEntity.ok(projectQueryService.getAllProjects());
     }
@@ -57,16 +57,15 @@ public class ProjectController {
         return ResponseEntity.ok(projectQueryService.getProjectsByGrade(grade));
     }
 
-    @RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
             schema = @Schema(implementation = UpdateProjectRequest.class)))
     @PutMapping(value = "/{projectId}/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> updateProject(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId,
-            @ModelAttribute UpdateProjectRequest request,
-            @RequestPart(value = "logo", required = false) MultipartFile logo
+            @ModelAttribute UpdateProjectRequest request
     ) {
-        projectCommandService.updateProject(projectId, user.userId(), request, logo);
+        projectCommandService.updateProject(projectId, user.userId(), request, request.getLogo());
         return ResponseEntity.noContent().build();
     }
 
