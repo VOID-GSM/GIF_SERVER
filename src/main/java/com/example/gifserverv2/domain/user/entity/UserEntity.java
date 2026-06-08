@@ -76,10 +76,6 @@ public class UserEntity {
         return clientRole;
     }
 
-    /**
-     * Returns the effective role used for authorization and token claims.
-     * Priority: adminRole -> clientRole -> explicit role field
-     */
     public Role getEffectiveRole() {
         if (this.adminRole != null) {
             return Role.ADMIN;
