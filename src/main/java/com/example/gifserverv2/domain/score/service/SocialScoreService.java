@@ -6,6 +6,10 @@ import com.example.gifserverv2.domain.project.entity.Project;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.gifserverv2.global.security.AuthenticatedUser;
+import com.example.gifserverv2.domain.user.entity.AdminRole;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 @Service
 @RequiredArgsConstructor
@@ -14,15 +18,19 @@ public class SocialScoreService {
 
     private final ScoreSupport support;
 
-    public void createSocial(CreateSocialScoreRequest request, String evaluatorId) {
-        support.validateCommonRequest(request.getProjectId(), evaluatorId);
+    public void createSocial(CreateSocialScoreRequest request, AuthenticatedUser evaluator) {
+        if (evaluator == null || evaluator.adminRole() == null || evaluator.adminRole() != AdminRole.GENERAL_TEACHER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "사회 중심 영역 점수는 일반 교과 선생님만 부여할 수 있습니다.");
+        }
+
+        support.validateCommonRequest(request.getProjectId(), evaluator.userId().toString());
         support.requireScore(request.getUserExperience(), "userExperience");
         support.requireScore(request.getSocialValueCommunity(), "socialValueCommunity");
         support.requireScore(request.getAiUtilizationCommunity(), "aiUtilizationCommunity");
         support.requireScore(request.getPresentationCommunity(), "presentationCommunity");
 
         Project project = support.getProjectOrThrow(request.getProjectId());
-        final String evaluatorKey = evaluatorId.trim();
+        final String evaluatorKey = evaluator.userId().toString().trim();
         support.upsertScore(
                 project,
                 evaluatorKey,
@@ -59,15 +67,19 @@ public class SocialScoreService {
         );
     }
 
-    public void updateSocial(CreateSocialScoreRequest request, String evaluatorId) {
-        support.validateCommonRequest(request.getProjectId(), evaluatorId);
+    public void updateSocial(CreateSocialScoreRequest request, AuthenticatedUser evaluator) {
+        if (evaluator == null || evaluator.adminRole() == null || evaluator.adminRole() != AdminRole.GENERAL_TEACHER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "사회 중심 영역 점수는 일반 교과 선생님만 수정할 수 있습니다.");
+        }
+
+        support.validateCommonRequest(request.getProjectId(), evaluator.userId().toString());
         support.requireScore(request.getUserExperience(), "userExperience");
         support.requireScore(request.getSocialValueCommunity(), "socialValueCommunity");
         support.requireScore(request.getAiUtilizationCommunity(), "aiUtilizationCommunity");
         support.requireScore(request.getPresentationCommunity(), "presentationCommunity");
 
         Project project = support.getProjectOrThrow(request.getProjectId());
-        Score score = support.getScoreOrThrow(project, evaluatorId.trim());
+        Score score = support.getScoreOrThrow(project, evaluator.userId().toString().trim());
 
         score.updateScore(
                 score.getTechnicalCompleteness(),
@@ -85,10 +97,10 @@ public class SocialScoreService {
         );
     }
 
-    public Score getSocial(Long projectId, String evaluatorId) {
-        support.validateCommonRequest(projectId, evaluatorId);
+    public Score getSocial(Long projectId, AuthenticatedUser evaluator) {
+        support.validateCommonRequest(projectId, evaluator.userId().toString());
         Project project = support.getProjectOrThrow(projectId);
-        return support.getScoreOrThrow(project, evaluatorId.trim());
+        return support.getScoreOrThrow(project, evaluator.userId().toString().trim());
     }
 }
 
