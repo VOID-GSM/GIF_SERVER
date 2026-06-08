@@ -23,6 +23,9 @@ public class MajorScoreService {
         if (evaluator == null || evaluator.adminRole() == null || evaluator.adminRole() != AdminRole.MAJOR_TEACHER) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "전공 교과 선생님만 전공 점수를 부여할 수 있습니다.");
         }
+        if (evaluator.userId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "평가자 ID가 필요합니다.");
+        }
 
         support.validateCommonRequest(request.getProjectId(), evaluator.userId().toString());
         support.requireScore(request.getTechnicalCompleteness(), "technicalCompleteness");
@@ -73,6 +76,9 @@ public class MajorScoreService {
         if (evaluator == null || evaluator.adminRole() == null || evaluator.adminRole() != AdminRole.MAJOR_TEACHER) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "전공 교과 선생님만 전공 점수를 수정할 수 있습니다.");
         }
+        if (evaluator.userId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "평가자 ID가 필요합니다.");
+        }
 
         support.validateCommonRequest(request.getProjectId(), evaluator.userId().toString());
         support.requireScore(request.getTechnicalCompleteness(), "technicalCompleteness");
@@ -100,6 +106,9 @@ public class MajorScoreService {
     }
 
     public Score getMajor(Long projectId, AuthenticatedUser evaluator) {
+        if (evaluator == null || evaluator.userId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "평가자 ID가 필요합니다.");
+        }
         support.validateCommonRequest(projectId, evaluator.userId().toString());
         Project project = support.getProjectOrThrow(projectId);
         return support.getScoreOrThrow(project, evaluator.userId().toString().trim());
