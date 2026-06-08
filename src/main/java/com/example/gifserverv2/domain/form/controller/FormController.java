@@ -113,4 +113,13 @@ public class FormController {
         formFileService.deleteFile(user.userId(), submitId, fieldId);
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/submit")
+    public ResponseEntity<Void> updateSubmit(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestBody UpdateSubmitRequest request
+    ) {
+        clientFormService.updateSubmit(user.userId(), request);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -30,63 +30,63 @@ public class ScoreController {
     @PostMapping("/major")
     public ResponseEntity<Void> createMajor(@AuthenticationPrincipal AuthenticatedUser user,
                                             @RequestBody CreateMajorScoreRequest request) {
-        majorScoreService.createMajor(request, evaluatorId(user));
+        majorScoreService.createMajor(request, user);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @PatchMapping("/major")
     public ResponseEntity<Void> updateMajor(@AuthenticationPrincipal AuthenticatedUser user,
                                             @RequestBody CreateMajorScoreRequest request) {
-        majorScoreService.updateMajor(request, evaluatorId(user));
+        majorScoreService.updateMajor(request, user);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/major")
     public ResponseEntity<DetailScoreResponse> getMajor(@AuthenticationPrincipal AuthenticatedUser user,
                                                         @RequestParam Long projectId) {
-        var score = majorScoreService.getMajor(projectId, evaluatorId(user));
+        var score = majorScoreService.getMajor(projectId, user);
         return ResponseEntity.ok(new DetailScoreResponse(score));
     }
 
     @PostMapping("/report")
     public ResponseEntity<Void> createReport(@AuthenticationPrincipal AuthenticatedUser user,
                                              @RequestBody CreateReportScoreRequest request) {
-        reportScoreService.createReport(request, evaluatorId(user));
+        reportScoreService.createReport(request, user);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @PatchMapping("/report")
     public ResponseEntity<Void> updateReport(@AuthenticationPrincipal AuthenticatedUser user,
                                              @RequestBody CreateReportScoreRequest request) {
-        reportScoreService.updateReport(request, evaluatorId(user));
+        reportScoreService.updateReport(request, user);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/report")
     public ResponseEntity<DetailScoreResponse> getReport(@AuthenticationPrincipal AuthenticatedUser user,
                                                          @RequestParam Long projectId) {
-        var score = reportScoreService.getReport(projectId, evaluatorId(user));
+        var score = reportScoreService.getReport(projectId, user);
         return ResponseEntity.ok(new DetailScoreResponse(score));
     }
 
     @PostMapping("/social")
     public ResponseEntity<Void> createSocial(@AuthenticationPrincipal AuthenticatedUser user,
                                              @RequestBody CreateSocialScoreRequest request) {
-        socialScoreService.createSocial(request, evaluatorId(user));
+        socialScoreService.createSocial(request, user);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @PatchMapping("/social")
     public ResponseEntity<Void> updateSocial(@AuthenticationPrincipal AuthenticatedUser user,
                                              @RequestBody CreateSocialScoreRequest request) {
-        socialScoreService.updateSocial(request, evaluatorId(user));
+        socialScoreService.updateSocial(request, user);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/social")
     public ResponseEntity<DetailScoreResponse> getSocial(@AuthenticationPrincipal AuthenticatedUser user,
                                                          @RequestParam Long projectId) {
-        var score = socialScoreService.getSocial(projectId, evaluatorId(user));
+        var score = socialScoreService.getSocial(projectId, user);
         return ResponseEntity.ok(new DetailScoreResponse(score));
     }
 }
