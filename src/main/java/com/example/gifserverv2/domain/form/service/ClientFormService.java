@@ -106,23 +106,42 @@ public class ClientFormService {
             throw FormException.deadlinePassed();
         }
 
+        // 파일 타입 제외한 기존 답변 일괄 삭제
         List<FormFieldAnswer> existing = formFieldAnswerRepository.findAllByFormSubmitId(request.submitId());
-        existing.stream()
+        List<FormFieldAnswer> toDelete = existing.stream()
                 .filter(a -> a.getFormField().getType() != FormField.FieldType.FILE)
-                .forEach(formFieldAnswerRepository::delete);
+                .toList();
+        formFieldAnswerRepository.deleteAll(toDelete);
 
-        request.answers().forEach(answerReq -> {
-            FormField field = formFieldRepository.findById(answerReq.fieldId())
-                    .orElseThrow(FormException::fieldNotFound);
+        // 요청된 fieldId 한 번에 조회
+        Map<Long, UpdateSubmitRequest.AnswerRequest> answerMap = new HashMap<>();
+        for (UpdateSubmitRequest.AnswerRequest answer : request.answers()) {
+            answerMap.put(answer.fieldId(), answer);
+        }
 
-            if (field.getType() == FormField.FieldType.FILE) return;
+        List<FormField> fields = formFieldRepository.findAllById(answerMap.keySet());
+        if (fields.size() != answerMap.size()) {
+            throw FormException.fieldNotFound();
+        }
 
-            formFieldAnswerRepository.save(FormFieldAnswer.builder()
+        // 타 양식 필드 오염 방지 검증 + 새 답변 생성
+        List<FormFieldAnswer> newAnswers = new ArrayList<>();
+        for (FormField field : fields) {
+            if (!field.getForm().getId().equals(submit.getForm().getId())) {
+                throw new FormException(HttpStatus.BAD_REQUEST, "해당 양식에 존재하지 않는 항목입니다.");
+            }
+
+            if (field.getType() == FormField.FieldType.FILE) continue;
+
+            UpdateSubmitRequest.AnswerRequest answerReq = answerMap.get(field.getId());
+            newAnswers.add(FormFieldAnswer.builder()
                     .formSubmit(submit)
                     .formField(field)
                     .textAnswer(answerReq.textAnswer())
                     .dateAnswer(answerReq.dateAnswer())
                     .build());
-        });
+        }
+
+        formFieldAnswerRepository.saveAll(newAnswers);
     }
 }
