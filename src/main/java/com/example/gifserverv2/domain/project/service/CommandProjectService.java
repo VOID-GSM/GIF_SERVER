@@ -18,7 +18,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
 
-import static jdk.internal.jrtfs.JrtFileAttributeView.AttrID.extension;
 
 @Service
 @RequiredArgsConstructor
