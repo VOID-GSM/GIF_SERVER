@@ -6,6 +6,7 @@ import com.example.gifserverv2.domain.project.service.CommandProjectService;
 import com.example.gifserverv2.domain.project.service.QueryProjectService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -45,13 +46,14 @@ public class ProjectController {
         return ResponseEntity.ok(projectQueryService.getProjectsByGrade(grade));
     }
 
-    @PutMapping("/{projectId}/update")
+    @PutMapping(value = "/{projectId}/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> updateProject(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId,
-            @RequestBody UpdateProjectRequest request
+            @ModelAttribute UpdateProjectRequest request,
+            @RequestPart(value = "logo", required = false) MultipartFile logo
     ) {
-        projectCommandService.updateProject(projectId, user.userId(), request);
+        projectCommandService.updateProject(projectId, user.userId(), request, logo);
         return ResponseEntity.noContent().build();
     }
 
@@ -63,5 +65,11 @@ public class ProjectController {
     ) {
         projectCommandService.uploadLogo(projectId, user.userId(), file);
         return ResponseEntity.noContent().build();
+    }
+    @GetMapping("/users/search")
+    public ResponseEntity<List<UserSearchResponse>> searchUsers(
+            @RequestParam String keyword
+    ) {
+        return ResponseEntity.ok(projectQueryService.searchUsers(keyword));
     }
 }

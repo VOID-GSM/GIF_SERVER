@@ -59,17 +59,42 @@ public class CommandProjectService {
         return project.getId();
     }
 
-
-    public void updateProject(Long projectId, Long userId, UpdateProjectRequest request) {
+    public void updateProject(Long projectId, Long userId, UpdateProjectRequest request, MultipartFile logo) {
         Project project = projectQueryService.getProjectOrThrow(projectId);
         validateLeader(projectId, userId);
 
-        if (request.name() != null) project.updateName(request.name());
-        if (request.teamName() != null) project.updateTeamName(request.teamName());
-        if (request.description() != null) project.updateDescription(request.description());
+        if (request.getName() != null) project.updateName(request.getName());
+        if (request.getTeamName() != null) project.updateTeamName(request.getTeamName());
+        if (request.getDescription() != null) project.updateDescription(request.getDescription());
 
-        if (request.addMemberIds() != null) {
-            request.addMemberIds().forEach(memberId -> {
+        if (logo != null && !logo.isEmpty()) {
+            try {
+                Path dir = Paths.get(uploadDir);
+                if (!Files.exists(dir)) Files.createDirectories(dir);
+
+                if (project.getLogoPath() != null) {
+                    Files.deleteIfExists(dir.resolve(project.getLogoPath()));
+                }
+
+                String originalFilename = logo.getOriginalFilename();
+                String extension = "";
+                if (originalFilename != null && originalFilename.contains(".")) {
+                    extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+                }
+
+                String fileName = UUID.randomUUID() + extension;
+                Path filePath = dir.resolve(fileName).normalize();
+                logo.transferTo(filePath.toAbsolutePath().toFile());
+
+                project.updateLogoPath(fileName);
+
+            } catch (IOException e) {
+                throw new RuntimeException("로고 업로드 중 오류가 발생했습니다.", e);
+            }
+        }
+
+        if (request.getAddMemberIds() != null) {
+            request.getAddMemberIds().forEach(memberId -> {
                 if (projectMemberRepository.existsByProjectIdAndUserId(projectId, memberId)) {
                     throw ProjectException.alreadyMember();
                 }
@@ -81,8 +106,8 @@ public class CommandProjectService {
             });
         }
 
-        if (request.removeMemberIds() != null) {
-            request.removeMemberIds().forEach(memberId -> {
+        if (request.getRemoveMemberIds() != null) {
+            request.getRemoveMemberIds().forEach(memberId -> {
                 ProjectMember member = projectMemberRepository
                         .findByProjectIdAndUserId(projectId, memberId)
                         .orElseThrow(ProjectException::notMember);
