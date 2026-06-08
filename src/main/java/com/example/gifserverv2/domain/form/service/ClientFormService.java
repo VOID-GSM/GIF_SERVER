@@ -21,7 +21,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -106,14 +109,12 @@ public class ClientFormService {
             throw FormException.deadlinePassed();
         }
 
-        // 파일 타입 제외한 기존 답변 일괄 삭제
         List<FormFieldAnswer> existing = formFieldAnswerRepository.findAllByFormSubmitId(request.submitId());
         List<FormFieldAnswer> toDelete = existing.stream()
                 .filter(a -> a.getFormField().getType() != FormField.FieldType.FILE)
                 .toList();
         formFieldAnswerRepository.deleteAll(toDelete);
 
-        // 요청된 fieldId 한 번에 조회
         Map<Long, UpdateSubmitRequest.AnswerRequest> answerMap = new HashMap<>();
         for (UpdateSubmitRequest.AnswerRequest answer : request.answers()) {
             answerMap.put(answer.fieldId(), answer);
@@ -124,7 +125,6 @@ public class ClientFormService {
             throw FormException.fieldNotFound();
         }
 
-        // 타 양식 필드 오염 방지 검증 + 새 답변 생성
         List<FormFieldAnswer> newAnswers = new ArrayList<>();
         for (FormField field : fields) {
             if (!field.getForm().getId().equals(submit.getForm().getId())) {
