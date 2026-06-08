@@ -64,4 +64,10 @@ public class ProjectController {
         projectCommandService.uploadLogo(projectId, user.userId(), file);
         return ResponseEntity.noContent().build();
     }
+    @GetMapping("/users/search")
+    public ResponseEntity<List<UserSearchResponse>> searchUsers(
+            @RequestParam String keyword
+    ) {
+        return ResponseEntity.ok(projectQueryService.searchUsers(keyword));
+    }
 }
