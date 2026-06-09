@@ -28,7 +28,7 @@ public class AdditionalInfoService {
     public void updateAdminAdditionalInfo(Long userId, AdminAdditionalInfoRequest request) {
         UserEntity user = authService.requireUser(userId);
         if (user.getEffectiveRole() != Role.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자만 관리자 추가 정보를 입력할 수 있습니다.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "선생님만 선생님 추가 정보를 입력할 수 있습니다.");
         }
 
         String adminTeam = normalizeTeam(request.adminTeam());
@@ -40,7 +40,7 @@ public class AdditionalInfoService {
     @Transactional
     public void updateClientAdditionalInfo(Long userId, ClientAdditionalInfoRequest request) {
         UserEntity user = authService.requireUser(userId);
-        if (user.getEffectiveRole() != Role.CLIENT) {
+        if (user.getEffectiveRole() != Role.USER) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "학생만 학생 추가 정보를 입력할 수 있습니다.");
         }
 

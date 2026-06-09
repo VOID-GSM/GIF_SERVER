@@ -65,9 +65,7 @@ public class AuthService {
             Role assignedRole = Role.USER;
 
             if (!isStudent) {
-                // Treat non-student users as teachers (ADMIN)
                 assignedRole = Role.ADMIN;
-                // Fallback display name from email local part
                 if (email != null && !email.isBlank() && email.contains("@")) {
                     name = email.split("@")[0];
                 } else {

@@ -81,7 +81,7 @@ public class UserEntity {
             return Role.ADMIN;
         }
         if (this.clientRole != null) {
-            return Role.CLIENT;
+            return Role.USER;
         }
         return this.role;
     }
@@ -101,7 +101,7 @@ public class UserEntity {
         if (adminRole != null) {
             this.role = Role.ADMIN;
         } else if (this.clientRole != null) {
-            this.role = Role.CLIENT;
+            this.role = Role.USER;
         } else {
             this.role = Role.USER;
         }
@@ -110,7 +110,7 @@ public class UserEntity {
     public void updateClientAdditionalInfo(ClientRole clientRole) {
         this.clientRole = clientRole;
         if (clientRole != null) {
-            this.role = Role.CLIENT;
+            this.role = Role.USER;
         } else if (this.adminRole != null) {
             this.role = Role.ADMIN;
         } else {
