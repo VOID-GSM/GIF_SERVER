@@ -23,6 +23,17 @@ public class UserEntity {
     @Column(nullable = false)
     private Role role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "admin_role")
+    private AdminRole adminRole;
+
+    @Column(name = "admin_team")
+    private String adminTeam;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "client_role")
+    private ClientRole clientRole;
+
     protected UserEntity() {
     }
 
@@ -53,8 +64,57 @@ public class UserEntity {
         return role;
     }
 
+    public AdminRole getAdminRole() {
+        return adminRole;
+    }
+
+    public String getAdminTeam() {
+        return adminTeam;
+    }
+
+    public ClientRole getClientRole() {
+        return clientRole;
+    }
+
+    public Role getEffectiveRole() {
+        if (this.adminRole != null) {
+            return Role.ADMIN;
+        }
+        if (this.clientRole != null) {
+            return Role.USER;
+        }
+        return this.role;
+    }
+
     public void updateProfile(String name, String studentNumber) {
         this.name = name;
         this.studentNumber = studentNumber;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    public void updateAdminAdditionalInfo(AdminRole adminRole, String adminTeam) {
+        this.adminRole = adminRole;
+        this.adminTeam = adminTeam;
+        if (adminRole != null) {
+            this.role = Role.ADMIN;
+        } else if (this.clientRole != null) {
+            this.role = Role.USER;
+        } else {
+            this.role = Role.USER;
+        }
+    }
+
+    public void updateClientAdditionalInfo(ClientRole clientRole) {
+        this.clientRole = clientRole;
+        if (clientRole != null) {
+            this.role = Role.USER;
+        } else if (this.adminRole != null) {
+            this.role = Role.ADMIN;
+        } else {
+            this.role = Role.USER;
+        }
     }
 }

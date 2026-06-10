@@ -1,6 +1,8 @@
 package com.example.gifserverv2.global.security;
 
 import com.example.gifserverv2.domain.user.entity.Role;
+import com.example.gifserverv2.domain.user.entity.AdminRole;
+import com.example.gifserverv2.domain.user.entity.ClientRole;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -47,9 +49,12 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
                 if (roleClaim == null || roleClaim.isBlank()) {
                     throw new IllegalArgumentException("Missing role claim");
                 }
-                Role role = Role.valueOf(roleClaim);
+                Role role = parseRole(roleClaim);
+                AdminRole adminRole = parseAdminRole(claims.get("adminRole", String.class));
+                String adminTeam = claims.get("adminTeam", String.class);
+                ClientRole clientRole = parseClientRole(claims.get("clientRole", String.class));
 
-                AuthenticatedUser principal = new AuthenticatedUser(userId, email, name, studentNumber, role);
+                AuthenticatedUser principal = new AuthenticatedUser(userId, email, name, studentNumber, role, adminRole, adminTeam, clientRole);
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         principal,
                         null,
@@ -82,5 +87,29 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
         }
 
         return Long.valueOf(subject.trim());
+    }
+
+    private Role parseRole(String roleClaim) {
+        if ("USER".equals(roleClaim)) {
+            return Role.USER;
+        }
+
+        return Role.valueOf(roleClaim);
+    }
+
+    private AdminRole parseAdminRole(String adminRoleClaim) {
+        if (adminRoleClaim == null || adminRoleClaim.isBlank()) {
+            return null;
+        }
+
+        return AdminRole.valueOf(adminRoleClaim);
+    }
+
+    private ClientRole parseClientRole(String clientRoleClaim) {
+        if (clientRoleClaim == null || clientRoleClaim.isBlank()) {
+            return null;
+        }
+
+        return ClientRole.valueOf(clientRoleClaim);
     }
 }

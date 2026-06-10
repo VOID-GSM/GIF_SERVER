@@ -13,4 +13,5 @@ public interface FormFieldAnswerRepository extends JpaRepository<FormFieldAnswer
     void deleteAllByFormSubmitId(Long formSubmitId);
 
     Optional<FormFieldAnswer> findByFormSubmitIdAndFormFieldId(Long formSubmitId, Long formFieldId);
+
 }

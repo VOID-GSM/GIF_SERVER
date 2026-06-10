@@ -56,34 +56,44 @@ public class AuthService {
                     codeVerifier);
             UserInfo userInfo = dataGsmOAuthClient.getUserInfo(tokenResponse.getAccessToken());
 
-            if (!userInfo.isStudent()) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "학생만 로그인할 수 있습니다.");
-            }
-
             Student student = userInfo.getStudent();
             String email = userInfo.getEmail();
+            boolean isStudent = userInfo.isStudent();
 
-            if (student == null) {
-                log.warn("Student info missing in UserInfo: {}", userInfo);
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학생 정보가 없습니다.");
+            String name = null;
+            String studentNumber = null;
+            Role assignedRole = Role.USER;
+
+            if (!isStudent) {
+                assignedRole = Role.ADMIN;
+                if (email != null && !email.isBlank() && email.contains("@")) {
+                    name = email.split("@")[0];
+                } else {
+                    name = email;
+                }
+            } else {
+                if (student == null) {
+                    log.warn("Student info missing in UserInfo: {}", userInfo);
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학생 정보가 없습니다.");
+                }
+
+                name = student.getName();
+                studentNumber = student.getStudentNumber() != null ? String.valueOf(student.getStudentNumber()).trim() : null;
+
+                if (email == null || email.isBlank() || name == null || name.isBlank() || studentNumber == null || studentNumber.isBlank()) {
+                    log.warn("Invalid student info: email='{}', name='{}', studentNumber='{}'", email, name, studentNumber);
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학생 정보가 유효하지 않습니다.");
+                }
+
+                try {
+                    Long.parseLong(studentNumber);
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid studentNumber format: {}", studentNumber);
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학번 형식이 유효하지 않습니다.");
+                }
             }
 
-            String name = student.getName();
-            String studentNumber = student.getStudentNumber() != null ? String.valueOf(student.getStudentNumber()).trim() : null;
-
-            if (email == null || email.isBlank() || name == null || name.isBlank() || studentNumber == null || studentNumber.isBlank()) {
-                log.warn("Invalid student info: email='{}', name='{}', studentNumber='{}'", email, name, studentNumber);
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학생 정보가 유효하지 않습니다.");
-            }
-
-            try {
-                Long.parseLong(studentNumber);
-            } catch (NumberFormatException e) {
-                log.warn("Invalid studentNumber format: {}", studentNumber);
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학번 형식이 유효하지 않습니다.");
-            }
-
-            UserEntity user = findOrCreateUser(email, name, studentNumber);
+            UserEntity user = findOrCreateUser(email, name, studentNumber, assignedRole);
             String accessToken = jwtTokenProvider.createToken(user);
 
             return new OAuthSignInResponse(
@@ -92,7 +102,10 @@ public class AuthService {
                     user.getEmail(),
                     user.getName(),
                     user.getStudentNumber(),
-                    user.getRole().name());
+                    user.getRole().name(),
+                    null,
+                    null,
+                    null);
         } catch (DataGsmException e) {
             log.warn("DataGSM OAuth error: status={}, message={}", e.getStatusCode(), e.getMessage());
             throw new ResponseStatusException(resolveStatus(e.getStatusCode()), "OAuth 인증에 실패했습니다.");
@@ -116,12 +129,15 @@ public class AuthService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
     }
 
-    private UserEntity findOrCreateUser(String email, String name, String studentNumber) {
+    private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role) {
         return userRepository.findByEmail(email)
                 .map(existing -> {
                     existing.updateProfile(name, studentNumber);
+                    if (existing.getRole() != role) {
+                        existing.setRole(role);
+                    }
                     return existing;
                 })
-                .orElseGet(() -> userRepository.save(new UserEntity(email, name, studentNumber, Role.USER)));
+                .orElseGet(() -> userRepository.save(new UserEntity(email, name, studentNumber, role)));
     }
 }
