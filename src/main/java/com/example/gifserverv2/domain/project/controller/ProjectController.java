@@ -5,10 +5,15 @@ import com.example.gifserverv2.domain.project.dto.response.*;
 import com.example.gifserverv2.domain.project.service.CommandProjectService;
 import com.example.gifserverv2.domain.project.service.QueryProjectService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -23,7 +28,7 @@ public class ProjectController {
     @PostMapping
     public ResponseEntity<Long> createProject(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestBody CreateProjectRequest request
+            @org.springframework.web.bind.annotation.RequestBody CreateProjectRequest request
     ) {
         return ResponseEntity.ok(projectCommandService.createProject(user.userId(), request));
     }
@@ -52,43 +57,32 @@ public class ProjectController {
         return ResponseEntity.ok(projectQueryService.getProjectsByGrade(grade));
     }
 
-    @PatchMapping("/name")
-    public ResponseEntity<Void> updateName(
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+            schema = @Schema(implementation = UpdateProjectRequest.class)))
+    @PutMapping(value = "/{projectId}/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Void> updateProject(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestParam Long projectId,
-            @RequestBody UpdateNameProjectRequest request
+            @PathVariable Long projectId,
+            @ModelAttribute UpdateProjectRequest request
     ) {
-        projectCommandService.updateName(projectId, user.userId(), request);
+        projectCommandService.updateProject(projectId, user.userId(), request, request.getLogo());
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/team-name")
-    public ResponseEntity<Void> updateTeamName(
+    @PostMapping("/{projectId}/logo")
+    public ResponseEntity<Void> uploadLogo(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestParam Long projectId,
-            @RequestBody UpdateTeamNameProjectRequest request
+            @PathVariable Long projectId,
+            @RequestParam("file") MultipartFile file
     ) {
-        projectCommandService.updateTeamName(projectId, user.userId(), request);
+        projectCommandService.uploadLogo(projectId, user.userId(), file);
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/description")
-    public ResponseEntity<Void> updateDescription(
-            @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestParam Long projectId,
-            @RequestBody UpdateDescriptionProjectRequest request
+    @GetMapping("/users/search")
+    public ResponseEntity<List<UserSearchResponse>> searchUsers(
+            @RequestParam String keyword
     ) {
-        projectCommandService.updateDescription(projectId, user.userId(), request);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PatchMapping("/members")
-    public ResponseEntity<Void> updateMembers(
-            @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestParam Long projectId,
-            @RequestBody UpdateMembersProjectRequest request
-    ) {
-        projectCommandService.updateMembers(projectId, user.userId(), request);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(projectQueryService.searchUsers(keyword));
     }
 }

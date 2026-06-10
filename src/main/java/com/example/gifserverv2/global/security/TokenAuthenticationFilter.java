@@ -91,7 +91,7 @@ public class TokenAuthenticationFilter extends OncePerRequestFilter {
 
     private Role parseRole(String roleClaim) {
         if ("USER".equals(roleClaim)) {
-            return Role.CLIENT;
+            return Role.USER;
         }
 
         return Role.valueOf(roleClaim);

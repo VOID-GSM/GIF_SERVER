@@ -6,6 +6,10 @@ import com.example.gifserverv2.domain.project.entity.Project;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.gifserverv2.global.security.AuthenticatedUser;
+import com.example.gifserverv2.domain.user.entity.AdminRole;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 @Service
 @RequiredArgsConstructor
@@ -14,15 +18,23 @@ public class MajorScoreService {
 
     private final ScoreSupport support;
 
-    public void createMajor(CreateMajorScoreRequest request, String evaluatorId) {
-        support.validateCommonRequest(request.getProjectId(), evaluatorId);
+    public void createMajor(CreateMajorScoreRequest request, AuthenticatedUser evaluator) {
+        // permission: only MAJOR_TEACHER can assign major scores
+        if (evaluator == null || evaluator.adminRole() == null || evaluator.adminRole() != AdminRole.MAJOR_TEACHER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "전공 교과 선생님만 전공 점수를 부여할 수 있습니다.");
+        }
+        if (evaluator.userId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "평가자 ID가 필요합니다.");
+        }
+
+        support.validateCommonRequest(request.getProjectId(), evaluator.userId().toString());
         support.requireScore(request.getTechnicalCompleteness(), "technicalCompleteness");
         support.requireScore(request.getSocialValueMajor(), "socialValueMajor");
         support.requireScore(request.getAiUtilityMajorScore(), "aiUtilityMajorScore");
         support.requireScore(request.getPresentationMajor(), "presentationMajor");
 
         Project project = support.getProjectOrThrow(request.getProjectId());
-        final String evaluatorKey = evaluatorId.trim();
+        final String evaluatorKey = evaluator.userId().toString().trim();
         support.upsertScore(
                 project,
                 evaluatorKey,
@@ -59,15 +71,23 @@ public class MajorScoreService {
         );
     }
 
-    public void updateMajor(CreateMajorScoreRequest request, String evaluatorId) {
-        support.validateCommonRequest(request.getProjectId(), evaluatorId);
+    public void updateMajor(CreateMajorScoreRequest request, AuthenticatedUser evaluator) {
+        // permission: only MAJOR_TEACHER can update major scores
+        if (evaluator == null || evaluator.adminRole() == null || evaluator.adminRole() != AdminRole.MAJOR_TEACHER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "전공 교과 선생님만 전공 점수를 수정할 수 있습니다.");
+        }
+        if (evaluator.userId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "평가자 ID가 필요합니다.");
+        }
+
+        support.validateCommonRequest(request.getProjectId(), evaluator.userId().toString());
         support.requireScore(request.getTechnicalCompleteness(), "technicalCompleteness");
         support.requireScore(request.getSocialValueMajor(), "socialValueMajor");
         support.requireScore(request.getAiUtilityMajorScore(), "aiUtilityMajorScore");
         support.requireScore(request.getPresentationMajor(), "presentationMajor");
 
         Project project = support.getProjectOrThrow(request.getProjectId());
-        Score score = support.getScoreOrThrow(project, evaluatorId.trim());
+        Score score = support.getScoreOrThrow(project, evaluator.userId().toString().trim());
 
         score.updateScore(
                 request.getTechnicalCompleteness(),
@@ -85,10 +105,13 @@ public class MajorScoreService {
         );
     }
 
-    public Score getMajor(Long projectId, String evaluatorId) {
-        support.validateCommonRequest(projectId, evaluatorId);
+    public Score getMajor(Long projectId, AuthenticatedUser evaluator) {
+        if (evaluator == null || evaluator.userId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "평가자 ID가 필요합니다.");
+        }
+        support.validateCommonRequest(projectId, evaluator.userId().toString());
         Project project = support.getProjectOrThrow(projectId);
-        return support.getScoreOrThrow(project, evaluatorId.trim());
+        return support.getScoreOrThrow(project, evaluator.userId().toString().trim());
     }
 }
 
