@@ -1,7 +1,7 @@
 # ==========================================
-# 1단계: 빌드 스테이지 (Build Stage) - Java 21 반영
+# 1단계: 빌드 스테이지 (Build Stage) - 호환성 높은 기본 JDK 사용
 # ==========================================
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM eclipse-temurin:21-jdk AS builder
 WORKDIR /app
 
 # 프로젝트 전체 파일을 컨테이너 내부로 복사
@@ -14,13 +14,14 @@ RUN chmod +x gradlew
 RUN ./gradlew bootJar
 
 # ==========================================
-# 2단계: 실행 스테이지 (Run Stage) - Java 21 반영
+# 2단계: 실행 스테이지 (Run Stage) - 안정적인 런타임 JRE 사용
 # ==========================================
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 
 # 1단계 빌드 스테이지에서 생성된 싱글 실행 JAR 파일만 추출하여 복사
-COPY --from=builder /app/build/libs/*.jar app.jar
+# (plain.jar 등이 같이 복사되어 꼬이는 것을 방지하기 위해 구체적인 이름 지정 권장)
+COPY --from=builder /app/build/libs/*-SNAPSHOT.jar app.jar || COPY --from=builder /app/build/libs/*.jar app.jar
 
 # 컨테이너가 외부와 통신할 포트 지정
 EXPOSE 8080
