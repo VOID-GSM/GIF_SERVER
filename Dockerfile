@@ -1,5 +1,5 @@
 # ==========================================
-# 1단계: 빌드 스테이지 (Build Stage)
+# 1단계: 빌드 스테이지 (Build Stage) - 가장 안정적인 JDK 21 기본 이미지
 # ==========================================
 FROM eclipse-temurin:21-jdk AS builder
 WORKDIR /app
@@ -10,17 +10,16 @@ COPY . .
 # gradlew 파일에 실행 권한 부여
 RUN chmod +x gradlew
 
-# Gradle을 사용하여 실행 가능한 JAR 파일만 빌드
+# Gradle을 사용하여 실행 가능한 JAR 파일 빌드
 RUN ./gradlew bootJar
 
 # ==========================================
-# 2단계: 실행 스테이지 (Run Stage)
+# 2단계: 실행 스테이지 (Run Stage) - 호환성 문제를 해결하기 위해 표준 JDK/JRE 환경 사용
 # ==========================================
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:21-jdk
 WORKDIR /app
 
-# ⚠️ 수정된 핵심 라인: 조건문 없이 build/libs에 생성된 jar 파일을 통째로 지정합니다.
-# 스프링 부트 빌드 시 생성되는 유일한 실행형 JAR 파일이 app.jar로 복사됩니다.
+# 1단계 빌드 스테이지에서 생성된 실행 JAR 파일 복사
 COPY --from=builder /app/build/libs/*.jar app.jar
 
 # 컨테이너가 외부와 통신할 포트 지정
