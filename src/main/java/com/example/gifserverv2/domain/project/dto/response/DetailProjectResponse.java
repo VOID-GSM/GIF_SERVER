@@ -9,7 +9,7 @@ public record DetailProjectResponse(
         String name,
         String teamName,
         String description,
-        String logoPath,
+        String logo,
         List<MemberInfo> members
 ) {
     public record MemberInfo(Long userId, String role) {}
