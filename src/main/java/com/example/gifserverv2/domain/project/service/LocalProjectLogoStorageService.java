@@ -52,6 +52,10 @@ public class LocalProjectLogoStorageService implements ProjectLogoStorageService
             return;
         }
 
+        if (!logoUrl.startsWith(baseUrl + "/")) {
+            throw new IllegalArgumentException("잘못된 로고 URL입니다.");
+        }
+
         try {
             String relativePath = logoUrl.replace(baseUrl + "/", "");
             Path basePath = Paths.get(uploadDir).toAbsolutePath().normalize();

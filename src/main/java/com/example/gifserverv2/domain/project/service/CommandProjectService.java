@@ -8,7 +8,7 @@ import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
 import com.example.gifserverv2.global.file.FileStorageService;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -35,8 +35,32 @@ public class CommandProjectService {
         if (logo != null && !logo.isEmpty()) {
             replaceLogo(project, logo);
         }
-    }
 
+        if (request.getAddMemberIds() != null) {
+            request.getAddMemberIds().forEach(memberId -> {
+                if (projectMemberRepository.existsByProjectIdAndUserId(projectId, memberId)) {
+                    throw ProjectException.alreadyMember();
+                }
+                projectMemberRepository.save(ProjectMember.builder()
+                        .project(project)
+                        .userId(memberId)
+                        .role(ProjectMember.MemberRole.MEMBER)
+                        .build());
+            });
+        }
+
+        if (request.getRemoveMemberIds() != null) {
+            request.getRemoveMemberIds().forEach(memberId -> {
+                ProjectMember member = projectMemberRepository
+                        .findByProjectIdAndUserId(projectId, memberId)
+                        .orElseThrow(ProjectException::notMember);
+                if (member.getRole() == ProjectMember.MemberRole.LEADER) {
+                    throw ProjectException.cannotRemoveLeader();
+                }
+                projectMemberRepository.delete(member);
+            });
+        }
+    }
     public Long createProject(Long userId, CreateProjectRequest request) {
         Project project = Project.builder()
                 .name(request.name())
