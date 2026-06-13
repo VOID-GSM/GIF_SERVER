@@ -53,7 +53,7 @@ public class LocalProjectLogoStorageService implements ProjectLogoStorageService
         }
 
         if (!logoUrl.startsWith(baseUrl + "/")) {
-            throw new IllegalArgumentException("잘못된 로고 URL입니다.");
+            return;
         }
 
         try {
