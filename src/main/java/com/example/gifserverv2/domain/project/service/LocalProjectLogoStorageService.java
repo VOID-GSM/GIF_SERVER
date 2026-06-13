@@ -52,6 +52,10 @@ public class LocalProjectLogoStorageService implements ProjectLogoStorageService
             return;
         }
 
+        if (!logoUrl.startsWith(baseUrl + "/")) {
+            return;
+        }
+
         try {
             String relativePath = logoUrl.replace(baseUrl + "/", "");
             Path basePath = Paths.get(uploadDir).toAbsolutePath().normalize();

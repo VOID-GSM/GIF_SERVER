@@ -1,6 +1,5 @@
 package com.example.gifserverv2.domain.project.service;
 
-import com.example.gifserverv2.domain.project.dto.request.CreateProjectRequest;
 import com.example.gifserverv2.domain.project.dto.request.UpdateProjectRequest;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.entity.ProjectMember;
@@ -8,10 +7,14 @@ import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
 import com.example.gifserverv2.global.file.FileStorageService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -35,9 +38,44 @@ public class CommandProjectService {
         if (logo != null && !logo.isEmpty()) {
             replaceLogo(project, logo);
         }
+
+        if (request.getAddMemberIds() != null || request.getRemoveMemberIds() != null) {
+            List<ProjectMember> currentMembers = projectMemberRepository.findAllByProjectId(projectId);
+            Map<Long, ProjectMember> memberMap = currentMembers.stream()
+                    .collect(Collectors.toMap(ProjectMember::getUserId, member -> member));
+
+            if (request.getAddMemberIds() != null) {
+                request.getAddMemberIds().forEach(memberId -> {
+                    if (memberMap.containsKey(memberId)) {
+                        throw ProjectException.alreadyMember();
+                    }
+                    ProjectMember newMember = ProjectMember.builder()
+                            .project(project)
+                            .userId(memberId)
+                            .role(ProjectMember.MemberRole.MEMBER)
+                            .build();
+                    projectMemberRepository.save(newMember);
+                    memberMap.put(memberId, newMember);
+                });
+            }
+
+            if (request.getRemoveMemberIds() != null) {
+                request.getRemoveMemberIds().forEach(memberId -> {
+                    ProjectMember member = memberMap.get(memberId);
+                    if (member == null) {
+                        throw ProjectException.notMember();
+                    }
+                    if (member.getRole() == ProjectMember.MemberRole.LEADER) {
+                        throw ProjectException.cannotRemoveLeader();
+                    }
+                    projectMemberRepository.delete(member);
+                    memberMap.remove(memberId);
+                });
+            }
+        }
     }
 
-    public Long createProject(Long userId, CreateProjectRequest request) {
+    public Long createProject(Long userId, com.example.gifserverv2.domain.project.dto.request.CreateProjectRequest request) {
         Project project = Project.builder()
                 .name(request.name())
                 .teamName(request.teamName())
@@ -68,6 +106,7 @@ public class CommandProjectService {
 
         return savedProject.getId();
     }
+
     public void uploadLogo(Long projectId, Long userId, MultipartFile file) {
         Project project = projectQueryService.getProjectOrThrow(projectId);
         validateLeader(projectId, userId);
