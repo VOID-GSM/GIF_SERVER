@@ -28,7 +28,7 @@ public class ProjectController {
     @PostMapping
     public ResponseEntity<Long> createProject(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @org.springframework.web.bind.annotation.RequestBody CreateProjectRequest request
+            @RequestBody CreateProjectRequest request
     ) {
         return ResponseEntity.ok(projectCommandService.createProject(user.userId(), request));
     }
@@ -69,11 +69,11 @@ public class ProjectController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{projectId}/logo")
+    @PostMapping(value = "/{projectId}/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> uploadLogo(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId,
-            @RequestParam("file") MultipartFile file
+            @RequestPart("file") MultipartFile file
     ) {
         projectCommandService.uploadLogo(projectId, user.userId(), file);
         return ResponseEntity.noContent().build();

@@ -6,7 +6,7 @@ public record ListProjectResponse(
         Long id,
         String name,
         String teamName,
-        String logoPath
+        String logo
 ) {
     public static ListProjectResponse from(Project project) {
         return new ListProjectResponse(
