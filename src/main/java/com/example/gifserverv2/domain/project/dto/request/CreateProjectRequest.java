@@ -1,20 +1,23 @@
 package com.example.gifserverv2.domain.project.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+public record CreateProjectRequest(
+        @NotBlank(message = "프로젝트 이름은 필수입니다.")
+        @Size(max = 20, message = "프로젝트 이름은 20자 이하여야 합니다.")
+        String name,
 
-@Getter
-@Setter
-@NoArgsConstructor
-public class CreateProjectRequest {
-    private String name;
-    private String teamName;
-    private String description;
-    private List<Long> memberIds;
-    private MultipartFile logo;
-}
+        @NotBlank(message = "팀 이름은 필수입니다.")
+        @Size(max = 20, message = "팀 이름은 20자 이하여야 합니다.")
+        String teamName,
+
+        @Size(max = 500, message = "설명은 500자 이하여야 합니다.")
+        String description,
+
+        List<Long> memberIds,
+        MultipartFile logo
+) {}
