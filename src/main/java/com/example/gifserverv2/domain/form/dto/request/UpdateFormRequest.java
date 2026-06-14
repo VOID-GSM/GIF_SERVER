@@ -7,6 +7,7 @@ import java.util.List;
 
 public record UpdateFormRequest(
         String title,
+        String description,
         LocalDate deadline,
         Integer targetGrade,
         List<FieldRequest> fields
