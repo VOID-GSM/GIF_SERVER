@@ -7,6 +7,7 @@ import com.example.gifserverv2.domain.project.service.QueryProjectService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.RequestBody;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -28,11 +29,10 @@ public class ProjectController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Long> createProject(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @ModelAttribute CreateProjectRequest request
+            @Valid @ModelAttribute CreateProjectRequest request
     ) {
         return ResponseEntity.ok(projectCommandService.createProject(user.userId(), request));
     }
-
     @GetMapping("/admin")
     public ResponseEntity<List<ListProjectResponse>> getAllProjects() {
         return ResponseEntity.ok(projectQueryService.getAllProjects());
