@@ -77,15 +77,15 @@ public class CommandProjectService {
 
     public Long createProject(Long userId, CreateProjectRequest request) {
         Project project = Project.builder()
-                .name(request.getName())
-                .teamName(request.getTeamName())
-                .description(request.getDescription())
+                .name(request.name())
+                .teamName(request.teamName())
+                .description(request.description())
                 .build();
 
         Project savedProject = projectRepository.save(project);
 
-        if (request.getLogo() != null && !request.getLogo().isEmpty()) {
-            String logoUrl = projectLogoStorageService.save(request.getLogo());
+        if (request.logo() != null && !request.logo().isEmpty()) {
+            String logoUrl = projectLogoStorageService.save(request.logo());
             savedProject.updateLogoPath(logoUrl);
         }
 
@@ -96,8 +96,8 @@ public class CommandProjectService {
                 .build();
         projectMemberRepository.save(leader);
 
-        if (request.getMemberIds() != null) {
-            for (Long memberId : request.getMemberIds()) {
+        if (request.memberIds() != null) {
+            for (Long memberId : request.memberIds()) {
                 if (memberId.equals(userId)) continue;
 
                 ProjectMember member = ProjectMember.builder()
