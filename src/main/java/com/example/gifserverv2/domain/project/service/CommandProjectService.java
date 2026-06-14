@@ -1,5 +1,6 @@
 package com.example.gifserverv2.domain.project.service;
 
+import com.example.gifserverv2.domain.project.dto.request.CreateProjectRequest;
 import com.example.gifserverv2.domain.project.dto.request.UpdateProjectRequest;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.entity.ProjectMember;
@@ -24,7 +25,6 @@ public class CommandProjectService {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final QueryProjectService projectQueryService;
-    private final FileStorageService fileStorageService;
     private final ProjectLogoStorageService projectLogoStorageService;
 
     public void updateProject(Long projectId, Long userId, UpdateProjectRequest request, MultipartFile logo) {
@@ -75,14 +75,19 @@ public class CommandProjectService {
         }
     }
 
-    public Long createProject(Long userId, com.example.gifserverv2.domain.project.dto.request.CreateProjectRequest request) {
+    public Long createProject(Long userId, CreateProjectRequest request) {
         Project project = Project.builder()
-                .name(request.name())
-                .teamName(request.teamName())
-                .description(request.description())
+                .name(request.getName())
+                .teamName(request.getTeamName())
+                .description(request.getDescription())
                 .build();
 
         Project savedProject = projectRepository.save(project);
+
+        if (request.getLogo() != null && !request.getLogo().isEmpty()) {
+            String logoUrl = projectLogoStorageService.save(request.getLogo());
+            savedProject.updateLogoPath(logoUrl);
+        }
 
         ProjectMember leader = ProjectMember.builder()
                 .project(savedProject)
@@ -91,8 +96,8 @@ public class CommandProjectService {
                 .build();
         projectMemberRepository.save(leader);
 
-        if (request.memberIds() != null) {
-            for (Long memberId : request.memberIds()) {
+        if (request.getMemberIds() != null) {
+            for (Long memberId : request.getMemberIds()) {
                 if (memberId.equals(userId)) continue;
 
                 ProjectMember member = ProjectMember.builder()

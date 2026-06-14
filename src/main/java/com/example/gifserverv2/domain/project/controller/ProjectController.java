@@ -25,10 +25,10 @@ public class ProjectController {
     private final QueryProjectService projectQueryService;
     private final CommandProjectService projectCommandService;
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Long> createProject(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestBody CreateProjectRequest request
+            @ModelAttribute CreateProjectRequest request
     ) {
         return ResponseEntity.ok(projectCommandService.createProject(user.userId(), request));
     }
