@@ -9,6 +9,8 @@ import com.example.gifserverv2.domain.form.entity.Form;
 import com.example.gifserverv2.domain.form.entity.FormField;
 import com.example.gifserverv2.domain.form.repository.FormRepository;
 import com.example.gifserverv2.domain.form.repository.FormSubmitRepository;
+import com.example.gifserverv2.domain.project.entity.Project;
+import com.example.gifserverv2.domain.project.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,12 +26,14 @@ public class AdminFormService {
     private final FormRepository formRepository;
     private final FormSubmitRepository formSubmitRepository;
     private final QueryFormService queryFormService;
+    private final ProjectRepository projectRepository;
 
     @Transactional
     public Long createForm(CreateFormRequest request) {
         Form form = Form.builder()
                 .title(request.title())
                 .deadline(request.deadline())
+                .targetGrade(request.targetGrade())
                 .fields(new ArrayList<>())
                 .build();
 
@@ -66,7 +70,17 @@ public class AdminFormService {
                     .toList();
         }
 
-        form.update(request.title(), request.deadline(), newFields);
+        form.update(request.title(), request.deadline(), request.targetGrade(), newFields);
+    }
+
+    public List<ListFormResponse> getAllFormsForAdmin(Integer grade) {
+        List<Form> forms = (grade == null)
+                ? formRepository.findAll()
+                : formRepository.findAllByTargetGrade(grade);
+
+        return forms.stream()
+                .map(ListFormResponse::from)
+                .toList();
     }
 
     @Transactional
@@ -90,7 +104,12 @@ public class AdminFormService {
     public List<SubmitDetailFormResponse> getSubmitListByForm(Long formId) {
         Form form = queryFormService.getFormOrThrow(formId);
         return formSubmitRepository.findAllByFormId(form.getId()).stream()
-                .map(SubmitDetailFormResponse::from)
+                .map(submit -> {
+                    String teamName = projectRepository.findById(submit.getProjectId())
+                            .map(Project::getTeamName)
+                            .orElse(null);
+                    return SubmitDetailFormResponse.from(submit, teamName);
+                })
                 .toList();
     }
 }

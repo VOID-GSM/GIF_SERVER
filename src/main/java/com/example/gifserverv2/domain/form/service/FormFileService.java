@@ -57,6 +57,7 @@ public class FormFileService {
                 .formSubmit(submit)
                 .formField(field)
                 .filePath(savedUrl)
+                .fileSize(file.getSize())
                 .build());
 
         return savedUrl;

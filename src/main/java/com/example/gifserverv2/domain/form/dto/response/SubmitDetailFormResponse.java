@@ -9,6 +9,7 @@ import java.util.List;
 public record SubmitDetailFormResponse(
         Long submitId,
         Long projectId,
+        String teamName,
         Long submittedByUserId,
         LocalDateTime submittedAt,
         List<AnswerResponse> answers
@@ -19,10 +20,15 @@ public record SubmitDetailFormResponse(
             String type,
             String textAnswer,
             String filePath,
-            LocalDate dateAnswer
+            Long fileSize,
+            LocalDate dateAnswer,
+            String eventName,
+            LocalDate startDate,
+            LocalDate endDate,
+            String color
     ) {}
 
-    public static SubmitDetailFormResponse from(FormSubmit submit) {
+    public static SubmitDetailFormResponse from(FormSubmit submit, String teamName) {
         List<AnswerResponse> answerResponses = submit.getAnswers().stream()
                 .map(a -> new AnswerResponse(
                         a.getFormField().getId(),
@@ -30,13 +36,19 @@ public record SubmitDetailFormResponse(
                         a.getFormField().getType().name(),
                         a.getTextAnswer(),
                         a.getFilePath(),
-                        a.getDateAnswer()
+                        a.getFileSize(),
+                        a.getDateAnswer(),
+                        a.getEventName(),
+                        a.getStartDate(),
+                        a.getEndDate(),
+                        a.getColor()
                 ))
                 .toList();
 
         return new SubmitDetailFormResponse(
                 submit.getId(),
                 submit.getProjectId(),
+                teamName,
                 submit.getSubmittedByUserId(),
                 submit.getSubmittedAt(),
                 answerResponses

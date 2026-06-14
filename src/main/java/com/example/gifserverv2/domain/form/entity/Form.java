@@ -32,6 +32,12 @@ public class Form {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Column
+    private Integer targetGrade;
+
+    @Column(length = 500)
+    private String description;
+
     @OneToMany(mappedBy = "form", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("orderIndex ASC")
     @Builder.Default
@@ -42,9 +48,11 @@ public class Form {
         this.createdAt = LocalDateTime.now();
     }
 
-    public void update(String title, LocalDate deadline, List<FormField> newFields) {
+    public void update(String title, String description, LocalDate deadline, Integer targetGrade, List<FormField> newFields) {
         this.title = title;
+        this.description = description;
         this.deadline = deadline;
+        this.targetGrade = targetGrade;
         this.fields.clear();
         if (newFields != null) {
             this.fields.addAll(newFields);

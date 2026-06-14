@@ -33,4 +33,20 @@ public class FormFieldAnswer {
 
     @Column
     private LocalDate dateAnswer;
+
+    @Column
+    private Long fileSize;
+
+    @Column
+    private String eventName;
+
+    @Column
+    private LocalDate startDate;
+
+    @Column
+    private LocalDate endDate;
+
+    @Column(length = 7)
+    private String color;
+
 }
