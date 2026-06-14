@@ -20,7 +20,12 @@ public record SubmitDetailFormResponse(
             String type,
             String textAnswer,
             String filePath,
-            LocalDate dateAnswer
+            Long fileSize,
+            LocalDate dateAnswer,
+            String eventName,
+            LocalDate startDate,
+            LocalDate endDate,
+            String color
     ) {}
 
     public static SubmitDetailFormResponse from(FormSubmit submit, String teamName) {
@@ -31,7 +36,12 @@ public record SubmitDetailFormResponse(
                         a.getFormField().getType().name(),
                         a.getTextAnswer(),
                         a.getFilePath(),
-                        a.getDateAnswer()
+                        a.getFileSize(),
+                        a.getDateAnswer(),
+                        a.getEventName(),
+                        a.getStartDate(),
+                        a.getEndDate(),
+                        a.getColor()
                 ))
                 .toList();
 
