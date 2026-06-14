@@ -14,8 +14,10 @@ import com.example.gifserverv2.domain.form.repository.FormFieldAnswerRepository;
 import com.example.gifserverv2.domain.form.repository.FormFieldRepository;
 import com.example.gifserverv2.domain.form.repository.FormRepository;
 import com.example.gifserverv2.domain.form.repository.FormSubmitRepository;
+import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
+import com.example.gifserverv2.domain.project.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -37,6 +39,7 @@ public class ClientFormService {
     private final FormFieldAnswerRepository formFieldAnswerRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final QueryFormService queryFormService;
+    private final ProjectRepository projectRepository;
 
     public List<ListFormResponse> getAnnouncedForms(Long projectId) {
         return formRepository.findAllByAnnouncedTrueOrderByDeadlineAsc().stream()
@@ -94,7 +97,12 @@ public class ClientFormService {
         FormSubmit submit = formSubmitRepository
                 .findByFormIdAndProjectId(formId, projectId)
                 .orElseThrow(FormException::notSubmitted);
-        return SubmitDetailFormResponse.from(submit);
+
+        String teamName = projectRepository.findById(projectId)
+                .map(Project::getTeamName)
+                .orElse(null);
+
+        return SubmitDetailFormResponse.from(submit, teamName);
     }
     @Transactional
     public void updateSubmit(Long userId, UpdateSubmitRequest request) {

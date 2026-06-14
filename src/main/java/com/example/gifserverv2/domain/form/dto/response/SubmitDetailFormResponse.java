@@ -9,6 +9,7 @@ import java.util.List;
 public record SubmitDetailFormResponse(
         Long submitId,
         Long projectId,
+        String teamName,
         Long submittedByUserId,
         LocalDateTime submittedAt,
         List<AnswerResponse> answers
@@ -22,7 +23,7 @@ public record SubmitDetailFormResponse(
             LocalDate dateAnswer
     ) {}
 
-    public static SubmitDetailFormResponse from(FormSubmit submit) {
+    public static SubmitDetailFormResponse from(FormSubmit submit, String teamName) {
         List<AnswerResponse> answerResponses = submit.getAnswers().stream()
                 .map(a -> new AnswerResponse(
                         a.getFormField().getId(),
@@ -37,6 +38,7 @@ public record SubmitDetailFormResponse(
         return new SubmitDetailFormResponse(
                 submit.getId(),
                 submit.getProjectId(),
+                teamName,
                 submit.getSubmittedByUserId(),
                 submit.getSubmittedAt(),
                 answerResponses

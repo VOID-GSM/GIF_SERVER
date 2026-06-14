@@ -56,8 +56,10 @@ public class FormController {
 
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<ListFormResponse>> getAllFormsForAdmin() {
-        return ResponseEntity.ok(adminFormService.getAllFormsForAdmin());
+    public ResponseEntity<List<ListFormResponse>> getAllFormsForAdmin(
+            @RequestParam(required = false) Integer grade
+    ) {
+        return ResponseEntity.ok(adminFormService.getAllFormsForAdmin(grade));
     }
 
     @GetMapping("/admin/submit")

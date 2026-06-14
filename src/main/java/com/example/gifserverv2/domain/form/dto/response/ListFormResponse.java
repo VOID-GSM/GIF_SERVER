@@ -9,13 +9,14 @@ public record ListFormResponse(
         String title,
         LocalDate deadline,
         boolean announced,
-        boolean submitted
+        boolean submitted,
+        Integer targetGrade
 ) {
     public static ListFormResponse from(Form form) {
-        return new ListFormResponse(form.getId(), form.getTitle(), form.getDeadline(), form.isAnnounced(), false);
+        return new ListFormResponse(form.getId(), form.getTitle(), form.getDeadline(), form.isAnnounced(), false, form.getTargetGrade());
     }
 
     public static ListFormResponse from(Form form, boolean submitted) {
-        return new ListFormResponse(form.getId(), form.getTitle(), form.getDeadline(), form.isAnnounced(), submitted);
+        return new ListFormResponse(form.getId(), form.getTitle(), form.getDeadline(), form.isAnnounced(), submitted, form.getTargetGrade());
     }
 }

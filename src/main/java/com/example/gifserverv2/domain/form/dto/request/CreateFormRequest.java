@@ -8,6 +8,7 @@ import java.util.List;
 public record CreateFormRequest(
         String title,
         LocalDate deadline,
+        Integer targetGrade,
         List<FieldRequest> fields
 ) {
     public record FieldRequest(
