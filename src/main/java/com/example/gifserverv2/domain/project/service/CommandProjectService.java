@@ -33,6 +33,7 @@ public class    CommandProjectService {
         if (request.getName() != null) project.updateName(request.getName());
         if (request.getTeamName() != null) project.updateTeamName(request.getTeamName());
         if (request.getDescription() != null) project.updateDescription(request.getDescription());
+        if (request.getGrade() != null) project.updateGrade(request.getGrade());
 
         if (logo != null && !logo.isEmpty()) {
             replaceLogo(project, logo);
@@ -79,6 +80,7 @@ public class    CommandProjectService {
                 .name(request.name())
                 .teamName(request.teamName())
                 .description(request.description())
+                .grade(request.grade())
                 .build();
 
         Project savedProject = projectRepository.save(project);

@@ -1,5 +1,7 @@
 package com.example.gifserverv2.domain.project.dto.request;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,6 +20,9 @@ public record CreateProjectRequest(
         @Size(max = 500, message = "설명은 500자 이하여야 합니다.")
         String description,
 
+        @Min(value = 1, message = "학년은 1 이상이어야 합니다.")
+        @Max(value = 2, message = "학년은 2 이하여야 합니다.")
+        Integer grade,
         List<Long> memberIds,
         MultipartFile logo
 ) {}

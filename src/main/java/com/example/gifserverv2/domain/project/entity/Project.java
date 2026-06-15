@@ -30,6 +30,9 @@ public class    Project {
     @Column
     private String logo;
 
+    @Column
+    private Integer grade;
+
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ProjectMember> members = new ArrayList<>();
@@ -39,4 +42,5 @@ public class    Project {
     public void updateDescription(String description) { this.description = description; }
     public void updateLogo(String logo) { this.logo = logo; }
     public void deleteLogo() { this.logo = null; }
+    public void updateGrade(Integer grade) { this.grade = grade; }
 }

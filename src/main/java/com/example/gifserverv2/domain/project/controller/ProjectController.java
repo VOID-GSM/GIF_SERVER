@@ -63,7 +63,7 @@ public class ProjectController {
     public ResponseEntity<Void> updateProject(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId,
-            @ModelAttribute UpdateProjectRequest request
+            @Valid @ModelAttribute UpdateProjectRequest request
     ) {
         projectCommandService.updateProject(projectId, user.userId(), request, request.getLogo());
         return ResponseEntity.noContent().build();
