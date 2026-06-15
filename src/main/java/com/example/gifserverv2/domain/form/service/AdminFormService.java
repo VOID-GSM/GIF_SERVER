@@ -70,7 +70,7 @@ public class AdminFormService {
                     .toList();
         }
 
-        form.update(request.title(), request.deadline(), request.targetGrade(), newFields);
+        form.update(request.title(), request.description(), request.deadline(), request.targetGrade(), newFields);
     }
 
     public List<ListFormResponse> getAllFormsForAdmin(Integer grade) {
