@@ -6,14 +6,16 @@ public record ListProjectResponse(
         Long id,
         String name,
         String teamName,
-        String logo
+        String logo,
+        Integer grade
 ) {
     public static ListProjectResponse from(Project project) {
         return new ListProjectResponse(
                 project.getId(),
                 project.getName(),
                 project.getTeamName(),
-                project.getLogo()
+                project.getLogo(),
+                project.getGrade()
         );
     }
 }

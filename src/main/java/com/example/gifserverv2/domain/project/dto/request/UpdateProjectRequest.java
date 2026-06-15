@@ -17,4 +17,5 @@ public class UpdateProjectRequest {
     private List<Long> addMemberIds;
     private List<Long> removeMemberIds;
     private MultipartFile logo;
+    private Integer grade;
 }
