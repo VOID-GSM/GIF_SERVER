@@ -24,6 +24,7 @@ import team.themoment.datagsm.sdk.oauth.model.TokenResponse;
 import team.themoment.datagsm.sdk.oauth.model.UserInfo;
 
 import java.util.Set;
+import java.util.Objects;
 
 @Service
 public class AuthService {
@@ -142,18 +143,23 @@ public class AuthService {
         UserEntity user = requireUser(caller.userId());
 
         boolean changed = false;
-        if (request.name() != null && !request.name().isBlank()) {
-            user.updateProfile(request.name(), user.getStudentNumber());
-            changed = true;
-        }
 
+        // Determine new profile values, preserving existing values when fields are omitted
+        String newName = (request.name() != null && !request.name().isBlank()) ? request.name() : user.getName();
+        String newStudentNumber = (request.studentNumber() != null && !request.studentNumber().isBlank()) ? request.studentNumber() : user.getStudentNumber();
+
+        // If a student number was provided, validate its format
         if (request.studentNumber() != null && !request.studentNumber().isBlank()) {
             try {
                 Long.parseLong(request.studentNumber());
             } catch (NumberFormatException e) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학번 형식이 유효하지 않습니다.");
             }
-            user.updateProfile(user.getName(), request.studentNumber());
+        }
+
+        // Update profile only once when any value actually changed
+        if (!newName.equals(user.getName()) || (newStudentNumber != null && !newStudentNumber.equals(user.getStudentNumber())) || (newStudentNumber == null && user.getStudentNumber() != null)) {
+            user.updateProfile(newName, newStudentNumber);
             changed = true;
         }
 
