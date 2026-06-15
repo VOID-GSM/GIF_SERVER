@@ -37,9 +37,7 @@ oauth:
     authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
     token-uri: https://oauth2.googleapis.com/token
     user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
-    scope:
-      - profile
-      - email
+    scopes: ${OAUTH_GOOGLE_SCOPES:openid email profile}
     redirect-uris:
       - ${OAUTH_GOOGLE_REDIRECT_URIS:http://localhost:8080/api/auth/google/callback}
 
