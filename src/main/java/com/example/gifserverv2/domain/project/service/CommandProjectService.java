@@ -7,7 +7,6 @@ import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
-import com.example.gifserverv2.global.file.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +19,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class CommandProjectService {
+public class    CommandProjectService {
 
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
@@ -86,7 +85,7 @@ public class CommandProjectService {
 
         if (request.logo() != null && !request.logo().isEmpty()) {
             String logoUrl = projectLogoStorageService.save(request.logo());
-            savedProject.updateLogoPath(logoUrl);
+            savedProject.updateLogo(logoUrl);
         }
 
         ProjectMember leader = ProjectMember.builder()
@@ -123,7 +122,7 @@ public class CommandProjectService {
         String oldLogoUrl = project.getLogo();
 
         String newLogoUrl = projectLogoStorageService.save(file);
-        project.updateLogoPath(newLogoUrl);
+        project.updateLogo(newLogoUrl);
 
         if (oldLogoUrl != null && !oldLogoUrl.isBlank()) {
             projectLogoStorageService.delete(oldLogoUrl);
