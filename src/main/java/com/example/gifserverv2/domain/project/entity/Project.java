@@ -28,7 +28,7 @@ public class Project {
     private String description;
 
     @Column
-    private String logoPath;
+    private String logo;
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -37,6 +37,6 @@ public class Project {
     public void updateName(String name) { this.name = name; }
     public void updateTeamName(String teamName) { this.teamName = teamName; }
     public void updateDescription(String description) { this.description = description; }
-    public void updateLogoPath(String logoPath) { this.logoPath = logoPath; }
-    public void deleteLogo() { this.logoPath = null; }
+    public void updateLogoPath(String logoPath) { this.logo = logoPath; }
+    public void deleteLogo() { this.logo = null; }
 }

@@ -120,7 +120,7 @@ public class CommandProjectService {
     }
 
     private void replaceLogo(Project project, MultipartFile file) {
-        String oldLogoUrl = project.getLogoPath();
+        String oldLogoUrl = project.getLogo();
 
         String newLogoUrl = projectLogoStorageService.save(file);
         project.updateLogoPath(newLogoUrl);

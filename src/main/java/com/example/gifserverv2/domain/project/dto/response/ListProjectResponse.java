@@ -13,7 +13,7 @@ public record ListProjectResponse(
                 project.getId(),
                 project.getName(),
                 project.getTeamName(),
-                project.getLogoPath()
+                project.getLogo()
         );
     }
 }
