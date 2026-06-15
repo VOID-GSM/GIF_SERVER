@@ -214,6 +214,11 @@ public class AuthService {
                 .orElseGet(() -> userRepository.save(new UserEntity(email, name, studentNumber, role, grade)));
     }
 
+    // Backwards-compatible overload: when grade is not known, delegate with null grade
+    private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role) {
+        return findOrCreateUser(email, name, studentNumber, role, null);
+    }
+
     @Transactional
     @SuppressWarnings({"rawtypes", "unchecked"})
     public OAuthSignInResponse signInWithGoogle(String accessToken, Map userInfo) {
