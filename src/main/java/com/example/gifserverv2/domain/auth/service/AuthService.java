@@ -67,6 +67,7 @@ public class AuthService {
 
             String name = null;
             String studentNumber = null;
+            String grade = null;
             Role assignedRole = Role.USER;
 
             if (!isStudent) {
@@ -219,6 +220,7 @@ public class AuthService {
         String email = userInfo.get("email") != null ? userInfo.get("email").toString() : null;
         String name = userInfo.get("name") != null ? userInfo.get("name").toString() : null;
         String studentNumber = null;
+        String grade = null;
 
         if (email == null || email.isBlank()) {
             throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Google 사용자 이메일을 가져오지 못했습니다.");
@@ -226,7 +228,7 @@ public class AuthService {
 
         Role assignedRole = Role.ADMIN;
 
-        UserEntity user = findOrCreateUser(email, name, studentNumber, assignedRole);
+        UserEntity user = findOrCreateUser(email, name, studentNumber, assignedRole, grade);
         String token = jwtTokenProvider.createToken(user);
 
         return new OAuthSignInResponse(
@@ -235,6 +237,7 @@ public class AuthService {
                 user.getEmail(),
                 user.getName(),
                 user.getStudentNumber(),
+                user.getGrade(),
                 user.getRole().name(),
                 user.getAdminRole() != null ? user.getAdminRole().name() : null,
                 user.getAdminTeam(),
