@@ -1,5 +1,6 @@
 package com.example.gifserverv2.domain.project.service;
 
+import com.example.gifserverv2.domain.project.dto.request.CreateProjectRequest;
 import com.example.gifserverv2.domain.project.dto.request.UpdateProjectRequest;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.entity.ProjectMember;
@@ -24,7 +25,6 @@ public class CommandProjectService {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final QueryProjectService projectQueryService;
-    private final FileStorageService fileStorageService;
     private final ProjectLogoStorageService projectLogoStorageService;
 
     public void updateProject(Long projectId, Long userId, UpdateProjectRequest request, MultipartFile logo) {
@@ -75,7 +75,7 @@ public class CommandProjectService {
         }
     }
 
-    public Long createProject(Long userId, com.example.gifserverv2.domain.project.dto.request.CreateProjectRequest request) {
+    public Long createProject(Long userId, CreateProjectRequest request) {
         Project project = Project.builder()
                 .name(request.name())
                 .teamName(request.teamName())
@@ -83,6 +83,11 @@ public class CommandProjectService {
                 .build();
 
         Project savedProject = projectRepository.save(project);
+
+        if (request.logo() != null && !request.logo().isEmpty()) {
+            String logoUrl = projectLogoStorageService.save(request.logo());
+            savedProject.updateLogoPath(logoUrl);
+        }
 
         ProjectMember leader = ProjectMember.builder()
                 .project(savedProject)
