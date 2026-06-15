@@ -1,6 +1,7 @@
 package com.example.gifserverv2.domain.auth.controller;
 
 import com.example.gifserverv2.domain.auth.dto.request.OAuthSignInRequest;
+import com.example.gifserverv2.domain.auth.dto.request.UpdateCurrentUserRequest;
 import com.example.gifserverv2.domain.auth.dto.response.CurrentUserResponse;
 import com.example.gifserverv2.domain.auth.dto.response.OAuthSignInResponse;
 import com.example.gifserverv2.domain.auth.service.AuthService;
@@ -58,5 +59,15 @@ public class AuthController {
                 user.getAdminRole() != null ? user.getAdminRole().name() : null,
                 user.getAdminTeam(),
                 user.getClientRole() != null ? user.getClientRole().name() : null);
+    }
+
+    @PatchMapping("/me")
+    public CurrentUserResponse updateMe(@AuthenticationPrincipal AuthenticatedUser currentUser,
+                                        @Valid @RequestBody UpdateCurrentUserRequest request) {
+        if (currentUser == null || currentUser.userId() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증 정보가 필요합니다.");
+        }
+
+        return authService.updateCurrentUser(currentUser, request);
     }
 }

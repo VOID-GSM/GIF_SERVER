@@ -9,7 +9,8 @@ public record DetailProjectResponse(
         String name,
         String teamName,
         String description,
-        String logoPath,
+        String logo,
+        Integer grade,
         List<MemberInfo> members
 ) {
     public record MemberInfo(Long userId, String role) {}
@@ -24,7 +25,8 @@ public record DetailProjectResponse(
                 project.getName(),
                 project.getTeamName(),
                 project.getDescription(),
-                project.getLogoPath(),
+                project.getLogo(),
+                project.getGrade(),
                 memberInfos
         );
     }

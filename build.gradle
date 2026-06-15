@@ -43,6 +43,7 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.mysql:mysql-connector-j'
+    implementation 'org.mariadb.jdbc:mariadb-java-client'
 }
 
 tasks.named('test') {
