@@ -12,6 +12,7 @@ public record SubmitDetailFormResponse(
         String teamName,
         Long submittedByUserId,
         LocalDateTime submittedAt,
+        boolean deadlineComplied,
         List<AnswerResponse> answers
 ) {
     public record AnswerResponse(
@@ -29,6 +30,9 @@ public record SubmitDetailFormResponse(
     ) {}
 
     public static SubmitDetailFormResponse from(FormSubmit submit, String teamName) {
+        boolean deadlineComplied = !submit.getSubmittedAt().toLocalDate()
+                .isAfter(submit.getForm().getDeadline());
+
         List<AnswerResponse> answerResponses = submit.getAnswers().stream()
                 .map(a -> new AnswerResponse(
                         a.getFormField().getId(),
@@ -51,6 +55,7 @@ public record SubmitDetailFormResponse(
                 teamName,
                 submit.getSubmittedByUserId(),
                 submit.getSubmittedAt(),
+                deadlineComplied,
                 answerResponses
         );
     }
