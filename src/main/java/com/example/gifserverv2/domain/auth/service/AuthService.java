@@ -5,6 +5,7 @@ import com.example.gifserverv2.domain.auth.dto.response.OAuthSignInResponse;
 import com.example.gifserverv2.domain.auth.dto.response.CurrentUserResponse;
 import com.example.gifserverv2.domain.auth.dto.request.UpdateCurrentUserRequest;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
+import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
@@ -156,11 +157,13 @@ public class AuthService {
             changed = true;
         }
 
-        if (request.adminRole() != null || (request.adminTeam() != null && !request.adminTeam().isBlank())) {
+        if (request.adminRole() != null || request.adminTeam() != null) {
             if (caller.role() == null || caller.role() != Role.ADMIN) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자 정보는 관리자(선생님)만 수정할 수 있습니다.");
             }
-            user.updateAdminAdditionalInfo(request.adminRole(), request.adminTeam());
+            AdminRole newAdminRole = request.adminRole() != null ? request.adminRole() : user.getAdminRole();
+            String newAdminTeam = request.adminTeam() != null ? request.adminTeam() : user.getAdminTeam();
+            user.updateAdminAdditionalInfo(newAdminRole, newAdminTeam);
             changed = true;
         }
 
