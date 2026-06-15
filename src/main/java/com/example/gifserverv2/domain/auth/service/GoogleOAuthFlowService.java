@@ -3,6 +3,7 @@ package com.example.gifserverv2.domain.auth.service;
 import com.example.gifserverv2.domain.auth.dto.response.OAuthSignInResponse;
 import com.example.gifserverv2.domain.auth.store.OAuthStateStore;
 import org.springframework.beans.factory.annotation.Value;
+import com.example.gifserverv2.global.config.OAuthProperties;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -31,6 +32,7 @@ public class GoogleOAuthFlowService {
     private final RestTemplate restTemplate = new RestTemplate();
     private final AuthService authService;
     private final OAuthStateStore oauthStateStore;
+    private final OAuthProperties oauthProperties;
 
     @Value("${oauth.google.client-id:}")
     private String clientId;
@@ -50,29 +52,19 @@ public class GoogleOAuthFlowService {
     @Value("${oauth.google.scopes:openid email profile}")
     private String scopes;
 
-    @Value("${oauth.google.redirect-uris:}")
-    private String googleRedirectUris;
-
-    public GoogleOAuthFlowService(AuthService authService, OAuthStateStore oauthStateStore) {
+    public GoogleOAuthFlowService(AuthService authService, OAuthStateStore oauthStateStore, OAuthProperties oauthProperties) {
         this.authService = authService;
         this.oauthStateStore = oauthStateStore;
+        this.oauthProperties = oauthProperties;
     }
 
     public URI createLoginRedirect(String redirectUri) {
         // enforce allowed redirect URIs for Google (list from application.yml / env)
-        if (googleRedirectUris == null || googleRedirectUris.isBlank()) {
+        if (oauthProperties.getGoogle().getRedirectUris() == null || oauthProperties.getGoogle().getRedirectUris().isEmpty()) {
             // fall back to global check (datagsm) if google list not configured
             authService.assertAllowedRedirectUri(redirectUri);
         } else {
-            String[] parts = googleRedirectUris.split(",");
-            boolean ok = false;
-            for (String p : parts) {
-                if (p != null && !p.isBlank() && p.trim().equals(redirectUri)) {
-                    ok = true;
-                    break;
-                }
-            }
-            if (!ok) {
+            if (!oauthProperties.getGoogle().getRedirectUris().contains(redirectUri)) {
                 throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "허용되지 않은 redirectUri입니다.");
             }
         }

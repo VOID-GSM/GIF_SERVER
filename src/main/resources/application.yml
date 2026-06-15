@@ -27,9 +27,10 @@ spring:
 
 oauth:
   datagsm:
-    client-id: ${DATAGSM_CLIENT_ID}
-    client-secret: ${DATAGSM_CLIENT_SECRET}
-    redirect-uris: ${DATAGSM_REDIRECT_URIS}
+    client-id: ${DATAGSM_CLIENT_ID:}
+    client-secret: ${DATAGSM_CLIENT_SECRET:}
+    redirect-uris:
+      - ${DATAGSM_REDIRECT_URIS:http://localhost:8080/api/auth/dg/callback}
   google:
     client-id: ${OAUTH_GOOGLE_CLIENT_ID:}
     client-secret: ${OAUTH_GOOGLE_CLIENT_SECRET:}
@@ -39,7 +40,8 @@ oauth:
     scope:
       - profile
       - email
-    redirect-uri: ${OAUTH_GOOGLE_REDIRECT_URIS}
+    redirect-uris:
+      - ${OAUTH_GOOGLE_REDIRECT_URIS:http://localhost:8080/api/auth/google/callback}
 
 jwt:
   secret: ${JWT_SECRET}

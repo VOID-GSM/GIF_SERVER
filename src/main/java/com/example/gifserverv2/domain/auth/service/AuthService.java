@@ -12,7 +12,7 @@ import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.global.security.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import com.example.gifserverv2.global.config.OAuthProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,15 +34,14 @@ public class AuthService {
     private final DataGsmOAuthClient dataGsmOAuthClient;
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
-
-    @Value("${oauth.datagsm.redirect-uris}")
-    private Set<String> allowedRedirectUris;
+    private final OAuthProperties oauthProperties;
 
     public AuthService(DataGsmOAuthClient dataGsmOAuthClient, UserRepository userRepository,
-                       JwtTokenProvider jwtTokenProvider) {
+                       JwtTokenProvider jwtTokenProvider, OAuthProperties oauthProperties) {
         this.dataGsmOAuthClient = dataGsmOAuthClient;
         this.userRepository = userRepository;
         this.jwtTokenProvider = jwtTokenProvider;
+        this.oauthProperties = oauthProperties;
     }
 
     @Transactional
@@ -131,7 +130,7 @@ public class AuthService {
     }
 
     public void assertAllowedRedirectUri(String redirectUri) {
-        if (redirectUri == null || redirectUri.isBlank() || !allowedRedirectUris.contains(redirectUri)) {
+        if (redirectUri == null || redirectUri.isBlank() || !oauthProperties.getDatagsm().getRedirectUris().contains(redirectUri)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "허용되지 않은 redirectUri입니다.");
         }
     }
