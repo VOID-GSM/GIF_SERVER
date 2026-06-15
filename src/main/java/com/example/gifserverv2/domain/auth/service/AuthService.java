@@ -24,7 +24,7 @@ import team.themoment.datagsm.sdk.oauth.model.TokenResponse;
 import team.themoment.datagsm.sdk.oauth.model.UserInfo;
 
 import java.util.Set;
-import java.util.Objects;
+import java.util.Map;
 
 @Service
 public class AuthService {
@@ -144,11 +144,9 @@ public class AuthService {
 
         boolean changed = false;
 
-        // Determine new profile values, preserving existing values when fields are omitted
         String newName = (request.name() != null && !request.name().isBlank()) ? request.name() : user.getName();
         String newStudentNumber = (request.studentNumber() != null && !request.studentNumber().isBlank()) ? request.studentNumber() : user.getStudentNumber();
 
-        // If a student number was provided, validate its format
         if (request.studentNumber() != null && !request.studentNumber().isBlank()) {
             try {
                 Long.parseLong(request.studentNumber());
@@ -157,7 +155,6 @@ public class AuthService {
             }
         }
 
-        // Update profile only once when any value actually changed
         if (!newName.equals(user.getName()) || (newStudentNumber != null && !newStudentNumber.equals(user.getStudentNumber())) || (newStudentNumber == null && user.getStudentNumber() != null)) {
             user.updateProfile(newName, newStudentNumber);
             changed = true;
@@ -206,5 +203,33 @@ public class AuthService {
                     return existing;
                 })
                 .orElseGet(() -> userRepository.save(new UserEntity(email, name, studentNumber, role)));
+    }
+
+    @Transactional
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public OAuthSignInResponse signInWithGoogle(String accessToken, Map userInfo) {
+        String email = userInfo.get("email") != null ? userInfo.get("email").toString() : null;
+        String name = userInfo.get("name") != null ? userInfo.get("name").toString() : null;
+        String studentNumber = null;
+
+        if (email == null || email.isBlank()) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Google 사용자 이메일을 가져오지 못했습니다.");
+        }
+
+        Role assignedRole = Role.ADMIN;
+
+        UserEntity user = findOrCreateUser(email, name, studentNumber, assignedRole);
+        String token = jwtTokenProvider.createToken(user);
+
+        return new OAuthSignInResponse(
+                token,
+                user.getId(),
+                user.getEmail(),
+                user.getName(),
+                user.getStudentNumber(),
+                user.getRole().name(),
+                user.getAdminRole() != null ? user.getAdminRole().name() : null,
+                user.getAdminTeam(),
+                user.getClientRole() != null ? user.getClientRole().name() : null);
     }
 }

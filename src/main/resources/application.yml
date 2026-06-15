@@ -30,6 +30,16 @@ oauth:
     client-id: ${DATAGSM_CLIENT_ID}
     client-secret: ${DATAGSM_CLIENT_SECRET}
     redirect-uris: ${DATAGSM_REDIRECT_URIS}
+  google:
+    client-id: ${OAUTH_GOOGLE_CLIENT_ID:}
+    client-secret: ${OAUTH_GOOGLE_CLIENT_SECRET:}
+    authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+    token-uri: https://oauth2.googleapis.com/token
+    user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+    scope:
+      - profile
+      - email
+    redirect-uri: ${OAUTH_GOOGLE_REDIRECT_URIS}
 
 jwt:
   secret: ${JWT_SECRET}

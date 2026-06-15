@@ -6,6 +6,7 @@ import com.example.gifserverv2.domain.auth.dto.response.CurrentUserResponse;
 import com.example.gifserverv2.domain.auth.dto.response.OAuthSignInResponse;
 import com.example.gifserverv2.domain.auth.service.AuthService;
 import com.example.gifserverv2.domain.auth.service.DgOAuthFlowService;
+import com.example.gifserverv2.domain.auth.service.GoogleOAuthFlowService;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import jakarta.validation.Valid;
@@ -25,6 +26,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final DgOAuthFlowService dgOAuthFlowService;
+    private final GoogleOAuthFlowService googleOAuthFlowService;
 
     @GetMapping("/dg/start")
     public ResponseEntity<Void> startDgLogin(@RequestParam String redirectUri) {
@@ -35,6 +37,17 @@ public class AuthController {
     @GetMapping("/dg/callback")
     public OAuthSignInResponse dgCallback(@RequestParam String code, @RequestParam String state) {
         return dgOAuthFlowService.completeLogin(code, state);
+    }
+
+    @GetMapping("/google/start")
+    public ResponseEntity<Void> startGoogleLogin(@RequestParam String redirectUri) {
+        URI location = googleOAuthFlowService.createLoginRedirect(redirectUri);
+        return ResponseEntity.status(HttpStatus.FOUND).location(location).build();
+    }
+
+    @GetMapping("/google/callback")
+    public OAuthSignInResponse googleCallback(@RequestParam String code, @RequestParam String state) {
+        return googleOAuthFlowService.completeLogin(code, state);
     }
 
     @PostMapping("/signin")
