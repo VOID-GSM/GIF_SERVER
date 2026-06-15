@@ -12,7 +12,7 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class Project {
+public class    Project {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,7 +28,7 @@ public class Project {
     private String description;
 
     @Column
-    private String logoPath;
+    private String logo;
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -37,6 +37,6 @@ public class Project {
     public void updateName(String name) { this.name = name; }
     public void updateTeamName(String teamName) { this.teamName = teamName; }
     public void updateDescription(String description) { this.description = description; }
-    public void updateLogoPath(String logoPath) { this.logoPath = logoPath; }
-    public void deleteLogo() { this.logoPath = null; }
+    public void updateLogo(String logo) { this.logo = logo; }
+    public void deleteLogo() { this.logo = null; }
 }

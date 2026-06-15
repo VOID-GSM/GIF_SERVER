@@ -24,7 +24,7 @@ public record DetailProjectResponse(
                 project.getName(),
                 project.getTeamName(),
                 project.getDescription(),
-                project.getLogoPath(),
+                project.getLogo(),
                 memberInfos
         );
     }
