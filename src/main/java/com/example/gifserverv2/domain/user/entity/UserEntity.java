@@ -19,6 +19,9 @@ public class UserEntity {
     @Column(name = "student_number", nullable = false, length = 10)
     private String studentNumber;
 
+    @Column(name = "student_grade")
+    private String grade;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
@@ -44,6 +47,14 @@ public class UserEntity {
         this.role = role;
     }
 
+    public UserEntity(String email, String name, String studentNumber, Role role, String grade) {
+        this.email = email;
+        this.name = name;
+        this.studentNumber = studentNumber;
+        this.role = role;
+        this.grade = grade;
+    }
+
     public Long getId() {
         return id;
     }
@@ -58,6 +69,10 @@ public class UserEntity {
 
     public String getStudentNumber() {
         return studentNumber;
+    }
+
+    public String getGrade() {
+        return grade;
     }
 
     public Role getRole() {
@@ -87,8 +102,13 @@ public class UserEntity {
     }
 
     public void updateProfile(String name, String studentNumber) {
+        updateProfile(name, studentNumber, this.grade);
+    }
+
+    public void updateProfile(String name, String studentNumber, String grade) {
         this.name = name;
         this.studentNumber = studentNumber;
+        this.grade = grade;
     }
 
     public void setRole(Role role) {

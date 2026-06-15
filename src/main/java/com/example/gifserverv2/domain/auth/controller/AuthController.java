@@ -68,6 +68,7 @@ public class AuthController {
                 user.getEmail(),
                 user.getName(),
                 user.getStudentNumber(),
+                user.getGrade(),
                 user.getEffectiveRole().name(),
                 user.getAdminRole() != null ? user.getAdminRole().name() : null,
                 user.getAdminTeam(),

@@ -84,6 +84,12 @@ public class AuthService {
 
                 name = student.getName();
                 studentNumber = student.getStudentNumber() != null ? String.valueOf(student.getStudentNumber()).trim() : null;
+                // try to read grade if provided by DataGSM
+                try {
+                    Object g = student.getClass().getMethod("getGrade").invoke(student);
+                    if (g != null) grade = String.valueOf(g).trim();
+                } catch (Exception ignored) {
+                }
 
                 if (email == null || email.isBlank() || name == null || name.isBlank() || studentNumber == null || studentNumber.isBlank()) {
                     log.warn("Invalid student info: email='{}', name='{}', studentNumber='{}'", email, name, studentNumber);
@@ -98,7 +104,7 @@ public class AuthService {
                 }
             }
 
-            UserEntity user = findOrCreateUser(email, name, studentNumber, assignedRole);
+            UserEntity user = findOrCreateUser(email, name, studentNumber, assignedRole, grade);
             String accessToken = jwtTokenProvider.createToken(user);
 
             return new OAuthSignInResponse(
@@ -107,6 +113,7 @@ public class AuthService {
                     user.getEmail(),
                     user.getName(),
                     user.getStudentNumber(),
+                    user.getGrade(),
                     user.getRole().name(),
                     null,
                     null,
@@ -187,22 +194,23 @@ public class AuthService {
                 user.getEmail(),
                 user.getName(),
                 user.getStudentNumber(),
+                user.getGrade(),
                 user.getEffectiveRole().name(),
                 user.getAdminRole() != null ? user.getAdminRole().name() : null,
                 user.getAdminTeam(),
                 user.getClientRole() != null ? user.getClientRole().name() : null);
     }
 
-    private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role) {
+    private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role, String grade) {
         return userRepository.findByEmail(email)
                 .map(existing -> {
-                    existing.updateProfile(name, studentNumber);
+                    existing.updateProfile(name, studentNumber, grade);
                     if (existing.getRole() != role) {
                         existing.setRole(role);
                     }
                     return existing;
                 })
-                .orElseGet(() -> userRepository.save(new UserEntity(email, name, studentNumber, role)));
+                .orElseGet(() -> userRepository.save(new UserEntity(email, name, studentNumber, role, grade)));
     }
 
     @Transactional

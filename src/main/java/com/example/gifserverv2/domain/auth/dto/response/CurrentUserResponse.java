@@ -5,6 +5,7 @@ public record CurrentUserResponse(
         String email,
         String name,
         String studentNumber,
+        String grade,
         String role,
         String adminRole,
         String adminTeam,
