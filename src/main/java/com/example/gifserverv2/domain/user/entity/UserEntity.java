@@ -16,7 +16,7 @@ public class UserEntity {
     @Column(nullable = false)
     private String name;
 
-    @Column(name = "student_number", nullable = false, length = 10)
+    @Column(name = "student_number", nullable = true, length = 10)
     private String studentNumber;
 
     @Column(name = "student_grade")
