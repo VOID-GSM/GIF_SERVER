@@ -2,6 +2,9 @@ package com.example.gifserverv2.domain.auth.service;
 
 import com.example.gifserverv2.domain.auth.dto.request.OAuthSignInRequest;
 import com.example.gifserverv2.domain.auth.dto.response.OAuthSignInResponse;
+import com.example.gifserverv2.domain.auth.dto.response.CurrentUserResponse;
+import com.example.gifserverv2.domain.auth.dto.request.UpdateCurrentUserRequest;
+import com.example.gifserverv2.global.security.AuthenticatedUser;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
@@ -127,6 +130,61 @@ public class AuthService {
     public UserEntity requireUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+    }
+
+    @Transactional
+    public CurrentUserResponse updateCurrentUser(AuthenticatedUser caller, UpdateCurrentUserRequest request) {
+        if (caller == null || caller.userId() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증 정보가 필요합니다.");
+        }
+
+        UserEntity user = requireUser(caller.userId());
+
+        boolean changed = false;
+        if (request.name() != null && !request.name().isBlank()) {
+            user.updateProfile(request.name(), user.getStudentNumber());
+            changed = true;
+        }
+
+        if (request.studentNumber() != null && !request.studentNumber().isBlank()) {
+            try {
+                Long.parseLong(request.studentNumber());
+            } catch (NumberFormatException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학번 형식이 유효하지 않습니다.");
+            }
+            user.updateProfile(user.getName(), request.studentNumber());
+            changed = true;
+        }
+
+        if (request.adminRole() != null || (request.adminTeam() != null && !request.adminTeam().isBlank())) {
+            if (caller.role() == null || caller.role() != Role.ADMIN) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자 정보는 관리자(선생님)만 수정할 수 있습니다.");
+            }
+            user.updateAdminAdditionalInfo(request.adminRole(), request.adminTeam());
+            changed = true;
+        }
+
+        if (request.clientRole() != null) {
+            if (caller.role() == Role.ADMIN) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "학생 전용 필드는 관리자(선생님)가 수정할 수 없습니다.");
+            }
+            user.updateClientAdditionalInfo(request.clientRole());
+            changed = true;
+        }
+
+        if (changed) {
+            userRepository.save(user);
+        }
+
+        return new CurrentUserResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getName(),
+                user.getStudentNumber(),
+                user.getEffectiveRole().name(),
+                user.getAdminRole() != null ? user.getAdminRole().name() : null,
+                user.getAdminTeam(),
+                user.getClientRole() != null ? user.getClientRole().name() : null);
     }
 
     private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role) {
