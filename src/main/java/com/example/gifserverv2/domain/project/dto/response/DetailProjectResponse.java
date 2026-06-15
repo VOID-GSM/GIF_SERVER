@@ -10,6 +10,7 @@ public record DetailProjectResponse(
         String teamName,
         String description,
         String logo,
+        Integer grade,
         List<MemberInfo> members
 ) {
     public record MemberInfo(Long userId, String role) {}
@@ -25,6 +26,7 @@ public record DetailProjectResponse(
                 project.getTeamName(),
                 project.getDescription(),
                 project.getLogo(),
+                project.getGrade(),
                 memberInfos
         );
     }
