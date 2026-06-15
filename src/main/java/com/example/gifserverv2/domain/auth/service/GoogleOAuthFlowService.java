@@ -46,7 +46,7 @@ public class GoogleOAuthFlowService {
     @Value("${oauth.google.token-uri:https://oauth2.googleapis.com/token}")
     private String tokenUri;
 
-    @Value("${oauth.google.userinfo-uri:https://openidconnect.googleapis.com/v1/userinfo}")
+    @Value("${oauth.google.user-info-uri:https://openidconnect.googleapis.com/v1/userinfo}")
     private String userInfoUri;
 
     @Value("${oauth.google.scopes:openid email profile}")
