@@ -23,10 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -42,11 +39,28 @@ public class ClientFormService {
     private final ProjectRepository projectRepository;
 
     public List<ListFormResponse> getAnnouncedForms(Long projectId) {
-        return formRepository.findAllByAnnouncedTrueOrderByDeadlineAsc().stream()
+        List<Form> forms = formRepository.findAllByAnnouncedTrueOrderByDeadlineAsc();
+
+        if (projectId == null) {
+            return forms.stream()
+                    .map(form -> ListFormResponse.from(form, false, null))
+                    .toList();
+        }
+
+        Map<Long, FormSubmit> submitMap = new HashMap<>();
+        for (FormSubmit submit : formSubmitRepository.findAllByProjectId(projectId)) {
+            submitMap.put(submit.getForm().getId(), submit);
+        }
+
+        return forms.stream()
                 .map(form -> {
-                    boolean submitted = formSubmitRepository
-                            .existsByFormIdAndProjectId(form.getId(), projectId);
-                    return ListFormResponse.from(form, submitted);
+                    FormSubmit submit = submitMap.get(form.getId());
+                    boolean submitted = submit != null;
+                    Boolean deadlineComplied = null;
+                    if (submit != null) {
+                        deadlineComplied = !submit.getSubmittedAt().toLocalDate().isAfter(form.getDeadline());
+                    }
+                    return ListFormResponse.from(form, submitted, deadlineComplied);
                 })
                 .toList();
     }
