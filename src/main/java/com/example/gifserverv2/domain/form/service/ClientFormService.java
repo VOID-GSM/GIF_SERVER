@@ -23,10 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -44,9 +41,13 @@ public class ClientFormService {
     public List<ListFormResponse> getAnnouncedForms(Long projectId) {
         return formRepository.findAllByAnnouncedTrueOrderByDeadlineAsc().stream()
                 .map(form -> {
-                    boolean submitted = formSubmitRepository
-                            .existsByFormIdAndProjectId(form.getId(), projectId);
-                    return ListFormResponse.from(form, submitted);
+                    Optional<FormSubmit> submit = formSubmitRepository
+                            .findByFormIdAndProjectId(form.getId(), projectId);
+                    boolean submitted = submit.isPresent();
+                    Boolean deadlineComplied = submit
+                            .map(s -> !s.getSubmittedAt().toLocalDate().isAfter(form.getDeadline()))
+                            .orElse(null);
+                    return ListFormResponse.from(form, submitted, deadlineComplied);
                 })
                 .toList();
     }
