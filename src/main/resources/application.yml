@@ -39,7 +39,7 @@ oauth:
     user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
     scopes: ${OAUTH_GOOGLE_SCOPES:openid email profile}
     redirect-uris:
-      - ${OAUTH_GOOGLE_REDIRECT_URIS:http://localhost:8080/api/auth/google/callback}
+      - ${OAUTH_GOOGLE_REDIRECT_URIS}
 
 jwt:
   secret: ${JWT_SECRET}
