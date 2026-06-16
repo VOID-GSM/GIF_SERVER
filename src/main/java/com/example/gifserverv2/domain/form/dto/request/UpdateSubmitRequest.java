@@ -15,5 +15,14 @@ public record UpdateSubmitRequest(
             LocalDate startDate,
             LocalDate endDate,
             String color
-    ) {}
+    ) {
+        public AnswerRequest {
+            if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+                throw new IllegalArgumentException("시작일은 종료일보다 이전이어야 합니다.");
+            }
+            if (color != null && color.length() > 7) {
+                throw new IllegalArgumentException("색상 코드는 7자 이하이어야 합니다.");
+            }
+        }
+    }
 }
