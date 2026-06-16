@@ -110,6 +110,10 @@ public class ClientFormService {
                     .formField(field)
                     .textAnswer(answerReq.textAnswer())
                     .dateAnswer(answerReq.dateAnswer())
+                    .eventName(answerReq.eventName())
+                    .startDate(answerReq.startDate())
+                    .endDate(answerReq.endDate())
+                    .color(answerReq.color())
                     .build());
         });
 
@@ -170,6 +174,10 @@ public class ClientFormService {
                     .formField(field)
                     .textAnswer(answerReq.textAnswer())
                     .dateAnswer(answerReq.dateAnswer())
+                    .eventName(answerReq.eventName())
+                    .startDate(answerReq.startDate())
+                    .endDate(answerReq.endDate())
+                    .color(answerReq.color())
                     .build());
         }
 
