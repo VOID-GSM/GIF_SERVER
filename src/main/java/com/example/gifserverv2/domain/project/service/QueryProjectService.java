@@ -62,7 +62,7 @@ public class QueryProjectService {
                 .map(ProjectMember::getUserId)
                 .toList();
 
-        Map<Long, UserEntity> userMap = userRepository.findAllByIdIn(memberIds).stream()
+        Map<Long, UserEntity> userMap = userRepository.findAllById(memberIds).stream()
                 .collect(Collectors.toMap(UserEntity::getId, u -> u));
 
         return DetailProjectResponse.from(project, userMap);
