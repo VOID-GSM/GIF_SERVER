@@ -74,8 +74,11 @@ public class FormController {
     }
 
     @GetMapping("/{formId}")
-    public ResponseEntity<DetailFormResponse> getForm(@PathVariable Long formId) {
-        return ResponseEntity.ok(clientFormService.getForm(formId));
+    public ResponseEntity<DetailFormResponse> getForm(
+            @PathVariable Long formId,
+            @RequestParam(required = false) Long projectId
+    ) {
+        return ResponseEntity.ok(clientFormService.getForm(formId, projectId));
     }
 
     @PostMapping("/submit")

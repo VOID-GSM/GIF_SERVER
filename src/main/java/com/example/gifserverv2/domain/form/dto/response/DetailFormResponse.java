@@ -8,8 +8,10 @@ import java.util.List;
 public record DetailFormResponse(
         Long id,
         String title,
+        String description,
         LocalDate deadline,
         boolean announced,
+        Boolean deadlineComplied,
         List<FieldResponse> fields
 ) {
     public record FieldResponse(
@@ -20,7 +22,7 @@ public record DetailFormResponse(
             int orderIndex
     ) {}
 
-    public static DetailFormResponse from(Form form) {
+    public static DetailFormResponse from(Form form, Boolean deadlineComplied) {
         List<FieldResponse> fieldResponses = form.getFields().stream()
                 .map(f -> new FieldResponse(f.getId(), f.getTitle(), f.getDescription(), f.getType().name(), f.getOrderIndex()))
                 .toList();
@@ -28,8 +30,10 @@ public record DetailFormResponse(
         return new DetailFormResponse(
                 form.getId(),
                 form.getTitle(),
+                form.getDescription(),
                 form.getDeadline(),
                 form.isAnnounced(),
+                deadlineComplied,
                 fieldResponses
         );
     }

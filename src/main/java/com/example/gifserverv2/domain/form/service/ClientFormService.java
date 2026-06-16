@@ -51,10 +51,19 @@ public class ClientFormService {
                 .toList();
     }
 
-    public DetailFormResponse getForm(Long formId) {
+    public DetailFormResponse getForm(Long formId, Long projectId) {
         Form form = queryFormService.getFormOrThrow(formId);
         if (!form.isAnnounced()) throw FormException.notAnnounced();
-        return DetailFormResponse.from(form);
+
+        Boolean deadlineComplied = null;
+        if (projectId != null) {
+            deadlineComplied = formSubmitRepository
+                    .findByFormIdAndProjectId(formId, projectId)
+                    .map(submit -> !submit.getSubmittedAt().toLocalDate().isAfter(form.getDeadline()))
+                    .orElse(null);
+        }
+
+        return DetailFormResponse.from(form, deadlineComplied);
     }
 
     @Transactional
