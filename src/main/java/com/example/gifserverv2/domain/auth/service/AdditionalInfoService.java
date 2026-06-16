@@ -14,12 +14,10 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class AdditionalInfoService {
 
-    private final AuthService authService;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
 
-    public AdditionalInfoService(AuthService authService, ProjectRepository projectRepository, UserRepository userRepository) {
-        this.authService = authService;
+    public AdditionalInfoService(ProjectRepository projectRepository, UserRepository userRepository) {
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
     }
@@ -36,7 +34,6 @@ public class AdditionalInfoService {
         validateAdminTeam(user.getId(), adminTeam);
 
         user.updateAdminAdditionalInfo(request.adminRole(), adminTeam);
-        userRepository.save(user);
     }
 
     @Transactional
@@ -48,7 +45,6 @@ public class AdditionalInfoService {
         }
 
         user.updateClientAdditionalInfo(request.clientRole());
-        userRepository.save(user);
     }
 
     private String normalizeTeam(String adminTeam) {
