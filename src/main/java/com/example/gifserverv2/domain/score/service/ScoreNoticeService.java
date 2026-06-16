@@ -68,7 +68,7 @@ public class ScoreNoticeService {
             ScoreNotice notice = new ScoreNotice(true, Instant.now(), snapshot, caller.userId());
             scoreNoticeRepository.save(notice);
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "공지 저장 중 오류가 발생했습니다.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "공지 저장 중 오류가 발생했습니다.", e);
         }
     }
 
@@ -80,7 +80,7 @@ public class ScoreNoticeService {
                         List<ScoreSummaryResponse> summaries = objectMapper.readValue(n.getSnapshot(), new TypeReference<List<ScoreSummaryResponse>>(){});
                         return new ScoreNoticeResponse(true, n.getPublishedAt(), summaries);
                     } catch (Exception e) {
-                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "공지 데이터 파싱 중 오류가 발생했습니다.");
+                        throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "공지 데이터 파싱 중 오류가 발생했습니다.", e);
                     }
                 })
                 .orElseGet(() -> new ScoreNoticeResponse(false, null, List.of()));
