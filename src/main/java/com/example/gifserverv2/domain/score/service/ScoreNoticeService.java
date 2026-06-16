@@ -45,10 +45,15 @@ public class ScoreNoticeService {
         }
 
         List<Project> projects = projectRepository.findAll();
+        List<com.example.gifserverv2.domain.score.entity.Score> allScores = scoreRepository.findAll();
+        // group scores by project id to avoid N+1 queries
+        java.util.Map<Long, java.util.List<com.example.gifserverv2.domain.score.entity.Score>> scoresByProject =
+                allScores.stream().collect(java.util.stream.Collectors.groupingBy(s -> s.getProject().getId()));
+
         List<ScoreSummaryResponse> summaries = new ArrayList<>();
 
         for (Project p : projects) {
-            List<com.example.gifserverv2.domain.score.entity.Score> scores = scoreRepository.findByProject(p);
+            java.util.List<com.example.gifserverv2.domain.score.entity.Score> scores = scoresByProject.getOrDefault(p.getId(), java.util.List.of());
             int count = scores.size();
             double avg = 0.0;
             if (count > 0) {
