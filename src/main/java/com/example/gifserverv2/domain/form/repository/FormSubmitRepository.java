@@ -17,4 +17,5 @@ public interface FormSubmitRepository extends JpaRepository<FormSubmit, Long> {
     List<FormSubmit> findAllByFormId(Long formId);
 
     List<FormSubmit> findAllByProjectId(Long projectId);
+
 }
