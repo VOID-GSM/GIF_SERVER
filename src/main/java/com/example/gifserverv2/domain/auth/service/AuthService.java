@@ -100,7 +100,7 @@ public class AuthService {
                     Long.parseLong(studentNumber);
                 } catch (NumberFormatException e) {
                     log.warn("Invalid studentNumber format: {}", studentNumber);
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학번 형식이 유효하지 않습니다.");
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학번 형식이 유효하지 않습니다.", e);
                 }
             }
 
@@ -120,7 +120,7 @@ public class AuthService {
                     null);
         } catch (DataGsmException e) {
             log.warn("DataGSM OAuth error: status={}, message={}", e.getStatusCode(), e.getMessage());
-            throw new ResponseStatusException(resolveStatus(e.getStatusCode()), "OAuth 인증에 실패했습니다.");
+        throw new ResponseStatusException(resolveStatus(e.getStatusCode()), "OAuth 인증에 실패했습니다.", e);
         }
     }
 
