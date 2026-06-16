@@ -26,7 +26,8 @@ public class AdditionalInfoService {
 
     @Transactional
     public void updateAdminAdditionalInfo(Long userId, AdminAdditionalInfoRequest request) {
-        UserEntity user = authService.requireUser(userId);
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
         if (user.getEffectiveRole() != Role.ADMIN) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "선생님만 선생님 추가 정보를 입력할 수 있습니다.");
         }
@@ -35,16 +36,19 @@ public class AdditionalInfoService {
         validateAdminTeam(user.getId(), adminTeam);
 
         user.updateAdminAdditionalInfo(request.adminRole(), adminTeam);
+        userRepository.save(user);
     }
 
     @Transactional
     public void updateClientAdditionalInfo(Long userId, ClientAdditionalInfoRequest request) {
-        UserEntity user = authService.requireUser(userId);
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
         if (user.getEffectiveRole() != Role.USER) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "학생만 학생 추가 정보를 입력할 수 있습니다.");
         }
 
         user.updateClientAdditionalInfo(request.clientRole());
+        userRepository.save(user);
     }
 
     private String normalizeTeam(String adminTeam) {
