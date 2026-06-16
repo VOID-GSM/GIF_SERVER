@@ -27,9 +27,19 @@ spring:
 
 oauth:
   datagsm:
-    client-id: ${DATAGSM_CLIENT_ID}
-    client-secret: ${DATAGSM_CLIENT_SECRET}
-    redirect-uris: ${DATAGSM_REDIRECT_URIS}
+    client-id: ${DATAGSM_CLIENT_ID:}
+    client-secret: ${DATAGSM_CLIENT_SECRET:}
+    redirect-uris:
+      - ${DATAGSM_REDIRECT_URIS:http://localhost:8080/api/auth/dg/callback}
+  google:
+    client-id: ${OAUTH_GOOGLE_CLIENT_ID:}
+    client-secret: ${OAUTH_GOOGLE_CLIENT_SECRET:}
+    authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+    token-uri: https://oauth2.googleapis.com/token
+    user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+    scopes: ${OAUTH_GOOGLE_SCOPES:openid email profile}
+    redirect-uris:
+      - ${OAUTH_GOOGLE_REDIRECT_URIS}
 
 jwt:
   secret: ${JWT_SECRET}
