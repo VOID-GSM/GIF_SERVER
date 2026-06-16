@@ -12,5 +12,4 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     boolean existsByAdminTeamAndIdNotAndAdminRoleIsNotNull(String adminTeam, Long id);
 
-    List<UserEntity> findAllByIdIn(List<Long> ids);
 }
