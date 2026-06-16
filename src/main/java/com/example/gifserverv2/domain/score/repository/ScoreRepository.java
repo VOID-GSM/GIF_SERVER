@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface ScoreRepository extends JpaRepository<Score, Long> {
     Optional<Score> findByProjectAndEvaluatorId(Project project, String evaluatorId);
     boolean existsByProjectAndEvaluatorId(Project project, String evaluatorId);
+    java.util.List<Score> findByProject(Project project);
 }
