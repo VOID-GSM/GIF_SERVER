@@ -10,6 +10,10 @@ public record UpdateSubmitRequest(
     public record AnswerRequest(
             Long fieldId,
             String textAnswer,
-            LocalDate dateAnswer
+            LocalDate dateAnswer,
+            String eventName,
+            LocalDate startDate,
+            LocalDate endDate,
+            String color
     ) {}
 }
