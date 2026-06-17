@@ -9,5 +9,7 @@ public record CurrentUserResponse(
         String role,
         String adminRole,
         String adminTeam,
-        String clientRole) {
+        String clientRole,
+        Long projectId,
+        String clientTeam) {
 }

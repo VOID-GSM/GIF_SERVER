@@ -9,6 +9,9 @@ import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
+import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
+import com.example.gifserverv2.domain.project.entity.ProjectMember;
+import java.util.Optional;
 import com.example.gifserverv2.global.security.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,13 +38,15 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final OAuthProperties oauthProperties;
+    private final ProjectMemberRepository projectMemberRepository;
 
     public AuthService(DataGsmOAuthClient dataGsmOAuthClient, UserRepository userRepository,
-                       JwtTokenProvider jwtTokenProvider, OAuthProperties oauthProperties) {
+                       JwtTokenProvider jwtTokenProvider, OAuthProperties oauthProperties, ProjectMemberRepository projectMemberRepository) {
         this.dataGsmOAuthClient = dataGsmOAuthClient;
         this.userRepository = userRepository;
         this.jwtTokenProvider = jwtTokenProvider;
         this.oauthProperties = oauthProperties;
+        this.projectMemberRepository = projectMemberRepository;
     }
 
     @Transactional
@@ -84,7 +89,6 @@ public class AuthService {
 
                 name = student.getName();
                 studentNumber = student.getStudentNumber() != null ? String.valueOf(student.getStudentNumber()).trim() : null;
-                // try to read grade if provided by DataGSM
                 try {
                     Object g = student.getClass().getMethod("getGrade").invoke(student);
                     if (g != null) grade = String.valueOf(g).trim();
@@ -141,6 +145,41 @@ public class AuthService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
     }
 
+    // Build CurrentUserResponse including projectId and clientTeam (if the user is a project member)
+    public com.example.gifserverv2.domain.auth.dto.response.CurrentUserResponse buildCurrentUserResponse(UserEntity user) {
+        Long projectId = null;
+        String clientTeam = null;
+
+        try {
+            java.util.List<ProjectMember> members = projectMemberRepository.findAllByUserId(user.getId());
+            if (members != null && !members.isEmpty()) {
+                // prefer leader membership
+                ProjectMember pick = members.stream()
+                        .filter(m -> m.getRole() == ProjectMember.MemberRole.LEADER)
+                        .findFirst()
+                        .orElse(members.get(0));
+                if (pick != null && pick.getProject() != null) {
+                    projectId = pick.getProject().getId();
+                    clientTeam = pick.getProject().getTeamName();
+                }
+            }
+        } catch (Exception ignored) {
+        }
+
+        return new com.example.gifserverv2.domain.auth.dto.response.CurrentUserResponse(
+                user.getId(),
+                user.getEmail(),
+                user.getName(),
+                user.getStudentNumber(),
+                user.getGrade(),
+                user.getEffectiveRole().name(),
+                user.getAdminRole() != null ? user.getAdminRole().name() : null,
+                user.getAdminTeam(),
+                user.getClientRole() != null ? user.getClientRole().name() : null,
+                projectId,
+                clientTeam);
+    }
+
     @Transactional
     public CurrentUserResponse updateCurrentUser(AuthenticatedUser caller, UpdateCurrentUserRequest request) {
         if (caller == null || caller.userId() == null) {
@@ -189,16 +228,7 @@ public class AuthService {
             userRepository.save(user);
         }
 
-        return new CurrentUserResponse(
-                user.getId(),
-                user.getEmail(),
-                user.getName(),
-                user.getStudentNumber(),
-                user.getGrade(),
-                user.getEffectiveRole().name(),
-                user.getAdminRole() != null ? user.getAdminRole().name() : null,
-                user.getAdminTeam(),
-                user.getClientRole() != null ? user.getClientRole().name() : null);
+        return buildCurrentUserResponse(user);
     }
 
     private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role, String grade) {
