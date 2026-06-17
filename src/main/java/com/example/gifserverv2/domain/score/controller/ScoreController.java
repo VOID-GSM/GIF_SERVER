@@ -94,7 +94,7 @@ public class ScoreController {
     }
 
     @GetMapping("/rank")
-    public ResponseEntity<java.util.List<ScoreRankResponse>> getRank(@RequestParam Integer grade) {
+    public ResponseEntity<java.util.List<ScoreRankResponse>> getRank(@RequestParam(required = false) Integer grade) {
         return ResponseEntity.ok(scoreNoticeService.getRankByGrade(grade));
     }
 }
