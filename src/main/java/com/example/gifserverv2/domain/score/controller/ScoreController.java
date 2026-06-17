@@ -8,6 +8,8 @@ import com.example.gifserverv2.domain.score.service.MajorScoreService;
 import com.example.gifserverv2.domain.score.service.ReportScoreService;
 import com.example.gifserverv2.domain.score.service.SocialScoreService;
 import lombok.RequiredArgsConstructor;
+import com.example.gifserverv2.domain.score.dto.response.ScoreRankResponse;
+import com.example.gifserverv2.domain.score.service.ScoreNoticeService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,6 +24,7 @@ public class ScoreController {
     private final MajorScoreService majorScoreService;
     private final ReportScoreService reportScoreService;
     private final SocialScoreService socialScoreService;
+    private final ScoreNoticeService scoreNoticeService;
 
     private String evaluatorId(AuthenticatedUser user) {
         return user.userId().toString();
@@ -88,5 +91,10 @@ public class ScoreController {
                                                          @RequestParam Long projectId) {
         var score = socialScoreService.getSocial(projectId, user);
         return ResponseEntity.ok(new DetailScoreResponse(score));
+    }
+
+    @GetMapping("/rank")
+    public ResponseEntity<java.util.List<ScoreRankResponse>> getRank(@RequestParam Integer grade) {
+        return ResponseEntity.ok(scoreNoticeService.getRankByGrade(grade));
     }
 }
