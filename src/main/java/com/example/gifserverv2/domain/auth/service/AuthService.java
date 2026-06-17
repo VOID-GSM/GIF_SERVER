@@ -146,27 +146,25 @@ public class AuthService {
     }
 
     // Build CurrentUserResponse including projectId and clientTeam (if the user is a project member)
-    public com.example.gifserverv2.domain.auth.dto.response.CurrentUserResponse buildCurrentUserResponse(UserEntity user) {
+    @Transactional(readOnly = true)
+    public CurrentUserResponse buildCurrentUserResponse(UserEntity user) {
         Long projectId = null;
         String clientTeam = null;
 
-        try {
-            java.util.List<ProjectMember> members = projectMemberRepository.findAllByUserId(user.getId());
-            if (members != null && !members.isEmpty()) {
-                // prefer leader membership
-                ProjectMember pick = members.stream()
-                        .filter(m -> m.getRole() == ProjectMember.MemberRole.LEADER)
-                        .findFirst()
-                        .orElse(members.get(0));
-                if (pick != null && pick.getProject() != null) {
-                    projectId = pick.getProject().getId();
-                    clientTeam = pick.getProject().getTeamName();
-                }
+        java.util.List<ProjectMember> members = projectMemberRepository.findAllByUserId(user.getId());
+        if (members != null && !members.isEmpty()) {
+            // prefer leader membership
+            ProjectMember pick = members.stream()
+                    .filter(m -> m.getRole() == ProjectMember.MemberRole.LEADER)
+                    .findFirst()
+                    .orElse(members.get(0));
+            if (pick != null && pick.getProject() != null) {
+                projectId = pick.getProject().getId();
+                clientTeam = pick.getProject().getTeamName();
             }
-        } catch (Exception ignored) {
         }
 
-        return new com.example.gifserverv2.domain.auth.dto.response.CurrentUserResponse(
+        return new CurrentUserResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getName(),
