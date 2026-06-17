@@ -33,7 +33,6 @@ public class AdminFormService {
         Form form = Form.builder()
                 .title(request.title())
                 .deadline(request.deadline())
-                .targetGrade(request.targetGrade())
                 .fields(new ArrayList<>())
                 .build();
 

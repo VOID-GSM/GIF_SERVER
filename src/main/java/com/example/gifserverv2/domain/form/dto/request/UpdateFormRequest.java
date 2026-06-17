@@ -17,5 +17,5 @@ public record UpdateFormRequest(
             String description,
             FormField.FieldType type,
             int orderIndex
-    ) {}
+    ) { }
 }
