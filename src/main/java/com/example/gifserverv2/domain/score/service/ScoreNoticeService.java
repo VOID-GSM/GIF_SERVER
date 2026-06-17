@@ -116,10 +116,22 @@ public class ScoreNoticeService {
 
         results.sort((a, b) -> Integer.compare(b.totalScore(), a.totalScore()));
 
-        int rank = 1;
+        int prevScore = Integer.MIN_VALUE;
+        int prevRank = 0;
         for (int i = 0; i < results.size(); i++) {
             ScoreRankResponse r = results.get(i);
-            results.set(i, new ScoreRankResponse(rank++, r.teamName(), r.totalScore()));
+            int currentScore = r.totalScore();
+            int currentRank;
+            if (i == 0) {
+                currentRank = 1;
+            } else if (currentScore == prevScore) {
+                currentRank = prevRank;
+            } else {
+                currentRank = i + 1; // standard competition ranking: ranks skip after ties
+            }
+            results.set(i, new ScoreRankResponse(currentRank, r.teamName(), currentScore));
+            prevScore = currentScore;
+            prevRank = currentRank;
         }
 
         return results;
