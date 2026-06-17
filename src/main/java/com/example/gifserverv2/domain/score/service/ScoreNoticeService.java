@@ -6,6 +6,7 @@ import com.example.gifserverv2.domain.score.dto.response.ScoreNoticeResponse;
 import com.example.gifserverv2.domain.score.dto.response.ScoreSummaryResponse;
 import com.example.gifserverv2.domain.score.dto.response.ScoreRankResponse;
 import com.example.gifserverv2.domain.score.entity.ScoreNotice;
+import com.example.gifserverv2.domain.score.entity.Score;
 import com.example.gifserverv2.domain.score.repository.ScoreNoticeRepository;
 import com.example.gifserverv2.domain.score.repository.ScoreRepository;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
@@ -46,19 +47,18 @@ public class ScoreNoticeService {
         }
 
         List<Project> projects = projectRepository.findAll();
-        List<com.example.gifserverv2.domain.score.entity.Score> allScores = scoreRepository.findAll();
-        // group scores by project id to avoid N+1 queries
-        java.util.Map<Long, java.util.List<com.example.gifserverv2.domain.score.entity.Score>> scoresByProject =
-                allScores.stream().collect(java.util.stream.Collectors.groupingBy(s -> s.getProject().getId()));
+        List<Score> allScores = scoreRepository.findAll();
+        Map<Long, List<Score>> scoresByProject =
+                allScores.stream().collect(Collectors.groupingBy(s -> s.getProject().getId()));
 
         List<ScoreSummaryResponse> summaries = new ArrayList<>();
 
         for (Project p : projects) {
-            java.util.List<com.example.gifserverv2.domain.score.entity.Score> scores = scoresByProject.getOrDefault(p.getId(), java.util.List.of());
+            List<Score> scores = scoresByProject.getOrDefault(p.getId(), List.of());
             int count = scores.size();
             double avg = 0.0;
             if (count > 0) {
-                double sum = scores.stream().mapToInt(com.example.gifserverv2.domain.score.entity.Score::getSubTotalScore).sum();
+                double sum = scores.stream().mapToInt(Score::getSubTotalScore).sum();
                 avg = sum / count;
             }
             summaries.add(new ScoreSummaryResponse(p.getId(), p.getTeamName(), avg, count));
@@ -88,37 +88,34 @@ public class ScoreNoticeService {
     }
 
     @Transactional(readOnly = true)
-    public java.util.List<ScoreRankResponse> getRankByGrade(Integer grade) {
-        java.util.List<Project> projects;
+    public List<ScoreRankResponse> getRankByGrade(Integer grade) {
+        List<Project> projects;
         if (grade == null) {
             projects = projectRepository.findAll();
         } else {
-            // prefer repository method that filters by grade; fallback to findAll if none
             projects = projectRepository.findByGrade(grade);
         }
 
-        java.util.List<com.example.gifserverv2.domain.score.entity.Score> allScores = scoreRepository.findAll();
-        java.util.Map<Long, java.util.List<com.example.gifserverv2.domain.score.entity.Score>> scoresByProject =
-                allScores.stream().collect(java.util.stream.Collectors.groupingBy(s -> s.getProject().getId()));
+        List<Score> allScores = scoreRepository.findAll();
+        Map<Long, List<Score>> scoresByProject =
+                allScores.stream().collect(Collectors.groupingBy(s -> s.getProject().getId()));
 
-        java.util.List<ScoreRankResponse> results = new java.util.ArrayList<>();
+        List<ScoreRankResponse> results = new ArrayList<>();
 
         for (Project p : projects) {
-            java.util.List<com.example.gifserverv2.domain.score.entity.Score> scores = scoresByProject.getOrDefault(p.getId(), java.util.List.of());
+            List<Score> scores = scoresByProject.getOrDefault(p.getId(), List.of());
             int count = scores.size();
             double avg = 0.0;
             if (count > 0) {
-                double sum = scores.stream().mapToInt(com.example.gifserverv2.domain.score.entity.Score::getSubTotalScore).sum();
+                double sum = scores.stream().mapToInt(Score::getSubTotalScore).sum();
                 avg = sum / count;
             }
             int totalScore = (int) Math.round(avg);
             results.add(new ScoreRankResponse(0, p.getTeamName(), totalScore));
         }
 
-        // sort by totalScore desc
         results.sort((a, b) -> Integer.compare(b.totalScore(), a.totalScore()));
 
-        // assign ranks (1-based)
         int rank = 1;
         for (int i = 0; i < results.size(); i++) {
             ScoreRankResponse r = results.get(i);
