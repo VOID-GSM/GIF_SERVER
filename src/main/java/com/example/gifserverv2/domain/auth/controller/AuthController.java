@@ -63,16 +63,7 @@ public class AuthController {
 
         UserEntity user = authService.requireUser(currentUser.userId());
 
-        return new CurrentUserResponse(
-                user.getId(),
-                user.getEmail(),
-                user.getName(),
-                user.getStudentNumber(),
-                user.getGrade(),
-                user.getEffectiveRole().name(),
-                user.getAdminRole() != null ? user.getAdminRole().name() : null,
-                user.getAdminTeam(),
-                user.getClientRole() != null ? user.getClientRole().name() : null);
+        return authService.buildCurrentUserResponse(user);
     }
 
     @PatchMapping("/me")
