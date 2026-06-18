@@ -115,7 +115,7 @@ public class AdminFormService {
     }
 
     public List<ListFormResponse> getDraftForms() {
-        return formRepository.findAllByAnnouncedFalse().stream()
+        return formRepository.findAllByAnnouncedFalseOrderByCreatedAtDesc().stream()
                 .map(ListFormResponse::from)
                 .toList();
     }
