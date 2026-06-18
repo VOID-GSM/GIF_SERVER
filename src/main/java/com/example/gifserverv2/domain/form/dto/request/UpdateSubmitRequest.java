@@ -10,13 +10,16 @@ public record UpdateSubmitRequest(
     public record AnswerRequest(
             Long fieldId,
             String textAnswer,
-            LocalDate dateAnswer,
+            List<CalendarEventAnswer> dateAnswer
+    ) {}
+
+    public record CalendarEventAnswer(
             String eventName,
             LocalDate startDate,
             LocalDate endDate,
             String color
     ) {
-        public AnswerRequest {
+        public CalendarEventAnswer {
             if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
                 throw new IllegalArgumentException("시작일은 종료일보다 이전이어야 합니다.");
             }

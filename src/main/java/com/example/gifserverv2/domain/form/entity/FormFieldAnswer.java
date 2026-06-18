@@ -2,8 +2,8 @@ package com.example.gifserverv2.domain.form.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "form_field_answer")
@@ -32,21 +32,9 @@ public class FormFieldAnswer {
     private String filePath;
 
     @Column
-    private LocalDate dateAnswer;
-
-    @Column
     private Long fileSize;
 
-    @Column
-    private String eventName;
-
-    @Column
-    private LocalDate startDate;
-
-    @Column
-    private LocalDate endDate;
-
-    @Column(length = 7)
-    private String color;
-
+    @OneToMany(mappedBy = "formFieldAnswer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Calendar> calendarEvents = new ArrayList<>();
 }
