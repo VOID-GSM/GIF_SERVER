@@ -17,6 +17,7 @@ public class OpenAiService {
     private String apiKey;
 
     private final ObjectMapper objectMapper;
+    private final OkHttpClient client = new OkHttpClient();
 
     public String summarize(String prompt) {
         try {
