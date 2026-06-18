@@ -36,5 +36,5 @@ public class FormFieldAnswer {
 
     @OneToMany(mappedBy = "formFieldAnswer", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<Calendar> calendarEvents = new ArrayList<>();
+    private List<CalendarEvent> calendarEvents = new ArrayList<>();
 }

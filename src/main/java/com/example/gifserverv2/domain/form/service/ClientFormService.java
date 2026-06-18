@@ -5,10 +5,7 @@ import com.example.gifserverv2.domain.form.dto.request.UpdateSubmitRequest;
 import com.example.gifserverv2.domain.form.dto.response.DetailFormResponse;
 import com.example.gifserverv2.domain.form.dto.response.ListFormResponse;
 import com.example.gifserverv2.domain.form.dto.response.SubmitDetailFormResponse;
-import com.example.gifserverv2.domain.form.entity.Form;
-import com.example.gifserverv2.domain.form.entity.FormField;
-import com.example.gifserverv2.domain.form.entity.FormFieldAnswer;
-import com.example.gifserverv2.domain.form.entity.FormSubmit;
+import com.example.gifserverv2.domain.form.entity.*;
 import com.example.gifserverv2.domain.form.exception.FormException;
 import com.example.gifserverv2.domain.form.repository.FormFieldAnswerRepository;
 import com.example.gifserverv2.domain.form.repository.FormFieldRepository;
@@ -113,8 +110,8 @@ public class ClientFormService {
 
             if (field.getType() == FormField.FieldType.CALENDAR
                     && answerReq.dateAnswer() != null) {
-                List<com.example.gifserverv2.domain.form.entity.Calendar> events = answerReq.dateAnswer().stream()
-                        .map(e -> com.example.gifserverv2.domain.form.entity.Calendar.builder()
+                List<CalendarEvent> events = answerReq.dateAnswer().stream()
+                        .map(e -> CalendarEvent.builder()
                                 .formFieldAnswer(answer)
                                 .eventName(e.eventName())
                                 .startDate(e.startDate())
@@ -189,8 +186,8 @@ public class ClientFormService {
 
             if (field.getType() == FormField.FieldType.CALENDAR
                     && answerReq.dateAnswer() != null) {
-                List<com.example.gifserverv2.domain.form.entity.Calendar> events = answerReq.dateAnswer().stream()
-                        .map(e -> com.example.gifserverv2.domain.form.entity.Calendar.builder()
+                List<CalendarEvent> events = answerReq.dateAnswer().stream()
+                        .map(e -> CalendarEvent.builder()
                                 .formFieldAnswer(answer)
                                 .eventName(e.eventName())
                                 .startDate(e.startDate())
