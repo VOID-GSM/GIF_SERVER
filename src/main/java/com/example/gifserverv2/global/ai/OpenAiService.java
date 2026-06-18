@@ -43,6 +43,9 @@ public class OpenAiService {
                     .build();
 
             try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    throw new RuntimeException("OpenAI API 호출 실패: " + response.code() + " - " + response.message());
+                }
                 String responseBody = response.body().string();
                 Map<?, ?> json = objectMapper.readValue(responseBody, Map.class);
                 List<?> choices = (List<?>) json.get("choices");
