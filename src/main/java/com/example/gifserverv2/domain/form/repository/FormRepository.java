@@ -13,6 +13,5 @@ public interface FormRepository extends JpaRepository<Form, Long> {
     List<Form> findAllByAnnouncedFalseOrderByCreatedAtDesc();
     List<Form> findAllByTargetGrade(Integer targetGrade);
     List<Form> findAllByAnnouncedTrueAndTargetGradeOrderByDeadlineAsc(Integer targetGrade);
-    List<Form> findAllByAnnouncedFalse();
     Optional<Form> findByIdAndAnnouncedFalse(Long id);
 }
