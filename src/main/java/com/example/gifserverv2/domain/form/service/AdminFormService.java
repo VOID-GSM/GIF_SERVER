@@ -3,10 +3,12 @@ package com.example.gifserverv2.domain.form.service;
 import com.example.gifserverv2.domain.form.dto.request.CreateFormRequest;
 import com.example.gifserverv2.domain.form.dto.request.CreateFormRequest.FieldRequest;
 import com.example.gifserverv2.domain.form.dto.request.UpdateFormRequest;
+import com.example.gifserverv2.domain.form.dto.response.DetailFormResponse;
 import com.example.gifserverv2.domain.form.dto.response.ListFormResponse;
 import com.example.gifserverv2.domain.form.dto.response.SubmitDetailFormResponse;
 import com.example.gifserverv2.domain.form.entity.Form;
 import com.example.gifserverv2.domain.form.entity.FormField;
+import com.example.gifserverv2.domain.form.exception.FormException;
 import com.example.gifserverv2.domain.form.repository.FormRepository;
 import com.example.gifserverv2.domain.form.repository.FormSubmitRepository;
 import com.example.gifserverv2.domain.project.entity.Project;
@@ -110,5 +112,17 @@ public class AdminFormService {
                     return SubmitDetailFormResponse.from(submit, teamName);
                 })
                 .toList();
+    }
+
+    public List<ListFormResponse> getDraftForms() {
+        return formRepository.findAllByAnnouncedFalse().stream()
+                .map(ListFormResponse::from)
+                .toList();
+    }
+
+    public DetailFormResponse getDraftForm(Long formId) {
+        Form form = formRepository.findByIdAndAnnouncedFalse(formId)
+                .orElseThrow(FormException::notFound);
+        return DetailFormResponse.from(form, null);
     }
 }

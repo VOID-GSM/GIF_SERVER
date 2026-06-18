@@ -127,4 +127,16 @@ public class FormController {
         clientFormService.updateSubmit(user.userId(), request);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/admin/draft")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<ListFormResponse>> getDraftForms() {
+        return ResponseEntity.ok(adminFormService.getDraftForms());
+    }
+
+    @GetMapping("/admin/draft/{formId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<DetailFormResponse> getDraftForm(@PathVariable Long formId) {
+        return ResponseEntity.ok(adminFormService.getDraftForm(formId));
+    }
 }

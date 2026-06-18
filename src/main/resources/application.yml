@@ -64,3 +64,6 @@ springdoc:
     tags-sorter: alpha
   api-docs:
     path: /api-docs
+
+  openai:
+    api-key: ${OPEN_API_KEY}
