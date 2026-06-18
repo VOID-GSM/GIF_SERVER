@@ -38,7 +38,7 @@ public class AiSummaryService {
     }
 
     public String summarizeFormSubmit(Long submitId) {
-        FormSubmit submit = formSubmitRepository.findById(submitId)
+        FormSubmit submit = formSubmitRepository.findByIdWithAnswersAndFields(submitId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제출 내역을 찾을 수 없습니다."));
 
         StringBuilder prompt = new StringBuilder();
