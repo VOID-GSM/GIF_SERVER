@@ -55,10 +55,12 @@ public class AiSummaryService {
                     }
                 }
                 case CALENDAR -> {
-                    if (answer.getEventName() != null) {
-                        prompt.append("- ").append(fieldTitle).append(": ")
-                                .append(answer.getEventName())
-                                .append(" (").append(answer.getStartDate()).append(" ~ ").append(answer.getEndDate()).append(")\n");
+                    if (answer.getCalendarEvents() != null && !answer.getCalendarEvents().isEmpty()) {
+                        for (var event : answer.getCalendarEvents()) {
+                            prompt.append("- ").append(fieldTitle).append(": ")
+                                    .append(event.getEventName())
+                                    .append(" (").append(event.getStartDate()).append(" ~ ").append(event.getEndDate()).append(")\n");
+                        }
                     }
                 }
                 case FILE -> {
