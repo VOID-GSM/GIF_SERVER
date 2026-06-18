@@ -200,5 +200,6 @@ public class ClientFormService {
 
             newAnswers.add(answer);
         }
+        formFieldAnswerRepository.saveAll(newAnswers);
     }
 }
