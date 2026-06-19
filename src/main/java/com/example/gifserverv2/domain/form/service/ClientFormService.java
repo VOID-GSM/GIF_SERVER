@@ -5,26 +5,22 @@ import com.example.gifserverv2.domain.form.dto.request.UpdateSubmitRequest;
 import com.example.gifserverv2.domain.form.dto.response.DetailFormResponse;
 import com.example.gifserverv2.domain.form.dto.response.ListFormResponse;
 import com.example.gifserverv2.domain.form.dto.response.SubmitDetailFormResponse;
-import com.example.gifserverv2.domain.form.entity.Form;
-import com.example.gifserverv2.domain.form.entity.FormField;
-import com.example.gifserverv2.domain.form.entity.FormFieldAnswer;
-import com.example.gifserverv2.domain.form.entity.FormSubmit;
+import com.example.gifserverv2.domain.form.entity.*;
 import com.example.gifserverv2.domain.form.exception.FormException;
 import com.example.gifserverv2.domain.form.repository.FormFieldAnswerRepository;
 import com.example.gifserverv2.domain.form.repository.FormFieldRepository;
 import com.example.gifserverv2.domain.form.repository.FormRepository;
 import com.example.gifserverv2.domain.form.repository.FormSubmitRepository;
+import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
+import com.example.gifserverv2.domain.project.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -37,21 +33,48 @@ public class ClientFormService {
     private final FormFieldAnswerRepository formFieldAnswerRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final QueryFormService queryFormService;
+    private final ProjectRepository projectRepository;
 
     public List<ListFormResponse> getAnnouncedForms(Long projectId) {
-        return formRepository.findAllByAnnouncedTrueOrderByDeadlineAsc().stream()
+        List<Form> forms = formRepository.findAllByAnnouncedTrueOrderByDeadlineAsc();
+
+        if (projectId == null) {
+            return forms.stream()
+                    .map(form -> ListFormResponse.from(form, false, null))
+                    .toList();
+        }
+
+        Map<Long, FormSubmit> submitMap = new HashMap<>();
+        for (FormSubmit submit : formSubmitRepository.findAllByProjectId(projectId)) {
+            submitMap.put(submit.getForm().getId(), submit);
+        }
+
+        return forms.stream()
                 .map(form -> {
-                    boolean submitted = formSubmitRepository
-                            .existsByFormIdAndProjectId(form.getId(), projectId);
-                    return ListFormResponse.from(form, submitted);
+                    FormSubmit submit = submitMap.get(form.getId());
+                    boolean submitted = submit != null;
+                    Boolean deadlineComplied = null;
+                    if (submit != null) {
+                        deadlineComplied = !submit.getSubmittedAt().toLocalDate().isAfter(form.getDeadline());
+                    }
+                    return ListFormResponse.from(form, submitted, deadlineComplied);
                 })
                 .toList();
     }
 
-    public DetailFormResponse getForm(Long formId) {
+    public DetailFormResponse getForm(Long formId, Long projectId) {
         Form form = queryFormService.getFormOrThrow(formId);
         if (!form.isAnnounced()) throw FormException.notAnnounced();
-        return DetailFormResponse.from(form);
+
+        Boolean deadlineComplied = null;
+        if (projectId != null) {
+            deadlineComplied = formSubmitRepository
+                    .findByFormIdAndProjectId(formId, projectId)
+                    .map(submit -> !submit.getSubmittedAt().toLocalDate().isAfter(form.getDeadline()))
+                    .orElse(null);
+        }
+
+        return DetailFormResponse.from(form, deadlineComplied);
     }
 
     @Transactional
@@ -79,12 +102,27 @@ public class ClientFormService {
             FormField field = formFieldRepository.findById(answerReq.fieldId())
                     .orElseThrow(FormException::fieldNotFound);
 
-            formFieldAnswerRepository.save(FormFieldAnswer.builder()
+            FormFieldAnswer answer = FormFieldAnswer.builder()
                     .formSubmit(submit)
                     .formField(field)
                     .textAnswer(answerReq.textAnswer())
-                    .dateAnswer(answerReq.dateAnswer())
-                    .build());
+                    .build();
+
+            if (field.getType() == FormField.FieldType.CALENDAR
+                    && answerReq.dateAnswer() != null) {
+                List<CalendarEvent> events = answerReq.dateAnswer().stream()
+                        .map(e -> CalendarEvent.builder()
+                                .formFieldAnswer(answer)
+                                .eventName(e.eventName())
+                                .startDate(e.startDate())
+                                .endDate(e.endDate())
+                                .color(e.color())
+                                .build())
+                        .toList();
+                answer.getCalendarEvents().addAll(events);
+            }
+
+            formFieldAnswerRepository.save(answer);
         });
 
         return submit.getId();
@@ -94,7 +132,12 @@ public class ClientFormService {
         FormSubmit submit = formSubmitRepository
                 .findByFormIdAndProjectId(formId, projectId)
                 .orElseThrow(FormException::notSubmitted);
-        return SubmitDetailFormResponse.from(submit);
+
+        String teamName = projectRepository.findById(projectId)
+                .map(Project::getTeamName)
+                .orElse(null);
+
+        return SubmitDetailFormResponse.from(submit, teamName);
     }
     @Transactional
     public void updateSubmit(Long userId, UpdateSubmitRequest request) {
@@ -134,14 +177,29 @@ public class ClientFormService {
             if (field.getType() == FormField.FieldType.FILE) continue;
 
             UpdateSubmitRequest.AnswerRequest answerReq = answerMap.get(field.getId());
-            newAnswers.add(FormFieldAnswer.builder()
+
+            FormFieldAnswer answer = FormFieldAnswer.builder()
                     .formSubmit(submit)
                     .formField(field)
                     .textAnswer(answerReq.textAnswer())
-                    .dateAnswer(answerReq.dateAnswer())
-                    .build());
-        }
+                    .build();
 
+            if (field.getType() == FormField.FieldType.CALENDAR
+                    && answerReq.dateAnswer() != null) {
+                List<CalendarEvent> events = answerReq.dateAnswer().stream()
+                        .map(e -> CalendarEvent.builder()
+                                .formFieldAnswer(answer)
+                                .eventName(e.eventName())
+                                .startDate(e.startDate())
+                                .endDate(e.endDate())
+                                .color(e.color())
+                                .build())
+                        .toList();
+                answer.getCalendarEvents().addAll(events);
+            }
+
+            newAnswers.add(answer);
+        }
         formFieldAnswerRepository.saveAll(newAnswers);
     }
 }

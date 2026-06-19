@@ -3,12 +3,16 @@ package com.example.gifserverv2.domain.form.service;
 import com.example.gifserverv2.domain.form.dto.request.CreateFormRequest;
 import com.example.gifserverv2.domain.form.dto.request.CreateFormRequest.FieldRequest;
 import com.example.gifserverv2.domain.form.dto.request.UpdateFormRequest;
+import com.example.gifserverv2.domain.form.dto.response.DetailFormResponse;
 import com.example.gifserverv2.domain.form.dto.response.ListFormResponse;
 import com.example.gifserverv2.domain.form.dto.response.SubmitDetailFormResponse;
 import com.example.gifserverv2.domain.form.entity.Form;
 import com.example.gifserverv2.domain.form.entity.FormField;
+import com.example.gifserverv2.domain.form.exception.FormException;
 import com.example.gifserverv2.domain.form.repository.FormRepository;
 import com.example.gifserverv2.domain.form.repository.FormSubmitRepository;
+import com.example.gifserverv2.domain.project.entity.Project;
+import com.example.gifserverv2.domain.project.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +28,7 @@ public class AdminFormService {
     private final FormRepository formRepository;
     private final FormSubmitRepository formSubmitRepository;
     private final QueryFormService queryFormService;
+    private final ProjectRepository projectRepository;
 
     @Transactional
     public Long createForm(CreateFormRequest request) {
@@ -66,7 +71,17 @@ public class AdminFormService {
                     .toList();
         }
 
-        form.update(request.title(), request.deadline(), newFields);
+        form.update(request.title(), request.description(), request.deadline(), request.targetGrade(), newFields);
+    }
+
+    public List<ListFormResponse> getAllFormsForAdmin(Integer grade) {
+        List<Form> forms = (grade == null)
+                ? formRepository.findAll()
+                : formRepository.findAllByTargetGrade(grade);
+
+        return forms.stream()
+                .map(ListFormResponse::from)
+                .toList();
     }
 
     @Transactional
@@ -90,7 +105,24 @@ public class AdminFormService {
     public List<SubmitDetailFormResponse> getSubmitListByForm(Long formId) {
         Form form = queryFormService.getFormOrThrow(formId);
         return formSubmitRepository.findAllByFormId(form.getId()).stream()
-                .map(SubmitDetailFormResponse::from)
+                .map(submit -> {
+                    String teamName = projectRepository.findById(submit.getProjectId())
+                            .map(Project::getTeamName)
+                            .orElse(null);
+                    return SubmitDetailFormResponse.from(submit, teamName);
+                })
                 .toList();
+    }
+
+    public List<ListFormResponse> getDraftForms() {
+        return formRepository.findAllByAnnouncedFalseOrderByCreatedAtDesc().stream()
+                .map(ListFormResponse::from)
+                .toList();
+    }
+
+    public DetailFormResponse getDraftForm(Long formId) {
+        Form form = formRepository.findByIdAndAnnouncedFalse(formId)
+                .orElseThrow(FormException::notFound);
+        return DetailFormResponse.from(form, null);
     }
 }

@@ -5,8 +5,11 @@ public record CurrentUserResponse(
         String email,
         String name,
         String studentNumber,
+        String grade,
         String role,
         String adminRole,
         String adminTeam,
-        String clientRole) {
+        String clientRole,
+        Long projectId,
+        String clientTeam) {
 }

@@ -30,7 +30,7 @@ jobs:
         run: ./gradlew build -x test
 
       - name: GIF_SERVER CI Discord Notification (success)
-        if: ${{ success() && secrets.DISCORD }}
+        if: ${{ success() }}
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD }}
@@ -41,7 +41,7 @@ jobs:
           username: 'GIF-SERVER-bot'
 
       - name: GIF_SERVER CI Discord Notification (failure)
-        if: ${{ failure() && secrets.DISCORD }}
+        if: ${{ failure() }}
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD }}

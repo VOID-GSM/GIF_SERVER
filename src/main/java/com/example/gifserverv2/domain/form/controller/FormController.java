@@ -56,8 +56,10 @@ public class FormController {
 
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<ListFormResponse>> getAllFormsForAdmin() {
-        return ResponseEntity.ok(adminFormService.getAllFormsForAdmin());
+    public ResponseEntity<List<ListFormResponse>> getAllFormsForAdmin(
+            @RequestParam(required = false) Integer grade
+    ) {
+        return ResponseEntity.ok(adminFormService.getAllFormsForAdmin(grade));
     }
 
     @GetMapping("/admin/submit")
@@ -72,8 +74,11 @@ public class FormController {
     }
 
     @GetMapping("/{formId}")
-    public ResponseEntity<DetailFormResponse> getForm(@PathVariable Long formId) {
-        return ResponseEntity.ok(clientFormService.getForm(formId));
+    public ResponseEntity<DetailFormResponse> getForm(
+            @PathVariable Long formId,
+            @RequestParam(required = false) Long projectId
+    ) {
+        return ResponseEntity.ok(clientFormService.getForm(formId, projectId));
     }
 
     @PostMapping("/submit")
@@ -121,5 +126,17 @@ public class FormController {
     ) {
         clientFormService.updateSubmit(user.userId(), request);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/admin/draft")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<ListFormResponse>> getDraftForms() {
+        return ResponseEntity.ok(adminFormService.getDraftForms());
+    }
+
+    @GetMapping("/admin/draft/{formId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<DetailFormResponse> getDraftForm(@PathVariable Long formId) {
+        return ResponseEntity.ok(adminFormService.getDraftForm(formId));
     }
 }

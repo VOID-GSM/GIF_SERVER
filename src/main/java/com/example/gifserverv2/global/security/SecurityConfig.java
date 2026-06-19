@@ -48,13 +48,16 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/dg/start", "/api/auth/dg/callback").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auth/google/start", "/api/auth/google/callback").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/signin").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
                         .requestMatchers("/api/score/**").authenticated()
                         .requestMatchers("/api/project/**").authenticated()
                         .requestMatchers("/api/form/**").authenticated()
+                        .requestMatchers("/api/ai/**").authenticated()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/api-docs/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

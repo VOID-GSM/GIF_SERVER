@@ -7,7 +7,9 @@ import java.util.List;
 
 public record UpdateFormRequest(
         String title,
+        String description,
         LocalDate deadline,
+        Integer targetGrade,
         List<FieldRequest> fields
 ) {
     public record FieldRequest(
@@ -15,5 +17,5 @@ public record UpdateFormRequest(
             String description,
             FormField.FieldType type,
             int orderIndex
-    ) {}
+    ) { }
 }

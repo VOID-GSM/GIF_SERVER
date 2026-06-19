@@ -7,12 +7,13 @@ import com.example.gifserverv2.domain.project.service.QueryProjectService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.RequestBody;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -25,14 +26,13 @@ public class ProjectController {
     private final QueryProjectService projectQueryService;
     private final CommandProjectService projectCommandService;
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Long> createProject(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @org.springframework.web.bind.annotation.RequestBody CreateProjectRequest request
+            @Valid @ModelAttribute CreateProjectRequest request
     ) {
         return ResponseEntity.ok(projectCommandService.createProject(user.userId(), request));
     }
-
     @GetMapping("/admin")
     public ResponseEntity<List<ListProjectResponse>> getAllProjects() {
         return ResponseEntity.ok(projectQueryService.getAllProjects());
@@ -63,17 +63,17 @@ public class ProjectController {
     public ResponseEntity<Void> updateProject(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId,
-            @ModelAttribute UpdateProjectRequest request
+            @Valid @ModelAttribute UpdateProjectRequest request
     ) {
         projectCommandService.updateProject(projectId, user.userId(), request, request.getLogo());
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{projectId}/logo")
+    @PostMapping(value = "/{projectId}/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> uploadLogo(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId,
-            @RequestParam("file") MultipartFile file
+            @RequestPart("file") MultipartFile file
     ) {
         projectCommandService.uploadLogo(projectId, user.userId(), file);
         return ResponseEntity.noContent().build();
