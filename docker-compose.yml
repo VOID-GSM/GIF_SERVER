@@ -1,0 +1,31 @@
+services:
+  app:
+    image: ghcr.io/void-gsm/gif-server:latest
+    container_name: gif-server
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      - mariadb
+      - redis
+
+  mariadb:
+    image: mariadb:11
+    container_name: gif-mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: gif
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+  redis:
+    image: redis:7
+    container_name: gif-redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  mariadb_data:
