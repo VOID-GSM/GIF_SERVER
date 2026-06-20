@@ -171,6 +171,7 @@ public class ClientFormService {
             throw FormException.fieldNotFound();
         }
 
+        List<FormFieldAnswer> newAnswers = new ArrayList<>();
         for (FormField field : fields) {
             if (!field.getForm().getId().equals(submit.getForm().getId())) {
                 throw new FormException(HttpStatus.BAD_REQUEST, "해당 양식에 존재하지 않는 항목입니다.");
@@ -185,9 +186,8 @@ public class ClientFormService {
                     .filePath(answerReq.filePath())
                     .fileSize(answerReq.fileSize())
                     .build();
-            formFieldAnswerRepository.save(answer);
 
-            if (answerReq.dateAnswer() != null) {
+            if (field.getType() == FormField.FieldType.CALENDAR && answerReq.dateAnswer() != null) {
                 answerReq.dateAnswer().forEach(eventReq -> {
                     CalendarEvent event = CalendarEvent.builder()
                             .formFieldAnswer(answer)
@@ -199,6 +199,8 @@ public class ClientFormService {
                     answer.getCalendarEvents().add(event);
                 });
             }
+            newAnswers.add(answer);
         }
+        formFieldAnswerRepository.saveAll(newAnswers);
     }
 }
