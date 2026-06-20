@@ -115,7 +115,7 @@ public class ClientFormService {
                     .build();
             formFieldAnswerRepository.save(answer);
 
-            if (answerReq.dateAnswer() != null) {
+            if (field.getType() == FormField.FieldType.CALENDAR && answerReq.dateAnswer() != null) {
                 answerReq.dateAnswer().forEach(eventReq -> {
                     CalendarEvent event = CalendarEvent.builder()
                             .formFieldAnswer(answer)
@@ -127,6 +127,7 @@ public class ClientFormService {
                     answer.getCalendarEvents().add(event);
                 });
             }
+            formFieldAnswerRepository.save(answer);
         });
 
         return submit.getId();
