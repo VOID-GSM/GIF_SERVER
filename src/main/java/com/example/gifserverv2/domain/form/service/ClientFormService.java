@@ -5,7 +5,11 @@ import com.example.gifserverv2.domain.form.dto.request.UpdateSubmitRequest;
 import com.example.gifserverv2.domain.form.dto.response.DetailFormResponse;
 import com.example.gifserverv2.domain.form.dto.response.ListFormResponse;
 import com.example.gifserverv2.domain.form.dto.response.SubmitDetailFormResponse;
-import com.example.gifserverv2.domain.form.entity.*;
+import com.example.gifserverv2.domain.form.entity.CalendarEvent;
+import com.example.gifserverv2.domain.form.entity.Form;
+import com.example.gifserverv2.domain.form.entity.FormField;
+import com.example.gifserverv2.domain.form.entity.FormFieldAnswer;
+import com.example.gifserverv2.domain.form.entity.FormSubmit;
 import com.example.gifserverv2.domain.form.exception.FormException;
 import com.example.gifserverv2.domain.form.repository.FormFieldAnswerRepository;
 import com.example.gifserverv2.domain.form.repository.FormFieldRepository;
@@ -106,23 +110,23 @@ public class ClientFormService {
                     .formSubmit(submit)
                     .formField(field)
                     .textAnswer(answerReq.textAnswer())
+                    .filePath(answerReq.filePath())
+                    .fileSize(answerReq.fileSize())
                     .build();
-
-            if (field.getType() == FormField.FieldType.CALENDAR
-                    && answerReq.dateAnswer() != null) {
-                List<CalendarEvent> events = answerReq.dateAnswer().stream()
-                        .map(e -> CalendarEvent.builder()
-                                .formFieldAnswer(answer)
-                                .eventName(e.eventName())
-                                .startDate(e.startDate())
-                                .endDate(e.endDate())
-                                .color(e.color())
-                                .build())
-                        .toList();
-                answer.getCalendarEvents().addAll(events);
-            }
-
             formFieldAnswerRepository.save(answer);
+
+            if (answerReq.dateAnswer() != null) {
+                answerReq.dateAnswer().forEach(eventReq -> {
+                    CalendarEvent event = CalendarEvent.builder()
+                            .formFieldAnswer(answer)
+                            .eventName(eventReq.eventName())
+                            .startDate(eventReq.startDate())
+                            .endDate(eventReq.endDate())
+                            .color(eventReq.color())
+                            .build();
+                    answer.getCalendarEvents().add(event);
+                });
+            }
         });
 
         return submit.getId();
@@ -139,6 +143,7 @@ public class ClientFormService {
 
         return SubmitDetailFormResponse.from(submit, teamName);
     }
+
     @Transactional
     public void updateSubmit(Long userId, UpdateSubmitRequest request) {
         FormSubmit submit = formSubmitRepository.findById(request.submitId())
@@ -153,10 +158,7 @@ public class ClientFormService {
         }
 
         List<FormFieldAnswer> existing = formFieldAnswerRepository.findAllByFormSubmitId(request.submitId());
-        List<FormFieldAnswer> toDelete = existing.stream()
-                .filter(a -> a.getFormField().getType() != FormField.FieldType.FILE)
-                .toList();
-        formFieldAnswerRepository.deleteAll(toDelete);
+        formFieldAnswerRepository.deleteAll(existing);
 
         Map<Long, UpdateSubmitRequest.AnswerRequest> answerMap = new HashMap<>();
         for (UpdateSubmitRequest.AnswerRequest answer : request.answers()) {
@@ -168,13 +170,10 @@ public class ClientFormService {
             throw FormException.fieldNotFound();
         }
 
-        List<FormFieldAnswer> newAnswers = new ArrayList<>();
         for (FormField field : fields) {
             if (!field.getForm().getId().equals(submit.getForm().getId())) {
                 throw new FormException(HttpStatus.BAD_REQUEST, "해당 양식에 존재하지 않는 항목입니다.");
             }
-
-            if (field.getType() == FormField.FieldType.FILE) continue;
 
             UpdateSubmitRequest.AnswerRequest answerReq = answerMap.get(field.getId());
 
@@ -182,24 +181,23 @@ public class ClientFormService {
                     .formSubmit(submit)
                     .formField(field)
                     .textAnswer(answerReq.textAnswer())
+                    .filePath(answerReq.filePath())
+                    .fileSize(answerReq.fileSize())
                     .build();
+            formFieldAnswerRepository.save(answer);
 
-            if (field.getType() == FormField.FieldType.CALENDAR
-                    && answerReq.dateAnswer() != null) {
-                List<CalendarEvent> events = answerReq.dateAnswer().stream()
-                        .map(e -> CalendarEvent.builder()
-                                .formFieldAnswer(answer)
-                                .eventName(e.eventName())
-                                .startDate(e.startDate())
-                                .endDate(e.endDate())
-                                .color(e.color())
-                                .build())
-                        .toList();
-                answer.getCalendarEvents().addAll(events);
+            if (answerReq.dateAnswer() != null) {
+                answerReq.dateAnswer().forEach(eventReq -> {
+                    CalendarEvent event = CalendarEvent.builder()
+                            .formFieldAnswer(answer)
+                            .eventName(eventReq.eventName())
+                            .startDate(eventReq.startDate())
+                            .endDate(eventReq.endDate())
+                            .color(eventReq.color())
+                            .build();
+                    answer.getCalendarEvents().add(event);
+                });
             }
-
-            newAnswers.add(answer);
         }
-        formFieldAnswerRepository.saveAll(newAnswers);
     }
 }
