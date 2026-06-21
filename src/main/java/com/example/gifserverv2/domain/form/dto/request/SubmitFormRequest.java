@@ -18,12 +18,13 @@ public record SubmitFormRequest(
 
     public record CalendarEventRequest(
             String eventName,
-            LocalDate startDate,
-            LocalDate endDate,
+            String startDate,
+            String endDate,
             String color
     ) {
         public CalendarEventRequest {
-            if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+            if (startDate != null && endDate != null
+                    && java.time.LocalDate.parse(startDate).isAfter(java.time.LocalDate.parse(endDate))) {
                 throw new IllegalArgumentException("시작일은 종료일보다 이전이어야 합니다.");
             }
             if (color != null && color.length() > 7) {
