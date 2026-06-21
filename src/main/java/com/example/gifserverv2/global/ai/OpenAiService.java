@@ -34,8 +34,20 @@ public class OpenAiService {
                 .retrieve()
                 .body(Map.class);
 
+        if (response == null) {
+            throw new RuntimeException("OpenAI API 응답이 비어 있습니다.");
+        }
+
         List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
+        if (choices == null || choices.isEmpty()) {
+            throw new RuntimeException("OpenAI API 응답에서 결과를 찾을 수 없습니다.");
+        }
+
         Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+        if (message == null) {
+            throw new RuntimeException("OpenAI API 응답 메시지가 비어 있습니다.");
+        }
+
         return (String) message.get("content");
     }
 }
