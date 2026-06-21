@@ -41,7 +41,7 @@ public class FormController {
     }
 
     @PostMapping("/announce")
-    @PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> announceForm(@RequestParam Long formId) {
         adminFormService.announceForm(formId);
         return ResponseEntity.noContent().build();
