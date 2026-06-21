@@ -120,8 +120,8 @@ public class ClientFormService {
                     CalendarEvent event = CalendarEvent.builder()
                             .formFieldAnswer(answer)
                             .eventName(eventReq.eventName())
-                            .startDate(eventReq.startDate())
-                            .endDate(eventReq.endDate())
+                            .startDate(java.time.LocalDate.parse(eventReq.startDate()))
+                            .endDate(java.time.LocalDate.parse(eventReq.endDate()))
                             .color(eventReq.color())
                             .build();
                     answer.getCalendarEvents().add(event);
