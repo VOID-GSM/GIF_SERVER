@@ -24,6 +24,9 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 10MB
+  jackson:
+    datetime:
+      write-dates-as-timestamps: false
 
 oauth:
   datagsm:

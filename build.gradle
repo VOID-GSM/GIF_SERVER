@@ -44,7 +44,7 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'com.mysql:mysql-connector-j'
     implementation 'org.mariadb.jdbc:mariadb-java-client'
-    implementation 'com.theokanning.openai-gpt3-java:service:0.18.0'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
 }
 
 tasks.named('test') {
