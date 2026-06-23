@@ -142,7 +142,7 @@ public class FormController {
         return ResponseEntity.ok(adminFormService.getDraftForm(formId));
     }
 
-    @GetMapping("/form/submit/{submitId}/summary")
+    @GetMapping("/submit/{submitId}/summary")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> summarizeFormSubmit(@PathVariable Long submitId) {
         return ResponseEntity.ok(aiSummaryService.summarizeFormSubmit(submitId));
