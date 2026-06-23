@@ -143,7 +143,10 @@ public class FormController {
     }
 
     @GetMapping("/submit/{submitId}/summary")
-    public ResponseEntity<String> summarizeFormSubmit(@PathVariable Long submitId) {
+    public ResponseEntity<String> summarizeFormSubmit(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long submitId
+    ) {
         return ResponseEntity.ok(aiSummaryService.summarizeFormSubmit(submitId));
     }
 }
