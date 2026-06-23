@@ -75,7 +75,7 @@ public class ProjectController {
     public ResponseEntity<Void> updateDescription(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId,
-            @RequestBody UpdateProjectDescriptionRequest request
+            @Valid @RequestBody UpdateProjectDescriptionRequest request
     ) {
         projectCommandService.updateDescription(projectId, user.userId(), request);
         return ResponseEntity.noContent().build();
