@@ -1,6 +1,5 @@
 package com.example.gifserverv2.domain.form.dto.request;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public record SubmitFormRequest(
@@ -33,10 +32,9 @@ public record SubmitFormRequest(
                 } catch (java.time.format.DateTimeParseException e) {
                     throw new IllegalArgumentException("올바르지 않은 날짜 형식입니다. yyyy-MM-dd 형식이어야 합니다.");
                 }
-
-                if (color != null && color.length() > 7) {
-                    throw new IllegalArgumentException("색상 코드는 7자 이하이어야 합니다.");
-                }
+            }
+            if (color != null && color.length() > 7) {
+                throw new IllegalArgumentException("색상 코드는 7자 이하이어야 합니다.");
             }
         }
     }
