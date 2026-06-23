@@ -1,6 +1,7 @@
 package com.example.gifserverv2.domain.project.service;
 
 import com.example.gifserverv2.domain.project.dto.request.CreateProjectRequest;
+import com.example.gifserverv2.domain.project.dto.request.UpdateProjectDescriptionRequest;
 import com.example.gifserverv2.domain.project.dto.request.UpdateProjectRequest;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.entity.ProjectMember;
@@ -137,6 +138,18 @@ public class    CommandProjectService {
 
         if (member.getRole() != ProjectMember.MemberRole.LEADER) {
             throw ProjectException.notLeader();
+        }
+    }
+
+    public void updateDescription(Long projectId, Long userId, UpdateProjectDescriptionRequest request) {
+        Project project = projectQueryService.getProjectOrThrow(projectId);
+
+        if (!projectMemberRepository.existsByProjectIdAndUserId(projectId, userId)) {
+            throw ProjectException.notMember();
+        }
+
+        if (request.description() != null) {
+            project.updateDescription(request.description());
         }
     }
 }
