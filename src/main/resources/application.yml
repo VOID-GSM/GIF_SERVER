@@ -68,5 +68,5 @@ springdoc:
   api-docs:
     path: /api-docs
 
-  openai:
-    api-key: ${OPEN_API_KEY}
+openai:
+  api-key: ${OPEN_API_KEY:}

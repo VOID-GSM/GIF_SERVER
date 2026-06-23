@@ -10,7 +10,7 @@ import java.util.Map;
 @Service
 public class OpenAiService {
 
-    @Value("${OPEN_API_KEY}")
+    @Value("${openai.api-key}")
     private String apiKey;
 
     private final RestClient restClient = RestClient.create();
