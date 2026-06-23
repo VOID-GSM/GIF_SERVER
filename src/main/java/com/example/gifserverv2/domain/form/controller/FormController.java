@@ -6,6 +6,7 @@ import com.example.gifserverv2.domain.form.service.AdminFormService;
 import com.example.gifserverv2.domain.form.service.ClientFormService;
 import com.example.gifserverv2.domain.form.service.FormFileService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
+import com.example.gifserverv2.domain.ai.service.AiSummaryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,6 +24,7 @@ public class FormController {
     private final AdminFormService adminFormService;
     private final ClientFormService clientFormService;
     private final FormFileService formFileService;
+    private final AiSummaryService aiSummaryService;
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -139,4 +141,11 @@ public class FormController {
     public ResponseEntity<DetailFormResponse> getDraftForm(@PathVariable Long formId) {
         return ResponseEntity.ok(adminFormService.getDraftForm(formId));
     }
+
+    @GetMapping("/form/submit/{submitId}/summary")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> summarizeFormSubmit(@PathVariable Long submitId) {
+        return ResponseEntity.ok(aiSummaryService.summarizeFormSubmit(submitId));
+    }
 }
+

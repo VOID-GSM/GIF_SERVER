@@ -1,5 +1,6 @@
 package com.example.gifserverv2.domain.project.controller;
 
+import com.example.gifserverv2.domain.ai.service.AiSummaryService;
 import com.example.gifserverv2.domain.project.dto.request.*;
 import com.example.gifserverv2.domain.project.dto.response.*;
 import com.example.gifserverv2.domain.project.service.CommandProjectService;
@@ -8,7 +9,7 @@ import com.example.gifserverv2.global.security.AuthenticatedUser;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.security.access.prepost.PreAuthorize;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +26,7 @@ public class ProjectController {
 
     private final QueryProjectService projectQueryService;
     private final CommandProjectService projectCommandService;
+    private final AiSummaryService aiSummaryService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Long> createProject(
@@ -84,5 +86,11 @@ public class ProjectController {
             @RequestParam String keyword
     ) {
         return ResponseEntity.ok(projectQueryService.searchUsers(keyword));
+    }
+
+    @GetMapping("/project/{projectId}/summary")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> summarizeProject(@PathVariable Long projectId) {
+        return ResponseEntity.ok(aiSummaryService.summarizeProject(projectId));
     }
 }
