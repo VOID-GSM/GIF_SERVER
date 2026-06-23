@@ -71,6 +71,16 @@ public class ProjectController {
         return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping("/{projectId}/description")
+    public ResponseEntity<Void> updateDescription(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long projectId,
+            @Valid @RequestBody UpdateProjectDescriptionRequest request
+    ) {
+        projectCommandService.updateDescription(projectId, user.userId(), request);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping(value = "/{projectId}/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> uploadLogo(
             @AuthenticationPrincipal AuthenticatedUser user,
