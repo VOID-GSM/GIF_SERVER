@@ -148,7 +148,7 @@ public class    CommandProjectService {
             throw ProjectException.notMember();
         }
 
-        if (request.description() != null) {
+        if (request != null && request.description() != null) {
             project.updateDescription(request.description());
         }
     }
