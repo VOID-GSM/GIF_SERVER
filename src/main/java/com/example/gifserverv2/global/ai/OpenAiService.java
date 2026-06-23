@@ -20,7 +20,7 @@ public class OpenAiService {
         Map<String, Object> body = Map.of(
                 "model", "gpt-4o-mini",
                 "messages", List.of(
-                        Map.of("role", "system", "content", "당신은 학교 프로젝트 관리 시스템의 AI 요약 도우미입니다. 주어진 정보를 한국어로 2-3문장으로 간결하게 요약해주세요."),
+                        Map.of("role", "system", "content", "당신은 학교 프로젝트 관리 시스템의 AI 요약 도우미입니다. 주어진 정보를 한국어로 한문장으로 간결하게 요약해주세요."),
                         Map.of("role", "user", "content", prompt)
                 ),
                 "max_tokens", 300

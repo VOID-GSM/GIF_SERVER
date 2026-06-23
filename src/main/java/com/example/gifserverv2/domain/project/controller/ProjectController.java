@@ -89,7 +89,6 @@ public class ProjectController {
     }
 
     @GetMapping("/{projectId}/summary")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> summarizeProject(@PathVariable Long projectId) {
         return ResponseEntity.ok(aiSummaryService.summarizeProject(projectId));
     }
