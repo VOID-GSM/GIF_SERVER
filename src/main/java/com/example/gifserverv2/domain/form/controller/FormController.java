@@ -143,7 +143,6 @@ public class FormController {
     }
 
     @GetMapping("/submit/{submitId}/summary")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> summarizeFormSubmit(@PathVariable Long submitId) {
         return ResponseEntity.ok(aiSummaryService.summarizeFormSubmit(submitId));
     }

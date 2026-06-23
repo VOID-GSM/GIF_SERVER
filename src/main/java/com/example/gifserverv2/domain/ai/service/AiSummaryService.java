@@ -27,7 +27,7 @@ public class AiSummaryService {
                 .orElseThrow(ProjectException::notFound);
 
         StringBuilder prompt = new StringBuilder();
-        prompt.append("다음 프로젝트 정보를 요약해주세요:\n\n");
+        prompt.append("다음 프로젝트 정보를 한줄로 요약해주세요:\n\n");
         prompt.append("프로젝트명: ").append(project.getName()).append("\n");
         prompt.append("팀명: ").append(project.getTeamName()).append("\n");
         if (project.getDescription() != null) {
@@ -42,7 +42,7 @@ public class AiSummaryService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제출 내역을 찾을 수 없습니다."));
 
         StringBuilder prompt = new StringBuilder();
-        prompt.append("다음 양식 제출 내용을 요약해주세요:\n\n");
+        prompt.append("다음 양식 제출 내용을 한줄로 요약해주세요:\n\n");
         prompt.append("양식명: ").append(submit.getForm().getTitle()).append("\n");
         prompt.append("제출 답변:\n");
 
