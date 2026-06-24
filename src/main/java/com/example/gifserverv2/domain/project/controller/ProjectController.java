@@ -107,7 +107,7 @@ public class ProjectController {
     public ResponseEntity<Void> transferLeader(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId,
-            @RequestBody TransferLeaderRequest request
+            @Valid @RequestBody TransferLeaderRequest request
     ) {
         projectCommandService.transferLeader(projectId, user.userId(), request);
         return ResponseEntity.noContent().build();
