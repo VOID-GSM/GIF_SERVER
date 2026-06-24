@@ -1,6 +1,7 @@
 package com.example.gifserverv2.domain.project.service;
 
 import com.example.gifserverv2.domain.project.dto.request.CreateProjectRequest;
+import com.example.gifserverv2.domain.project.dto.request.TransferLeaderRequest;
 import com.example.gifserverv2.domain.project.dto.request.UpdateProjectDescriptionRequest;
 import com.example.gifserverv2.domain.project.dto.request.UpdateProjectRequest;
 import com.example.gifserverv2.domain.project.entity.Project;
@@ -9,6 +10,7 @@ import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -151,5 +153,22 @@ public class    CommandProjectService {
         if (request != null && request.description() != null) {
             project.updateDescription(request.description());
         }
+    }
+
+    public void transferLeader(Long projectId, Long userId, TransferLeaderRequest request) {
+        validateLeader(projectId, userId);
+
+        ProjectMember currentLeader = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+                .orElseThrow(ProjectException::notMember);
+
+        ProjectMember newLeader = projectMemberRepository.findByProjectIdAndUserId(projectId, request.newLeaderUserId())
+                .orElseThrow(ProjectException::notMember);
+
+        if (userId.equals(request.newLeaderUserId())) {
+            throw new ProjectException(HttpStatus.BAD_REQUEST, "본인에게 팀장을 양도할 수 없습니다.");
+        }
+
+        currentLeader.changeRole(ProjectMember.MemberRole.MEMBER);
+        newLeader.changeRole(ProjectMember.MemberRole.LEADER);
     }
 }

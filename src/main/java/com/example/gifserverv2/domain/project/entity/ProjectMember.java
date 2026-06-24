@@ -29,4 +29,8 @@ public class ProjectMember {
     public enum MemberRole {
         LEADER, MEMBER
     }
+
+    public void changeRole(MemberRole role){
+        this.role = role;
+    }
 }
