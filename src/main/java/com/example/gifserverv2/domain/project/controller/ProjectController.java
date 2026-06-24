@@ -102,4 +102,14 @@ public class ProjectController {
     public ResponseEntity<String> summarizeProject(@PathVariable Long projectId) {
         return ResponseEntity.ok(aiSummaryService.summarizeProject(projectId));
     }
+
+    @PatchMapping("/{projectId}/transfer-leader")
+    public ResponseEntity<Void> transferLeader(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long projectId,
+            @Valid @RequestBody TransferLeaderRequest request
+    ) {
+        projectCommandService.transferLeader(projectId, user.userId(), request);
+        return ResponseEntity.noContent().build();
+    }
 }
