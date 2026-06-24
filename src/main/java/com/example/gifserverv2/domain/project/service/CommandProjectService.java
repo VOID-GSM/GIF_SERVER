@@ -156,17 +156,19 @@ public class    CommandProjectService {
     }
 
     public void transferLeader(Long projectId, Long userId, TransferLeaderRequest request) {
-        validateLeader(projectId, userId);
+        if (userId.equals(request.newLeaderUserId())) {
+            throw new ProjectException(HttpStatus.BAD_REQUEST, "본인에게 팀장을 양도할 수 없습니다.");
+        }
 
         ProjectMember currentLeader = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
                 .orElseThrow(ProjectException::notMember);
 
+        if (currentLeader.getRole() != ProjectMember.MemberRole.LEADER) {
+            throw ProjectException.notLeader();
+        }
+
         ProjectMember newLeader = projectMemberRepository.findByProjectIdAndUserId(projectId, request.newLeaderUserId())
                 .orElseThrow(ProjectException::notMember);
-
-        if (userId.equals(request.newLeaderUserId())) {
-            throw new ProjectException(HttpStatus.BAD_REQUEST, "본인에게 팀장을 양도할 수 없습니다.");
-        }
 
         currentLeader.changeRole(ProjectMember.MemberRole.MEMBER);
         newLeader.changeRole(ProjectMember.MemberRole.LEADER);
