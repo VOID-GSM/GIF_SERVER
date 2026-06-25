@@ -3,6 +3,7 @@ package com.example.gifserverv2.domain.auth.service;
 import com.example.gifserverv2.domain.auth.dto.request.AdminAdditionalInfoRequest;
 import com.example.gifserverv2.domain.auth.dto.request.ClientAdditionalInfoRequest;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
@@ -30,10 +31,16 @@ public class AdditionalInfoService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "선생님만 선생님 추가 정보를 입력할 수 있습니다.");
         }
 
+        validateSubjectAdminRole(request.adminRole());
+
         String adminTeam = normalizeTeam(request.adminTeam());
         validateAdminTeam(user.getId(), adminTeam);
 
-        user.updateAdminAdditionalInfo(request.adminRole(), adminTeam);
+        user.updateAdminAdditionalInfo(
+                request.adminRole(),
+                adminTeam,
+                request.gradeHead()
+        );
     }
 
     @Transactional
@@ -58,6 +65,12 @@ public class AdditionalInfoService {
         }
 
         return trimmed;
+    }
+
+    private void validateSubjectAdminRole(AdminRole adminRole) {
+        if (adminRole != AdminRole.MAJOR_TEACHER && adminRole != AdminRole.GENERAL_TEACHER) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "선생님은 전공 교과 또는 일반 교과 중 하나를 선택해야 합니다.");
+        }
     }
 
     private void validateAdminTeam(Long userId, String adminTeam) {
