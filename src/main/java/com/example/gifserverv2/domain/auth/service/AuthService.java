@@ -209,7 +209,10 @@ public class AuthService {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자 정보는 관리자(선생님)만 수정할 수 있습니다.");
             }
             AdminRole newAdminRole = request.adminRole() != null ? request.adminRole() : user.getAdminRole();
-            validateSubjectAdminRole(newAdminRole);
+            String validationMessage = AdminRole.subjectTeacherValidationMessage(newAdminRole);
+            if (validationMessage != null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, validationMessage);
+            }
             String newAdminTeam = request.adminTeam() != null ? request.adminTeam() : user.getAdminTeam();
             user.updateAdminAdditionalInfo(newAdminRole, newAdminTeam, user.isGradeHead());
             changed = true;
@@ -278,9 +281,4 @@ public class AuthService {
                 user.getClientRole() != null ? user.getClientRole().name() : null);
     }
 
-    private void validateSubjectAdminRole(AdminRole adminRole) {
-        if (adminRole != AdminRole.MAJOR_TEACHER && adminRole != AdminRole.GENERAL_TEACHER) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "선생님은 전공 교과 또는 일반 교과 중 하나를 선택해야 합니다.");
-        }
-    }
 }

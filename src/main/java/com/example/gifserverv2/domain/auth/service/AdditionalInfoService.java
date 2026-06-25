@@ -31,7 +31,10 @@ public class AdditionalInfoService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "선생님만 선생님 추가 정보를 입력할 수 있습니다.");
         }
 
-        validateSubjectAdminRole(request.adminRole());
+        String validationMessage = AdminRole.subjectTeacherValidationMessage(request.adminRole());
+        if (validationMessage != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, validationMessage);
+        }
 
         String adminTeam = normalizeTeam(request.adminTeam());
         validateAdminTeam(user.getId(), adminTeam);
@@ -65,12 +68,6 @@ public class AdditionalInfoService {
         }
 
         return trimmed;
-    }
-
-    private void validateSubjectAdminRole(AdminRole adminRole) {
-        if (adminRole != AdminRole.MAJOR_TEACHER && adminRole != AdminRole.GENERAL_TEACHER) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "선생님은 전공 교과 또는 일반 교과 중 하나를 선택해야 합니다.");
-        }
     }
 
     private void validateAdminTeam(Long userId, String adminTeam) {
