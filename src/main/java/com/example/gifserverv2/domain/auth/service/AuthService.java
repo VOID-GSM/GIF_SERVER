@@ -11,7 +11,6 @@ import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.entity.ProjectMember;
-import java.util.Optional;
 import com.example.gifserverv2.global.security.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +25,6 @@ import team.themoment.datagsm.sdk.oauth.model.Student;
 import team.themoment.datagsm.sdk.oauth.model.TokenResponse;
 import team.themoment.datagsm.sdk.oauth.model.UserInfo;
 
-import java.util.Set;
 import java.util.Map;
 
 @Service
@@ -119,9 +117,10 @@ public class AuthService {
                     user.getStudentNumber(),
                     user.getGrade(),
                     user.getRole().name(),
-                    null,
-                    null,
-                    null);
+                    user.getAdminRole() != null ? user.getAdminRole().name() : null,
+                    user.getAdminTeam(),
+                    user.isGradeHead(),
+                    user.getClientRole() != null ? user.getClientRole().name() : null);
         } catch (DataGsmException e) {
             log.warn("DataGSM OAuth error: status={}, message={}", e.getStatusCode(), e.getMessage());
         throw new ResponseStatusException(resolveStatus(e.getStatusCode()), "OAuth 인증에 실패했습니다.", e);
@@ -173,6 +172,7 @@ public class AuthService {
                 user.getEffectiveRole().name(),
                 user.getAdminRole() != null ? user.getAdminRole().name() : null,
                 user.getAdminTeam(),
+                user.isGradeHead(),
                 user.getClientRole() != null ? user.getClientRole().name() : null,
                 projectId,
                 clientTeam);
@@ -209,8 +209,9 @@ public class AuthService {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자 정보는 관리자(선생님)만 수정할 수 있습니다.");
             }
             AdminRole newAdminRole = request.adminRole() != null ? request.adminRole() : user.getAdminRole();
+            validateSubjectAdminRole(newAdminRole);
             String newAdminTeam = request.adminTeam() != null ? request.adminTeam() : user.getAdminTeam();
-            user.updateAdminAdditionalInfo(newAdminRole, newAdminTeam);
+            user.updateAdminAdditionalInfo(newAdminRole, newAdminTeam, user.isGradeHead());
             changed = true;
         }
 
@@ -273,6 +274,13 @@ public class AuthService {
                 user.getRole().name(),
                 user.getAdminRole() != null ? user.getAdminRole().name() : null,
                 user.getAdminTeam(),
+                user.isGradeHead(),
                 user.getClientRole() != null ? user.getClientRole().name() : null);
+    }
+
+    private void validateSubjectAdminRole(AdminRole adminRole) {
+        if (adminRole != AdminRole.MAJOR_TEACHER && adminRole != AdminRole.GENERAL_TEACHER) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "선생님은 전공 교과 또는 일반 교과 중 하나를 선택해야 합니다.");
+        }
     }
 }
