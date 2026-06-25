@@ -72,7 +72,6 @@ public class MajorScoreService {
     }
 
     public void updateMajor(CreateMajorScoreRequest request, AuthenticatedUser evaluator) {
-        // permission: only MAJOR_TEACHER can update major scores
         if (evaluator == null || evaluator.adminRole() == null || evaluator.adminRole() != AdminRole.MAJOR_TEACHER) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "전공 교과 선생님만 전공 점수를 수정할 수 있습니다.");
         }
