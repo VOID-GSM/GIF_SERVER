@@ -104,6 +104,11 @@ public class AuthService {
                     log.warn("Invalid studentNumber format: {}", studentNumber);
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학번 형식이 유효하지 않습니다.", e);
                 }
+
+                if ("3".equals(grade)) {
+                    log.warn("Grade 3 student login blocked: email='{}', name='{}'", email, name);
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "3학년은 로그인할 수 없습니다.");
+                }
             }
 
             UserEntity user = findOrCreateUser(email, name, studentNumber, assignedRole, grade);
