@@ -10,8 +10,7 @@ import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
-import com.example.gifserverv2.domain.project.entity.ProjectMember;
-import java.util.Optional;
+import com.example.gifserverv2.domain.project.entity.TeamMember;
 import com.example.gifserverv2.global.security.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +25,6 @@ import team.themoment.datagsm.sdk.oauth.model.Student;
 import team.themoment.datagsm.sdk.oauth.model.TokenResponse;
 import team.themoment.datagsm.sdk.oauth.model.UserInfo;
 
-import java.util.Set;
 import java.util.Map;
 
 @Service
@@ -151,11 +149,11 @@ public class AuthService {
         Long projectId = null;
         String clientTeam = null;
 
-        java.util.List<ProjectMember> members = projectMemberRepository.findAllByUserId(user.getId());
+        java.util.List<TeamMember> members = projectMemberRepository.findAllByUserId(user.getId());
         if (members != null && !members.isEmpty()) {
             // prefer leader membership
-            ProjectMember pick = members.stream()
-                    .filter(m -> m.getRole() == ProjectMember.MemberRole.LEADER)
+            TeamMember pick = members.stream()
+                    .filter(m -> m.getRole() == TeamMember.MemberRole.LEADER)
                     .findFirst()
                     .orElse(members.get(0));
             if (pick != null && pick.getProject() != null) {
