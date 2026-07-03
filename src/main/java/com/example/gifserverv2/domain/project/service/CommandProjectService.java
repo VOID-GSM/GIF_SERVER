@@ -5,7 +5,7 @@ import com.example.gifserverv2.domain.project.dto.request.TransferLeaderRequest;
 import com.example.gifserverv2.domain.project.dto.request.UpdateProjectDescriptionRequest;
 import com.example.gifserverv2.domain.project.dto.request.UpdateProjectRequest;
 import com.example.gifserverv2.domain.project.entity.Project;
-import com.example.gifserverv2.domain.project.entity.TeamMember;
+import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
@@ -45,9 +45,9 @@ public class    CommandProjectService {
         }
 
         if (request.getAddMemberIds() != null || request.getRemoveMemberIds() != null) {
-            List<TeamMember> currentMembers = projectMemberRepository.findAllByProjectId(projectId);
-            Map<Long, TeamMember> memberMap = currentMembers.stream()
-                    .collect(Collectors.toMap(TeamMember::getUserId, member -> member));
+            List<ProjectMember> currentMembers = projectMemberRepository.findAllByProjectId(projectId);
+            Map<Long, ProjectMember> memberMap = currentMembers.stream()
+                    .collect(Collectors.toMap(ProjectMember::getUserId, member -> member));
 
             if (request.getAddMemberIds() != null) {
                 request.getAddMemberIds().forEach(memberId -> {
@@ -58,10 +58,10 @@ public class    CommandProjectService {
                     if (memberMap.containsKey(memberId)) {
                         throw ProjectException.alreadyMember();
                     }
-                    TeamMember newMember = TeamMember.builder()
+                    ProjectMember newMember = ProjectMember.builder()
                             .project(project)
                             .userId(memberId)
-                            .role(TeamMember.MemberRole.MEMBER)
+                            .role(ProjectMember.MemberRole.MEMBER)
                             .build();
                     projectMemberRepository.save(newMember);
                     memberMap.put(memberId, newMember);
@@ -70,11 +70,11 @@ public class    CommandProjectService {
 
             if (request.getRemoveMemberIds() != null) {
                 request.getRemoveMemberIds().forEach(memberId -> {
-                    TeamMember member = memberMap.get(memberId);
+                    ProjectMember member = memberMap.get(memberId);
                     if (member == null) {
                         throw ProjectException.notMember();
                     }
-                    if (member.getRole() == TeamMember.MemberRole.LEADER) {
+                    if (member.getRole() == ProjectMember.MemberRole.LEADER) {
                         throw ProjectException.cannotRemoveLeader();
                     }
                     projectMemberRepository.delete(member);
@@ -99,10 +99,10 @@ public class    CommandProjectService {
             savedProject.updateLogo(logoUrl);
         }
 
-        TeamMember leader = TeamMember.builder()
+        ProjectMember leader = ProjectMember.builder()
                 .project(savedProject)
                 .userId(userId)
-                .role(TeamMember.MemberRole.LEADER)
+                .role(ProjectMember.MemberRole.LEADER)
                 .build();
         projectMemberRepository.save(leader);
 
@@ -114,10 +114,10 @@ public class    CommandProjectService {
                     throw new ProjectException(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다. userId: " + memberId);
                 }
 
-                TeamMember member = TeamMember.builder()
+                ProjectMember member = ProjectMember.builder()
                         .project(savedProject)
                         .userId(memberId)
-                        .role(TeamMember.MemberRole.MEMBER)
+                        .role(ProjectMember.MemberRole.MEMBER)
                         .build();
                 projectMemberRepository.save(member);
             }
@@ -145,10 +145,10 @@ public class    CommandProjectService {
     }
 
     private void validateLeader(Long projectId, Long userId) {
-        TeamMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+        ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
                 .orElseThrow(ProjectException::notMember);
 
-        if (member.getRole() != TeamMember.MemberRole.LEADER) {
+        if (member.getRole() != ProjectMember.MemberRole.LEADER) {
             throw ProjectException.notLeader();
         }
     }
@@ -170,17 +170,17 @@ public class    CommandProjectService {
             throw new ProjectException(HttpStatus.BAD_REQUEST, "본인에게 팀장을 양도할 수 없습니다.");
         }
 
-        TeamMember currentLeader = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+        ProjectMember currentLeader = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
                 .orElseThrow(ProjectException::notMember);
 
-        if (currentLeader.getRole() != TeamMember.MemberRole.LEADER) {
+        if (currentLeader.getRole() != ProjectMember.MemberRole.LEADER) {
             throw ProjectException.notLeader();
         }
 
-        TeamMember newLeader = projectMemberRepository.findByProjectIdAndUserId(projectId, request.newLeaderUserId())
+        ProjectMember newLeader = projectMemberRepository.findByProjectIdAndUserId(projectId, request.newLeaderUserId())
                 .orElseThrow(ProjectException::notMember);
 
-        currentLeader.changeRole(TeamMember.MemberRole.MEMBER);
-        newLeader.changeRole(TeamMember.MemberRole.LEADER);
+        currentLeader.changeRole(ProjectMember.MemberRole.MEMBER);
+        newLeader.changeRole(ProjectMember.MemberRole.LEADER);
     }
 }

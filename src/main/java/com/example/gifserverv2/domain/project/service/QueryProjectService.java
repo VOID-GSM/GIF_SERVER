@@ -4,7 +4,7 @@ import com.example.gifserverv2.domain.project.dto.response.DetailProjectResponse
 import com.example.gifserverv2.domain.project.dto.response.ListProjectResponse;
 import com.example.gifserverv2.domain.project.dto.response.UserSearchResponse;
 import com.example.gifserverv2.domain.project.entity.Project;
-import com.example.gifserverv2.domain.project.entity.TeamMember;
+import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
@@ -59,7 +59,7 @@ public class QueryProjectService {
     public DetailProjectResponse getProject(Long projectId) {
         Project project = getProjectOrThrow(projectId);
         List<Long> memberIds = project.getMembers().stream()
-                .map(TeamMember::getUserId)
+                .map(ProjectMember::getUserId)
                 .toList();
 
         Map<Long, UserEntity> userMap = userRepository.findAllById(memberIds).stream()
