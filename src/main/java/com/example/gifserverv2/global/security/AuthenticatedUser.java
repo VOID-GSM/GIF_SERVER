@@ -12,5 +12,6 @@ public record AuthenticatedUser(
         Role role,
         AdminRole adminRole,
         String adminTeam,
+        boolean gradeHead,
         ClientRole clientRole) {
 }
