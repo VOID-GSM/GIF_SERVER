@@ -8,9 +8,5 @@ import java.util.Optional;
 
 public interface UserSearchRepository extends JpaRepository<UserEntity, Long> {
 
-    Optional<UserEntity> findByEmail(String email);
-
-    boolean existsByAdminTeamAndIdNotAndAdminRoleIsNotNull(String adminTeam, Long id);
-
     List<UserEntity> findByNameContainingOrStudentNumberContaining(String name, String studentNumber);
 }

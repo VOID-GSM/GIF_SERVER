@@ -149,7 +149,6 @@ public class AuthService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
     }
 
-    // Build CurrentUserResponse including projectId and clientTeam (if the user is a project member)
     @Transactional(readOnly = true)
     public CurrentUserResponse buildCurrentUserResponse(UserEntity user) {
         Long projectId = null;
@@ -157,7 +156,6 @@ public class AuthService {
 
         java.util.List<ProjectMember> members = projectMemberRepository.findAllByUserId(user.getId());
         if (members != null && !members.isEmpty()) {
-            // prefer leader membership
             ProjectMember pick = members.stream()
                     .filter(m -> m.getRole() == ProjectMember.MemberRole.LEADER)
                     .findFirst()
@@ -250,7 +248,6 @@ public class AuthService {
                 .orElseGet(() -> userRepository.save(new UserEntity(email, name, studentNumber, role, grade)));
     }
 
-    // Backwards-compatible overload: when grade is not known, delegate with null grade
     private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role) {
         return findOrCreateUser(email, name, studentNumber, role, null);
     }

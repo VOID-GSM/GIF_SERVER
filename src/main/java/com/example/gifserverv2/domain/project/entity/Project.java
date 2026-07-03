@@ -41,6 +41,5 @@ public class Project {
     public void updateTeamName(String teamName) { this.teamName = teamName; }
     public void updateDescription(String description) { this.description = description; }
     public void updateLogo(String logo) { this.logo = logo; }
-    public void deleteLogo() { this.logo = null; }
     public void updateGrade(Integer grade) { this.grade = grade; }
 }

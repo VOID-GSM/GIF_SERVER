@@ -1,7 +1,6 @@
 package com.example.gifserverv2.domain.form.service;
 
 import com.example.gifserverv2.domain.form.dto.request.CreateFormRequest;
-import com.example.gifserverv2.domain.form.dto.request.CreateFormRequest.FieldRequest;
 import com.example.gifserverv2.domain.form.dto.request.UpdateFormRequest;
 import com.example.gifserverv2.domain.form.dto.response.DetailFormResponse;
 import com.example.gifserverv2.domain.form.dto.response.ListFormResponse;
@@ -94,12 +93,6 @@ public class AdminFormService {
     public void deleteForm(Long formId) {
         Form form = queryFormService.getFormOrThrow(formId);
         formRepository.delete(form);
-    }
-
-    public List<ListFormResponse> getAllFormsForAdmin() {
-        return formRepository.findAll().stream()
-                .map(ListFormResponse::from)
-                .toList();
     }
 
     public List<SubmitDetailFormResponse> getSubmitListByForm(Long formId) {
