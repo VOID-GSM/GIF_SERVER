@@ -12,7 +12,7 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class    Project {
+public class Project {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

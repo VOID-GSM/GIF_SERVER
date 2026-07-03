@@ -9,6 +9,7 @@ import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class    CommandProjectService {
     private final ProjectMemberRepository projectMemberRepository;
     private final QueryProjectService projectQueryService;
     private final ProjectLogoStorageService projectLogoStorageService;
+    private final UserRepository userRepository;
 
     public void updateProject(Long projectId, Long userId, UpdateProjectRequest request, MultipartFile logo) {
         Project project = projectQueryService.getProjectOrThrow(projectId);
@@ -49,6 +51,10 @@ public class    CommandProjectService {
 
             if (request.getAddMemberIds() != null) {
                 request.getAddMemberIds().forEach(memberId -> {
+
+                    if (!userRepository.existsById(memberId)) {
+                        throw new ProjectException(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다. userId: " + memberId);
+                    }
                     if (memberMap.containsKey(memberId)) {
                         throw ProjectException.alreadyMember();
                     }
@@ -103,6 +109,10 @@ public class    CommandProjectService {
         if (request.memberIds() != null) {
             for (Long memberId : request.memberIds()) {
                 if (memberId.equals(userId)) continue;
+
+                if (!userRepository.existsById(memberId)) {
+                    throw new ProjectException(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다. userId: " + memberId);
+                }
 
                 ProjectMember member = ProjectMember.builder()
                         .project(savedProject)
