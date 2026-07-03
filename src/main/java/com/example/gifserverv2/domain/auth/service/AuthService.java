@@ -10,7 +10,7 @@ import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
-import com.example.gifserverv2.domain.project.entity.TeamMember;
+import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.global.security.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,6 +104,11 @@ public class AuthService {
                     log.warn("Invalid studentNumber format: {}", studentNumber);
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학번 형식이 유효하지 않습니다.", e);
                 }
+
+                if ("3".equals(grade)) {
+                    log.warn("Grade 3 student login blocked: email='{}', name='{}'", email, name);
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "3학년은 로그인할 수 없습니다.");
+                }
             }
 
             UserEntity user = findOrCreateUser(email, name, studentNumber, assignedRole, grade);
@@ -117,9 +122,10 @@ public class AuthService {
                     user.getStudentNumber(),
                     user.getGrade(),
                     user.getRole().name(),
-                    null,
-                    null,
-                    null);
+                    user.getAdminRole() != null ? user.getAdminRole().name() : null,
+                    user.getAdminTeam(),
+                    user.isGradeHead(),
+                    user.getClientRole() != null ? user.getClientRole().name() : null);
         } catch (DataGsmException e) {
             log.warn("DataGSM OAuth error: status={}, message={}", e.getStatusCode(), e.getMessage());
         throw new ResponseStatusException(resolveStatus(e.getStatusCode()), "OAuth 인증에 실패했습니다.", e);
@@ -171,6 +177,7 @@ public class AuthService {
                 user.getEffectiveRole().name(),
                 user.getAdminRole() != null ? user.getAdminRole().name() : null,
                 user.getAdminTeam(),
+                user.isGradeHead(),
                 user.getClientRole() != null ? user.getClientRole().name() : null,
                 projectId,
                 clientTeam);
@@ -207,8 +214,12 @@ public class AuthService {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자 정보는 관리자(선생님)만 수정할 수 있습니다.");
             }
             AdminRole newAdminRole = request.adminRole() != null ? request.adminRole() : user.getAdminRole();
+            String validationMessage = AdminRole.subjectTeacherValidationMessage(newAdminRole);
+            if (validationMessage != null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, validationMessage);
+            }
             String newAdminTeam = request.adminTeam() != null ? request.adminTeam() : user.getAdminTeam();
-            user.updateAdminAdditionalInfo(newAdminRole, newAdminTeam);
+            user.updateAdminAdditionalInfo(newAdminRole, newAdminTeam, user.isGradeHead());
             changed = true;
         }
 
@@ -271,6 +282,8 @@ public class AuthService {
                 user.getRole().name(),
                 user.getAdminRole() != null ? user.getAdminRole().name() : null,
                 user.getAdminTeam(),
+                user.isGradeHead(),
                 user.getClientRole() != null ? user.getClientRole().name() : null);
     }
+
 }
