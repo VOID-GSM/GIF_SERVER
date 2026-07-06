@@ -112,4 +112,32 @@ public class ProjectController {
         projectCommandService.transferLeader(projectId, user.userId(), request);
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/{projectId}/assign-advisor")
+    public ResponseEntity<AssignAdvisorTeacherResponse> assignAdvisorTeacher(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long projectId,
+            @Valid @RequestBody AssignAdvisorTeacherRequest request
+    ) {
+        return ResponseEntity.ok(projectCommandService.assignAdvisorTeacher(projectId, user.userId(), request));
+    }
+
+    @PostMapping("/{projectId}/assign-advisor/{requestId}/accept")
+    public ResponseEntity<AssignAdvisorTeacherResponse> acceptAdvisorAssignment(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long projectId,
+            @PathVariable Long requestId
+    ) {
+        return ResponseEntity.ok(projectCommandService.acceptAdvisorAssignment(projectId, requestId, user.userId()));
+    }
+
+    @PostMapping("/{projectId}/assign-advisor/{requestId}/cancel")
+    public ResponseEntity<Void> cancelAdvisorAssignment(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long projectId,
+            @PathVariable Long requestId
+    ) {
+        projectCommandService.cancelAdvisorAssignment(projectId, requestId, user.userId());
+        return ResponseEntity.noContent().build();
+    }
 }

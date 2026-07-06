@@ -138,8 +138,16 @@ public class AuthService {
     }
 
     public void assertAllowedRedirectUri(String redirectUri) {
-        if (redirectUri == null || redirectUri.isBlank() || !oauthProperties.getDatagsm().getRedirectUris().contains(redirectUri)) {
+        if (redirectUri == null || redirectUri.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "허용되지 않은 redirectUri입니다.");
+        }
+        java.util.List<String> allowed = java.util.Arrays.stream((oauthProperties.getDatagsm().getRedirectUris() == null ? "" : oauthProperties.getDatagsm().getRedirectUris()).split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .toList();
+        if (!allowed.contains(redirectUri)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "허용되지 않은 redirectUri입니다.");
+        }
         }
     }
 

@@ -59,14 +59,17 @@ public class GoogleOAuthFlowService {
     }
 
     public URI createLoginRedirect(String redirectUri) {
-        // enforce allowed redirect URIs for Google (list from application.yml / env)
-        if (oauthProperties.getGoogle().getRedirectUris() == null || oauthProperties.getGoogle().getRedirectUris().isEmpty()) {
+        // enforce allowed redirect URIs for Google (comma-separated string in application.yml / env)
+        java.util.List<String> allowed = java.util.Arrays.stream((oauthProperties.getGoogle().getRedirectUris() == null ? "" : oauthProperties.getGoogle().getRedirectUris()).split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .toList();
+
+        if (allowed.isEmpty()) {
             // fall back to global check (datagsm) if google list not configured
             authService.assertAllowedRedirectUri(redirectUri);
-        } else {
-            if (!oauthProperties.getGoogle().getRedirectUris().contains(redirectUri)) {
-                throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "허용되지 않은 redirectUri입니다.");
-            }
+        } else if (!allowed.contains(redirectUri)) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "허용되지 않은 redirectUri입니다.");
         }
 
         String state = UUID.randomUUID().toString();
