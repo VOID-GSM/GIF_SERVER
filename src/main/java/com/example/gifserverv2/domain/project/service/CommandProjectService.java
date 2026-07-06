@@ -1,13 +1,17 @@
 package com.example.gifserverv2.domain.project.service;
 
 import com.example.gifserverv2.domain.project.dto.request.CreateProjectRequest;
+import com.example.gifserverv2.domain.project.dto.request.TransferLeaderRequest;
+import com.example.gifserverv2.domain.project.dto.request.UpdateProjectDescriptionRequest;
 import com.example.gifserverv2.domain.project.dto.request.UpdateProjectRequest;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,6 +29,7 @@ public class    CommandProjectService {
     private final ProjectMemberRepository projectMemberRepository;
     private final QueryProjectService projectQueryService;
     private final ProjectLogoStorageService projectLogoStorageService;
+    private final UserRepository userRepository;
 
     public void updateProject(Long projectId, Long userId, UpdateProjectRequest request, MultipartFile logo) {
         Project project = projectQueryService.getProjectOrThrow(projectId);
@@ -46,6 +51,10 @@ public class    CommandProjectService {
 
             if (request.getAddMemberIds() != null) {
                 request.getAddMemberIds().forEach(memberId -> {
+
+                    if (!userRepository.existsById(memberId)) {
+                        throw new ProjectException(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다. userId: " + memberId);
+                    }
                     if (memberMap.containsKey(memberId)) {
                         throw ProjectException.alreadyMember();
                     }
@@ -101,6 +110,10 @@ public class    CommandProjectService {
             for (Long memberId : request.memberIds()) {
                 if (memberId.equals(userId)) continue;
 
+                if (!userRepository.existsById(memberId)) {
+                    throw new ProjectException(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다. userId: " + memberId);
+                }
+
                 ProjectMember member = ProjectMember.builder()
                         .project(savedProject)
                         .userId(memberId)
@@ -138,5 +151,36 @@ public class    CommandProjectService {
         if (member.getRole() != ProjectMember.MemberRole.LEADER) {
             throw ProjectException.notLeader();
         }
+    }
+
+    public void updateDescription(Long projectId, Long userId, UpdateProjectDescriptionRequest request) {
+        Project project = projectQueryService.getProjectOrThrow(projectId);
+
+        if (!projectMemberRepository.existsByProjectIdAndUserId(projectId, userId)) {
+            throw ProjectException.notMember();
+        }
+
+        if (request != null && request.description() != null) {
+            project.updateDescription(request.description());
+        }
+    }
+
+    public void transferLeader(Long projectId, Long userId, TransferLeaderRequest request) {
+        if (userId.equals(request.newLeaderUserId())) {
+            throw new ProjectException(HttpStatus.BAD_REQUEST, "본인에게 팀장을 양도할 수 없습니다.");
+        }
+
+        ProjectMember currentLeader = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+                .orElseThrow(ProjectException::notMember);
+
+        if (currentLeader.getRole() != ProjectMember.MemberRole.LEADER) {
+            throw ProjectException.notLeader();
+        }
+
+        ProjectMember newLeader = projectMemberRepository.findByProjectIdAndUserId(projectId, request.newLeaderUserId())
+                .orElseThrow(ProjectException::notMember);
+
+        currentLeader.changeRole(ProjectMember.MemberRole.MEMBER);
+        newLeader.changeRole(ProjectMember.MemberRole.LEADER);
     }
 }

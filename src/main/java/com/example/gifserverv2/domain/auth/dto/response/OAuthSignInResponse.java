@@ -10,5 +10,6 @@ public record OAuthSignInResponse(
         String role,
         String adminRole,
         String adminTeam,
+        boolean gradeHead,
         String clientRole) {
 }

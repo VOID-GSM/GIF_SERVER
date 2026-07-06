@@ -33,6 +33,9 @@ public class UserEntity {
     @Column(name = "admin_team")
     private String adminTeam;
 
+    @Column(name = "grade_head", nullable = false, columnDefinition = "boolean default false")
+    private boolean gradeHead = false;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "client_role")
     private ClientRole clientRole;
@@ -87,6 +90,10 @@ public class UserEntity {
         return adminTeam;
     }
 
+    public boolean isGradeHead() {
+        return gradeHead;
+    }
+
     public ClientRole getClientRole() {
         return clientRole;
     }
@@ -115,9 +122,10 @@ public class UserEntity {
         this.role = role;
     }
 
-    public void updateAdminAdditionalInfo(AdminRole adminRole, String adminTeam) {
+    public void updateAdminAdditionalInfo(AdminRole adminRole, String adminTeam, boolean gradeHead) {
         this.adminRole = adminRole;
         this.adminTeam = adminTeam;
+        this.gradeHead = gradeHead;
         if (adminRole != null) {
             this.role = Role.ADMIN;
         } else if (this.clientRole != null) {

@@ -7,7 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
-import com.example.gifserverv2.domain.user.entity.AdminRole;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
@@ -19,8 +18,7 @@ public class ReportScoreService {
     private final ScoreSupport support;
 
     public void createReport(CreateReportScoreRequest request, AuthenticatedUser evaluator) {
-        // permission: only grade leader can assign report scores
-        if (evaluator == null || evaluator.adminRole() == null || evaluator.adminRole() != AdminRole.GRADE_HEAD) {
+        if (evaluator == null || !evaluator.gradeHead()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "보고서 영역 점수는 학년부 부장만 부여할 수 있습니다.");
         }
 
@@ -69,8 +67,7 @@ public class ReportScoreService {
     }
 
     public void updateReport(CreateReportScoreRequest request, AuthenticatedUser evaluator) {
-        // permission: only grade leader can update report scores
-        if (evaluator == null || evaluator.adminRole() == null || evaluator.adminRole() != AdminRole.GRADE_HEAD) {
+        if (evaluator == null || !evaluator.gradeHead()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "보고서 영역 점수는 학년부 부장만 수정할 수 있습니다.");
         }
 
