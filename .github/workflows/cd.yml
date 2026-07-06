@@ -26,7 +26,8 @@ jobs:
             docker image prune -f
 
       - name: GIF_SERVER CD Discord Notification (success)
-        if: ${{ success() && secrets.DISCORD_GIF_SERVER != '' }}
+        if: ${{ success() }}
+        continue-on-error: true
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_GIF_SERVER }}
@@ -37,7 +38,8 @@ jobs:
           username: 'GIF-SERVER-bot'
 
       - name: GIF_SERVER CD Discord Notification (failure)
-        if: ${{ failure() && secrets.DISCORD_GIF_SERVER != '' }}
+        if: ${{ failure() }}
+        continue-on-error: true
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_GIF_SERVER }}
