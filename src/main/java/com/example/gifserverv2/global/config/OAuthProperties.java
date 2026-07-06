@@ -19,14 +19,13 @@ public class OAuthProperties {
     public void setGoogle(Google google) { this.google = google; }
 
     public static class Datagsm {
-        private String redirectUris = "";
-        public String getRedirectUris() { return redirectUris; }
-        public void setRedirectUris(String redirectUris) { this.redirectUris = redirectUris; }
+        private List<String> redirectUris = new ArrayList<>();
+        public List<String> getRedirectUris() { return redirectUris; }
+        public void setRedirectUris(List<String> redirectUris) { this.redirectUris = redirectUris; }
     }
-
     public static class Google {
-        private String redirectUris = "";
-        public String getRedirectUris() { return redirectUris; }
-        public void setRedirectUris(String redirectUris) { this.redirectUris = redirectUris; }
+        private List<String> redirectUris = new ArrayList<>();
+        public List<String> getRedirectUris() { return redirectUris; }
+        public void setRedirectUris(List<String> redirectUris) { this.redirectUris = redirectUris; }
     }
 }
