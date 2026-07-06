@@ -22,7 +22,7 @@ jobs:
             git fetch origin main
             git checkout main
             git reset --hard origin/main
-            docker-compose up -d --build
+            docker compose up -d --build
             docker image prune -f
 
       - name: GIF_SERVER CD Discord Notification (success)
@@ -31,6 +31,7 @@ jobs:
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_GIF_SERVER }}
+          ack_no_webhook: true
           title: '✅ 성공 했다능! ✅'
           status: ${{ job.status }}
           description: '서버 배포 성공'
@@ -43,6 +44,7 @@ jobs:
         uses: sarisia/actions-status-discord@v1
         with:
           webhook: ${{ secrets.DISCORD_GIF_SERVER }}
+          ack_no_webhook: true
           title: '❗️ 실패했다능! ❗️'
           status: ${{ job.status }}
           description: '서버 배포 실패'
