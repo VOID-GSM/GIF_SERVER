@@ -23,6 +23,8 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
+import java.util.List;
+import java.util.Arrays;
 
 @Service
 public class GoogleOAuthFlowService {
@@ -59,16 +61,11 @@ public class GoogleOAuthFlowService {
     }
 
     public URI createLoginRedirect(String redirectUri) {
-        // enforce allowed redirect URIs for Google (comma-separated string in application.yml / env)
-        java.util.List<String> allowed = java.util.Arrays.stream((oauthProperties.getGoogle().getRedirectUris() == null ? "" : oauthProperties.getGoogle().getRedirectUris()).split(","))
-                .map(String::trim)
-                .filter(s -> !s.isBlank())
-                .toList();
+        List<String> allowed = oauthProperties.getGoogle().getRedirectUris();
 
-        if (allowed.isEmpty()) {
-            // fall back to global check (datagsm) if google list not configured
+        if (allowed == null || allowed.isEmpty()) {
             authService.assertAllowedRedirectUri(redirectUri);
-        } else if (!allowed.contains(redirectUri)) {
+        } else if (!allowed.contains(redirectUri.trim())) {
             throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "허용되지 않은 redirectUri입니다.");
         }
 
