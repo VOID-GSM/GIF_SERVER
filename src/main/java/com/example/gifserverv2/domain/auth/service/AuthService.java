@@ -26,6 +26,7 @@ import team.themoment.datagsm.sdk.oauth.model.TokenResponse;
 import team.themoment.datagsm.sdk.oauth.model.UserInfo;
 
 import java.util.Map;
+import java.util.List;
 
 @Service
 public class AuthService {
@@ -138,7 +139,12 @@ public class AuthService {
     }
 
     public void assertAllowedRedirectUri(String redirectUri) {
-        if (redirectUri == null || redirectUri.isBlank() || !oauthProperties.getDatagsm().getRedirectUris().contains(redirectUri)) {
+        if (redirectUri == null || redirectUri.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "허용되지 않은 redirectUri입니다.");
+        }
+        List<String> allowed = oauthProperties.getDatagsm().getRedirectUris();
+
+        if (!allowed.contains(redirectUri)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "허용되지 않은 redirectUri입니다.");
         }
     }
@@ -154,7 +160,7 @@ public class AuthService {
         Long projectId = null;
         String clientTeam = null;
 
-        java.util.List<ProjectMember> members = projectMemberRepository.findAllByUserId(user.getId());
+        List<ProjectMember> members = projectMemberRepository.findAllByUserId(user.getId());
         if (members != null && !members.isEmpty()) {
             ProjectMember pick = members.stream()
                     .filter(m -> m.getRole() == ProjectMember.MemberRole.LEADER)

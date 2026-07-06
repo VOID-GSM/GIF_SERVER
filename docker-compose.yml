@@ -1,0 +1,9 @@
+services:
+  gif-backend:
+    build: .
+    container_name: gif-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
