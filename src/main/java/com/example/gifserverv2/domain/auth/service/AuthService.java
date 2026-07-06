@@ -148,7 +148,6 @@ public class AuthService {
         if (!allowed.contains(redirectUri)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "허용되지 않은 redirectUri입니다.");
         }
-        }
     }
 
     @Transactional(readOnly = true)
