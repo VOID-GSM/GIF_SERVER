@@ -7,3 +7,5 @@ services:
       - "8080:8080"
     env_file:
       - .env
+    extra_hosts:
+      - "oauth.authorization.datagsm.kr:3.35.143.88"
