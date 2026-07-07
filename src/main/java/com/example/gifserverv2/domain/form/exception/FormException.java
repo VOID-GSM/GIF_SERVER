@@ -26,14 +26,17 @@ public class FormException extends ResponseStatusException {
     }
 
     public static FormException alreadySubmitted() {
+
         return new FormException(HttpStatus.CONFLICT, "이미 제출한 양식입니다.");
     }
 
     public static FormException notAnnounced() {
+
         return new FormException(HttpStatus.BAD_REQUEST, "공지되지 않은 양식입니다.");
     }
 
     public static FormException notSubmitted() {
+
         return new FormException(HttpStatus.NOT_FOUND, "제출한 양식이 없습니다.");
     }
 

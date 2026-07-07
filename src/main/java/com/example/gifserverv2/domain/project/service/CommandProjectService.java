@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class    CommandProjectService {
+public class CommandProjectService {
 
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
@@ -51,10 +51,6 @@ public class    CommandProjectService {
 
             if (request.getAddMemberIds() != null) {
                 request.getAddMemberIds().forEach(memberId -> {
-
-                    if (!userRepository.existsById(memberId)) {
-                        throw new ProjectException(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다. userId: " + memberId);
-                    }
                     if (memberMap.containsKey(memberId)) {
                         throw ProjectException.alreadyMember();
                     }

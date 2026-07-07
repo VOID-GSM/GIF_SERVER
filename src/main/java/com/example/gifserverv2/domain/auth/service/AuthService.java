@@ -26,6 +26,7 @@ import team.themoment.datagsm.sdk.oauth.model.TokenResponse;
 import team.themoment.datagsm.sdk.oauth.model.UserInfo;
 
 import java.util.Map;
+import java.util.List;
 
 @Service
 public class AuthService {
@@ -138,7 +139,12 @@ public class AuthService {
     }
 
     public void assertAllowedRedirectUri(String redirectUri) {
-        if (redirectUri == null || redirectUri.isBlank() || !oauthProperties.getDatagsm().getRedirectUris().contains(redirectUri)) {
+        if (redirectUri == null || redirectUri.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "허용되지 않은 redirectUri입니다.");
+        }
+        List<String> allowed = oauthProperties.getDatagsm().getRedirectUris();
+
+        if (!allowed.contains(redirectUri)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "허용되지 않은 redirectUri입니다.");
         }
     }
@@ -149,15 +155,13 @@ public class AuthService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
     }
 
-    // Build CurrentUserResponse including projectId and clientTeam (if the user is a project member)
     @Transactional(readOnly = true)
     public CurrentUserResponse buildCurrentUserResponse(UserEntity user) {
         Long projectId = null;
         String clientTeam = null;
 
-        java.util.List<ProjectMember> members = projectMemberRepository.findAllByUserId(user.getId());
+        List<ProjectMember> members = projectMemberRepository.findAllByUserId(user.getId());
         if (members != null && !members.isEmpty()) {
-            // prefer leader membership
             ProjectMember pick = members.stream()
                     .filter(m -> m.getRole() == ProjectMember.MemberRole.LEADER)
                     .findFirst()
@@ -250,7 +254,6 @@ public class AuthService {
                 .orElseGet(() -> userRepository.save(new UserEntity(email, name, studentNumber, role, grade)));
     }
 
-    // Backwards-compatible overload: when grade is not known, delegate with null grade
     private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role) {
         return findOrCreateUser(email, name, studentNumber, role, null);
     }
