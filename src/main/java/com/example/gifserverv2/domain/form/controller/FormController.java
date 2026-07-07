@@ -27,13 +27,13 @@ public class FormController {
     private final AiSummaryService aiSummaryService;
 
     @PostMapping
-    // @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Long> createForm(@RequestBody CreateFormRequest request) {
         return ResponseEntity.ok(adminFormService.createForm(request));
     }
 
     @PatchMapping("/update")
-    // @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> updateForm(
             @RequestParam Long formId,
             @RequestBody UpdateFormRequest request
@@ -43,21 +43,21 @@ public class FormController {
     }
 
     @PostMapping("/announce")
-    // @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> announceForm(@RequestParam Long formId) {
         adminFormService.announceForm(formId);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/delete")
-    // @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteForm(@RequestParam Long formId) {
         adminFormService.deleteForm(formId);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/admin")
-    // @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ListFormResponse>> getAllFormsForAdmin(
             @RequestParam(required = false) Integer grade
     ) {
@@ -65,7 +65,7 @@ public class FormController {
     }
 
     @GetMapping("/admin/submit")
-    // @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<SubmitDetailFormResponse>> getSubmitList(@RequestParam Long formId) {
         return ResponseEntity.ok(adminFormService.getSubmitListByForm(formId));
     }
@@ -131,13 +131,13 @@ public class FormController {
     }
 
     @GetMapping("/admin/draft")
-    // @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ListFormResponse>> getDraftForms() {
         return ResponseEntity.ok(adminFormService.getDraftForms());
     }
 
     @GetMapping("/admin/draft/{formId}")
-    // @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<DetailFormResponse> getDraftForm(@PathVariable Long formId) {
         return ResponseEntity.ok(adminFormService.getDraftForm(formId));
     }
