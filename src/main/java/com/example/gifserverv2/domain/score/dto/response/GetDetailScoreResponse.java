@@ -4,7 +4,7 @@ import com.example.gifserverv2.domain.score.entity.Score;
 import lombok.Getter;
 
 @Getter
-public class DetailScoreResponse {
+public class GetDetailScoreResponse {
     private Long id;
     private String evaluatorId;
     private Integer technicalCompleteness;
@@ -22,7 +22,7 @@ public class DetailScoreResponse {
     private Integer subTotalScore;
     private int rank;
 
-    public DetailScoreResponse(Score s) {
+    public GetDetailScoreResponse(Score s) {
         this.id = s.getId();
         this.evaluatorId = s.getEvaluatorId();
         this.technicalCompleteness = s.getTechnicalCompleteness();
