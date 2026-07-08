@@ -33,7 +33,10 @@ public class QueryProjectService {
         return userSearchRepository
                 .findByNameContainingOrStudentNumberContaining(keyword, keyword)
                 .stream()
-                .map(UserSearchResponse::from)
+                .map(user -> {
+                    boolean hasTeam = projectMemberRepository.existsByUserId(user.getId());
+                    return UserSearchResponse.from(user, hasTeam);
+                })
                 .toList();
     }
 

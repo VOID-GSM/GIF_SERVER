@@ -114,6 +114,10 @@ public class CommandProjectService {
                     throw new ProjectException(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다. userId: " + memberId);
                 }
 
+                if (projectMemberRepository.existsByUserId(memberId)) {
+                    throw new ProjectException(HttpStatus.CONFLICT, "이미 다른 프로젝트에 소속된 팀원입니다.");
+                }
+
                 ProjectMember member = ProjectMember.builder()
                         .project(savedProject)
                         .userId(memberId)
