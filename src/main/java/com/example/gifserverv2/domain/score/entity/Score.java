@@ -117,6 +117,36 @@ public class Score {
                 + safe(this.presentationCommunity);
     }
 
+    public void updateMajorScore(Integer technicalCompleteness, Integer socialValueMajor,
+                            Integer aiUtilizationMajor, Integer presentationMajor) {
+        this.technicalCompleteness = technicalCompleteness;
+        this.socialValueMajor = socialValueMajor;
+        this.aiUtilizationMajor = aiUtilizationMajor;
+        this.presentationMajor = presentationMajor;
+
+        calculateSubTotalScore();
+    }
+
+    public void updateReportScore(Integer reportWriting, Integer reportContent,
+                                  Integer aiUsagePlan, Integer creativity) {
+        this.reportWriting = reportWriting;
+        this.reportContent = reportContent;
+        this.aiUsagePlan = aiUsagePlan;
+        this.creativity = creativity;
+
+        calculateSubTotalScore();
+    }
+
+    public void updateSocialScore(Integer userExperience, Integer socialValueCommunity,
+                                  Integer aiUtilizationCommunity, Integer presentationCommunity) {
+        this.userExperience = userExperience;
+        this.socialValueCommunity = socialValueCommunity;
+        this.aiUtilizationCommunity = aiUtilizationCommunity;
+        this.presentationCommunity = presentationCommunity;
+
+        calculateSubTotalScore();
+    }
+
     private int safe(Integer value) {
         return Objects.requireNonNullElse(value, 0);
     }
