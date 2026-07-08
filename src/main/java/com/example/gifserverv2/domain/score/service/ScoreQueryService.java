@@ -13,6 +13,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +30,26 @@ public class ScoreQueryService {
 
         List<Score> scores = scoreRepository.findByProject(project);
 
+        return calculateProjectAverage(projectId, scores);
+    }
+
+    public List<GetProjectFieldAverageResponse> getAllProjectFieldAverages() {
+        List<Project> projects = projectRepository.findAll();
+        List<Score> allScores = scoreRepository.findAll();
+
+        Map<Long, List<Score>> scoresByProject = allScores.stream()
+                .collect(Collectors.groupingBy(score -> score.getProject().getId()));
+
+        List<GetProjectFieldAverageResponse> responses = new ArrayList<>();
+        for (Project p : projects) {
+            List<Score> scores = scoresByProject.getOrDefault(p.getId(), List.of());
+            responses.add(calculateProjectAverage(p.getId(), scores));
+        }
+
+        return responses;
+    }
+
+    private GetProjectFieldAverageResponse calculateProjectAverage(Long projectId, List<Score> scores) {
         if (scores.isEmpty()) {
             return new GetProjectFieldAverageResponse(projectId, 0, 0, 0, 0);
         }
@@ -38,12 +60,13 @@ public class ScoreQueryService {
                 .average().orElse(0.0);
 
         double reportAvg = scores.stream()
-                .mapToDouble(score -> score.getReportWriting() + score.getReportContent() + score.getAiUsagePlan())
+                .mapToDouble(score -> score.getReportWriting() + score.getReportContent()
+                        + score.getAiUsagePlan() + score.getCreativity())
                 .average().orElse(0.0);
 
         double communityAvg = scores.stream()
-                .mapToDouble(score -> score.getCreativity() + score.getUserExperience()
-                        + score.getSocialValueCommunity() + score.getAiUtilizationCommunity() + score.getPresentationCommunity())
+                .mapToDouble(score -> score.getUserExperience() + score.getSocialValueCommunity()
+                        + score.getAiUtilizationCommunity() + score.getPresentationCommunity())
                 .average().orElse(0.0);
 
         double grandTotalAvg = majorAvg + reportAvg + communityAvg;
@@ -55,16 +78,5 @@ public class ScoreQueryService {
                 (int) Math.round(communityAvg),
                 (int) Math.round(grandTotalAvg)
         );
-    }
-
-    public List<GetProjectFieldAverageResponse> getAllProjectFieldAverages() {
-        List<Project> projects = projectRepository.findAll();
-        List<GetProjectFieldAverageResponse> responses = new ArrayList<>();
-
-        for (Project p : projects) {
-            responses.add(getProjectFieldAverages(p.getId()));
-        }
-
-        return responses;
     }
 }
