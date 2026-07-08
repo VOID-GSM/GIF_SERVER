@@ -30,10 +30,14 @@ public class QueryProjectService {
     private final UserRepository userRepository;
 
     public List<UserSearchResponse> searchUsers(String keyword) {
-        return userSearchRepository
-                .findByNameContainingOrStudentNumberContaining(keyword, keyword)
-                .stream()
-                .map(UserSearchResponse::from)
+        List<UserEntity> users = userSearchRepository.findByNameContainingOrStudentNumberContaining(keyword, keyword);
+        List<Long> userIds = users.stream().map(UserEntity::getId).toList();
+        java.util.Set<Long> userIdsWithTeam = projectMemberRepository.findAllByUserIdIn(userIds).stream()
+                .map(ProjectMember::getUserId)
+                .collect(Collectors.toSet());
+
+        return users.stream()
+                .map(user -> UserSearchResponse.from(user, userIdsWithTeam.contains(user.getId())))
                 .toList();
     }
 
