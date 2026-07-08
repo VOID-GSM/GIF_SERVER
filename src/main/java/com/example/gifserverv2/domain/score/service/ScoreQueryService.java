@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -54,5 +55,16 @@ public class ScoreQueryService {
                 (int) Math.round(communityAvg),
                 (int) Math.round(grandTotalAvg)
         );
+    }
+
+    public List<GetProjectFieldAverageResponse> getAllProjectFieldAverages() {
+        List<Project> projects = projectRepository.findAll();
+        List<GetProjectFieldAverageResponse> responses = new ArrayList<>();
+
+        for (Project p : projects) {
+            responses.add(getProjectFieldAverages(p.getId()));
+        }
+
+        return responses;
     }
 }
