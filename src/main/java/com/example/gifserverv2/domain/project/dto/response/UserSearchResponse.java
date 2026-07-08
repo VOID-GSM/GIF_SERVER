@@ -5,13 +5,15 @@ import com.example.gifserverv2.domain.user.entity.UserEntity;
 public record UserSearchResponse(
         Long userId,
         String name,
-        String studentNumber
+        String studentNumber,
+        boolean hasTeam
 ) {
-    public static UserSearchResponse from(UserEntity user) {
+    public static UserSearchResponse from(UserEntity user, boolean hasTeam) {
         return new UserSearchResponse(
                 user.getId(),
                 user.getName(),
-                user.getStudentNumber()
+                user.getStudentNumber(),
+                hasTeam
         );
     }
 }

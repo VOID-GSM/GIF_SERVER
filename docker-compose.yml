@@ -11,9 +11,14 @@ services:
       - "host.docker.internal:host-gateway"
     networks:
       - gifnet
+    volumes:
+      - uploads_data:/app/uploads
 
 networks:
   gifnet:
     driver: bridge
     driver_opts:
       com.docker.network.driver.mtu: 1400
+
+volumes:
+  uploads_data:
