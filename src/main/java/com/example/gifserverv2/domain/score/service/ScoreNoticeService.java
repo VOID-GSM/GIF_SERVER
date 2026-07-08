@@ -88,52 +88,39 @@ public class ScoreNoticeService {
     }
 
     @Transactional(readOnly = true)
-    public List<GetScoreRankResponse> getRankByGrade(Integer grade) {
-        List<Project> projects;
-        if (grade == null) {
-            projects = projectRepository.findAll();
-        } else {
-            projects = projectRepository.findByGrade(grade);
-        }
-
+    public List<GetScoreRankResponse> getRankByGradeAndRank(Integer grade, Integer targetRank) {
+        List<Project> projects = (grade == null) ? projectRepository.findAll() : projectRepository.findByGrade(grade);
         List<Score> allScores = scoreRepository.findAll();
-        Map<Long, List<Score>> scoresByProject =
-                allScores.stream().collect(Collectors.groupingBy(s -> s.getProject().getId()));
+        Map<Long, List<Score>> scoresByProject = allScores.stream().collect(Collectors.groupingBy(s -> s.getProject().getId()));
 
         List<GetScoreRankResponse> results = new ArrayList<>();
-
         for (Project p : projects) {
             List<Score> scores = scoresByProject.getOrDefault(p.getId(), List.of());
-            int count = scores.size();
-            double avg = 0.0;
-            if (count > 0) {
-                double sum = scores.stream().mapToInt(Score::getSubTotalScore).sum();
-                avg = sum / count;
-            }
-            int totalScore = (int) Math.round(avg);
-            results.add(new GetScoreRankResponse(0, p.getTeamName(), totalScore));
+            double avg = scores.isEmpty() ? 0.0 : scores.stream().mapToInt(Score::getSubTotalScore).sum() / (double) scores.size();
+            results.add(new GetScoreRankResponse(0, p.getTeamName(), (int) Math.round(avg)));
         }
 
         results.sort((a, b) -> Integer.compare(b.totalScore(), a.totalScore()));
 
+        List<GetScoreRankResponse> rankedResults = new ArrayList<>();
         int prevScore = Integer.MIN_VALUE;
         int prevRank = 0;
         for (int i = 0; i < results.size(); i++) {
             GetScoreRankResponse r = results.get(i);
             int currentScore = r.totalScore();
-            int currentRank;
-            if (i == 0) {
-                currentRank = 1;
-            } else if (currentScore == prevScore) {
-                currentRank = prevRank;
-            } else {
-                currentRank = i + 1; // standard competition ranking: ranks skip after ties
-            }
-            results.set(i, new GetScoreRankResponse(currentRank, r.teamName(), currentScore));
+            int currentRank = (i == 0) ? 1 : (currentScore == prevScore) ? prevRank : i + 1;
+
+            rankedResults.add(new GetScoreRankResponse(currentRank, r.teamName(), currentScore));
             prevScore = currentScore;
             prevRank = currentRank;
         }
 
-        return results;
+        if (targetRank != null) {
+            return rankedResults.stream()
+                    .filter(r -> r.rank() == targetRank)
+                    .collect(Collectors.toList());
+        }
+
+        return rankedResults;
     }
 }
