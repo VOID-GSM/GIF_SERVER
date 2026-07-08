@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,18 +56,18 @@ public class ScoreQueryService {
         }
 
         double majorAvg = scores.stream()
-                .mapToDouble(score -> score.getTechnicalCompleteness() + score.getSocialValueMajor()
-                        + score.getAiUtilizationMajor() + score.getPresentationMajor())
+                .mapToDouble(score -> safe(score.getTechnicalCompleteness()) + safe(score.getSocialValueMajor())
+                        + safe(score.getAiUtilizationMajor()) + safe(score.getPresentationMajor()))
                 .average().orElse(0.0);
 
         double reportAvg = scores.stream()
-                .mapToDouble(score -> score.getReportWriting() + score.getReportContent()
-                        + score.getAiUsagePlan() + score.getCreativity())
+                .mapToDouble(score -> safe(score.getReportWriting()) + safe(score.getReportContent())
+                        + safe(score.getAiUsagePlan()) + safe(score.getCreativity()))
                 .average().orElse(0.0);
 
         double communityAvg = scores.stream()
-                .mapToDouble(score -> score.getUserExperience() + score.getSocialValueCommunity()
-                        + score.getAiUtilizationCommunity() + score.getPresentationCommunity())
+                .mapToDouble(score -> safe(score.getUserExperience()) + safe(score.getSocialValueCommunity())
+                        + safe(score.getAiUtilizationCommunity()) + safe(score.getPresentationCommunity()))
                 .average().orElse(0.0);
 
         double grandTotalAvg = majorAvg + reportAvg + communityAvg;
@@ -78,5 +79,9 @@ public class ScoreQueryService {
                 (int) Math.round(communityAvg),
                 (int) Math.round(grandTotalAvg)
         );
+    }
+
+    private int safe(Integer value) {
+        return Objects.requireNonNullElse(value, 0);
     }
 }
