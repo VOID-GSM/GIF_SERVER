@@ -2,9 +2,9 @@ package com.example.gifserverv2.domain.score.service;
 
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
-import com.example.gifserverv2.domain.score.dto.response.ScoreNoticeResponse;
-import com.example.gifserverv2.domain.score.dto.response.ScoreSummaryResponse;
-import com.example.gifserverv2.domain.score.dto.response.ScoreRankResponse;
+import com.example.gifserverv2.domain.score.dto.response.GetScoreNoticeResponse;
+import com.example.gifserverv2.domain.score.dto.response.GetScoreSummaryResponse;
+import com.example.gifserverv2.domain.score.dto.response.GetScoreRankResponse;
 import com.example.gifserverv2.domain.score.entity.ScoreNotice;
 import com.example.gifserverv2.domain.score.entity.Score;
 import com.example.gifserverv2.domain.score.repository.ScoreNoticeRepository;
@@ -51,7 +51,7 @@ public class ScoreNoticeService {
         Map<Long, List<Score>> scoresByProject =
                 allScores.stream().collect(Collectors.groupingBy(s -> s.getProject().getId()));
 
-        List<ScoreSummaryResponse> summaries = new ArrayList<>();
+        List<GetScoreSummaryResponse> summaries = new ArrayList<>();
 
         for (Project p : projects) {
             List<Score> scores = scoresByProject.getOrDefault(p.getId(), List.of());
@@ -61,7 +61,7 @@ public class ScoreNoticeService {
                 double sum = scores.stream().mapToInt(Score::getSubTotalScore).sum();
                 avg = sum / count;
             }
-            summaries.add(new ScoreSummaryResponse(p.getId(), p.getTeamName(), avg, count));
+            summaries.add(new GetScoreSummaryResponse(p.getId(), p.getTeamName(), avg, count));
         }
 
         try {
@@ -74,21 +74,21 @@ public class ScoreNoticeService {
     }
 
     @Transactional(readOnly = true)
-    public ScoreNoticeResponse getCurrentNotice() {
+    public GetScoreNoticeResponse getCurrentNotice() {
         return scoreNoticeRepository.findTopByOrderByPublishedAtDesc()
                 .map(n -> {
                     try {
-                        List<ScoreSummaryResponse> summaries = objectMapper.readValue(n.getSnapshot(), new TypeReference<List<ScoreSummaryResponse>>(){});
-                        return new ScoreNoticeResponse(true, n.getPublishedAt(), summaries);
+                        List<GetScoreSummaryResponse> summaries = objectMapper.readValue(n.getSnapshot(), new TypeReference<List<GetScoreSummaryResponse>>(){});
+                        return new GetScoreNoticeResponse(true, n.getPublishedAt(), summaries);
                     } catch (Exception e) {
                         throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "공지 데이터 파싱 중 오류가 발생했습니다.", e);
                     }
                 })
-                .orElseGet(() -> new ScoreNoticeResponse(false, null, List.of()));
+                .orElseGet(() -> new GetScoreNoticeResponse(false, null, List.of()));
     }
 
     @Transactional(readOnly = true)
-    public List<ScoreRankResponse> getRankByGrade(Integer grade) {
+    public List<GetScoreRankResponse> getRankByGrade(Integer grade) {
         List<Project> projects;
         if (grade == null) {
             projects = projectRepository.findAll();
@@ -100,7 +100,7 @@ public class ScoreNoticeService {
         Map<Long, List<Score>> scoresByProject =
                 allScores.stream().collect(Collectors.groupingBy(s -> s.getProject().getId()));
 
-        List<ScoreRankResponse> results = new ArrayList<>();
+        List<GetScoreRankResponse> results = new ArrayList<>();
 
         for (Project p : projects) {
             List<Score> scores = scoresByProject.getOrDefault(p.getId(), List.of());
@@ -111,7 +111,7 @@ public class ScoreNoticeService {
                 avg = sum / count;
             }
             int totalScore = (int) Math.round(avg);
-            results.add(new ScoreRankResponse(0, p.getTeamName(), totalScore));
+            results.add(new GetScoreRankResponse(0, p.getTeamName(), totalScore));
         }
 
         results.sort((a, b) -> Integer.compare(b.totalScore(), a.totalScore()));
@@ -119,7 +119,7 @@ public class ScoreNoticeService {
         int prevScore = Integer.MIN_VALUE;
         int prevRank = 0;
         for (int i = 0; i < results.size(); i++) {
-            ScoreRankResponse r = results.get(i);
+            GetScoreRankResponse r = results.get(i);
             int currentScore = r.totalScore();
             int currentRank;
             if (i == 0) {
@@ -129,7 +129,7 @@ public class ScoreNoticeService {
             } else {
                 currentRank = i + 1; // standard competition ranking: ranks skip after ties
             }
-            results.set(i, new ScoreRankResponse(currentRank, r.teamName(), currentScore));
+            results.set(i, new GetScoreRankResponse(currentRank, r.teamName(), currentScore));
             prevScore = currentScore;
             prevRank = currentRank;
         }
