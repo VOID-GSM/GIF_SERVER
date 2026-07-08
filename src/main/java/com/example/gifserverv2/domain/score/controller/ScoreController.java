@@ -12,6 +12,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import com.example.gifserverv2.domain.score.dto.response.GetDetailScoreResponse;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/score")
 @RequiredArgsConstructor
@@ -102,7 +104,10 @@ public class ScoreController {
     }
 
     @GetMapping("/rank")
-    public ResponseEntity<java.util.List<GetScoreRankResponse>> getRank(@RequestParam(required = false) Integer grade) {
-        return ResponseEntity.ok(scoreNoticeService.getRankByGrade(grade));
+    public ResponseEntity<List<GetScoreRankResponse>> getRank(
+            @RequestParam(required = false) Integer grade,
+            @RequestParam(required = false) Integer rank) {
+
+        return ResponseEntity.ok(scoreNoticeService.getRankByGradeAndRank(grade, rank));
     }
 }
