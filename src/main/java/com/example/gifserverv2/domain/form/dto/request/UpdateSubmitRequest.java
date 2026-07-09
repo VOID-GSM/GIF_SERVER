@@ -1,5 +1,7 @@
 package com.example.gifserverv2.domain.form.dto.request;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -13,7 +15,7 @@ public record UpdateSubmitRequest(
             List<CalendarEventRequest> dateAnswer,
             String filePath,
             Long fileSize,
-            @io.swagger.v3.oas.annotations.media.Schema(description = "원본 파일명") String originalFileName
+            @Schema(description = "원본 파일명") String originalFileName
     ) {}
 
     public record CalendarEventRequest(
