@@ -15,10 +15,10 @@ public class AdvisorAssignmentRequest {
     private Long projectId;
 
     @Column(name = "requested_by", nullable = false)
-    private Long requestedBy; // master user id
+    private Long requestedBy;
 
     @Column(name = "advisor_user_id", nullable = false)
-    private Long advisorUserId; // requested teacher id
+    private Long advisorUserId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
