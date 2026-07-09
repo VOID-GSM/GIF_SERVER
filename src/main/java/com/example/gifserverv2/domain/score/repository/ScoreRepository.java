@@ -12,10 +12,11 @@ import java.util.Optional;
 public interface ScoreRepository extends JpaRepository<Score, Long> {
     Optional<Score> findByProjectAndEvaluatorId(Project project, String evaluatorId);
 
-    boolean existsByProjectAndEvaluatorId(Project project, String evaluatorId);
-
     java.util.List<Score> findByProject(Project project);
 
     @Query("SELECT s FROM Score s WHERE s.project.id IN :projectIds")
     List<Score> findByProjectIds(@Param("projectIds") List<Long> projectIds);
+
+    @Query("SELECT s FROM Score s JOIN FETCH s.project")
+    List<Score> findAllWithProject();
 }

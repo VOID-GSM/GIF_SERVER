@@ -42,7 +42,8 @@ public class ScoreQueryService {
         validateAdminAuthority(user);
 
         List<Project> projects = projectRepository.findAll();
-        List<Score> allScores = scoreRepository.findAll();
+
+        List<Score> allScores = scoreRepository.findAllWithProject();
 
         Map<Long, List<Score>> scoresByProject = allScores.stream()
                 .collect(Collectors.groupingBy(score -> score.getProject().getId()));
