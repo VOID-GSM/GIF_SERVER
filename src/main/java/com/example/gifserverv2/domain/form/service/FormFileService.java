@@ -54,6 +54,11 @@ public class FormFileService {
 
         String savedUrl = fileStorageService.save(file, "form");
         String originalFileName = file.getOriginalFilename();
+        if (originalFileName != null) {
+            originalFileName = org.springframework.util.StringUtils.getFilename(
+                    org.springframework.util.StringUtils.cleanPath(originalFileName)
+            );
+        }
 
         formFieldAnswerRepository.save(FormFieldAnswer.builder()
                 .formSubmit(submit)
