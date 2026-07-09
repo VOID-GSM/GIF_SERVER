@@ -90,8 +90,19 @@ public class ScoreNoticeService {
     @Transactional(readOnly = true)
     public List<GetScoreRankResponse> getRankByGradeAndRank(Integer grade, Integer targetRank) {
         List<Project> projects = (grade == null) ? projectRepository.findAll() : projectRepository.findByGrade(grade);
-        List<Score> allScores = scoreRepository.findAll();
-        Map<Long, List<Score>> scoresByProject = allScores.stream().collect(Collectors.groupingBy(s -> s.getProject().getId()));
+
+        if (projects.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> projectIds = projects.stream()
+                .map(Project::getId)
+                .collect(Collectors.toList());
+
+        List<Score> targetScores = scoreRepository.findByProjectIds(projectIds);
+
+        Map<Long, List<Score>> scoresByProject = targetScores.stream()
+                .collect(Collectors.groupingBy(s -> s.getProject().getId()));
 
         List<GetScoreRankResponse> results = new ArrayList<>();
         for (Project p : projects) {
