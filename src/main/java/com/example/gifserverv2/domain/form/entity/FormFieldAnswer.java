@@ -34,6 +34,9 @@ public class FormFieldAnswer {
     @Column
     private Long fileSize;
 
+    @Column
+    private String originalFileName;
+
     @OneToMany(mappedBy = "formFieldAnswer", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<CalendarEvent> calendarEvents = new ArrayList<>();

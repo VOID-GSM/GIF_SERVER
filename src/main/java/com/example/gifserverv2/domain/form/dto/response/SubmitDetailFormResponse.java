@@ -21,6 +21,7 @@ public record SubmitDetailFormResponse(
             String textAnswer,
             String filePath,
             Long fileSize,
+            String originalFileName,
             List<CalendarEventResponse> dateAnswer
     ) {}
 
@@ -53,6 +54,7 @@ public record SubmitDetailFormResponse(
                             a.getTextAnswer(),
                             a.getFilePath(),
                             a.getFileSize(),
+                            a.getOriginalFileName(),
                             events
                     );
                 })
