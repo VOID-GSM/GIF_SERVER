@@ -155,17 +155,17 @@ public class ClientFormService {
             throw new FormException(HttpStatus.FORBIDDEN, "본인이 제출한 양식만 수정할 수 있습니다.");
         }
 
-        if (submit.getForm().isDeadlinePassed()) {
-            throw FormException.deadlinePassed();
+        if (request.answers() == null) {
+            throw new FormException(HttpStatus.BAD_REQUEST, "답변 목록은 필수입니다.");
         }
-
-        List<FormFieldAnswer> existing = formFieldAnswerRepository.findAllByFormSubmitId(request.submitId());
-        formFieldAnswerRepository.deleteAll(existing);
 
         Map<Long, UpdateSubmitAnswerRequest> answerMap = new HashMap<>();
         for (UpdateSubmitAnswerRequest answer : request.answers()) {
             answerMap.put(answer.fieldId(), answer);
         }
+
+        List<FormFieldAnswer> existing = formFieldAnswerRepository.findAllByFormSubmitId(request.submitId());
+        formFieldAnswerRepository.deleteAll(existing);
 
         List<FormField> fields = formFieldRepository.findAllById(answerMap.keySet());
         if (fields.size() != answerMap.size()) {
