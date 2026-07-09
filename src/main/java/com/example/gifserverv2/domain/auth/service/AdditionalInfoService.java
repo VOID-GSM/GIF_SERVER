@@ -36,7 +36,7 @@ public class AdditionalInfoService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, validationMessage);
         }
 
-        String name = request.name();
+        String name = (request.name() != null && !request.name().isBlank()) ? request.name() : user.getName();
         String adminTeam = normalizeTeam(request.adminTeam());
         validateAdminTeam(user.getId(), adminTeam);
 
