@@ -1,6 +1,6 @@
 package com.example.gifserverv2.domain.score.controller;
 
-import com.example.gifserverv2.domain.score.dto.response.ScoreNoticeResponse;
+import com.example.gifserverv2.domain.score.dto.response.GetScoreNoticeResponse;
 import com.example.gifserverv2.domain.score.service.ScoreNoticeService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +24,7 @@ public class ScoreNoticeController {
     }
 
     @GetMapping
-    public ScoreNoticeResponse getCurrent() {
+    public GetScoreNoticeResponse getCurrent() {
         return scoreNoticeService.getCurrentNotice();
     }
 }

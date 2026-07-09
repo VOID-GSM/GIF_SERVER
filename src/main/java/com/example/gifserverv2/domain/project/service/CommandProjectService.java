@@ -9,6 +9,7 @@ import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,12 +23,13 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class    CommandProjectService {
+public class CommandProjectService {
 
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final QueryProjectService projectQueryService;
     private final ProjectLogoStorageService projectLogoStorageService;
+    private final UserRepository userRepository;
 
     public void updateProject(Long projectId, Long userId, UpdateProjectRequest request, MultipartFile logo) {
         Project project = projectQueryService.getProjectOrThrow(projectId);
@@ -101,8 +103,19 @@ public class    CommandProjectService {
         projectMemberRepository.save(leader);
 
         if (request.memberIds() != null) {
-            for (Long memberId : request.memberIds()) {
-                if (memberId.equals(userId)) continue;
+            List<Long> memberIds = request.memberIds().stream()
+                    .filter(id -> !id.equals(userId))
+                    .toList();
+
+            List<ProjectMember> existingMembers = projectMemberRepository.findAllByUserIdIn(memberIds);
+            if (!existingMembers.isEmpty()) {
+                throw new ProjectException(HttpStatus.CONFLICT, "이미 다른 프로젝트에 소속된 팀원이 포함되어 있습니다.");
+            }
+
+            for (Long memberId : memberIds) {
+                if (!userRepository.existsById(memberId)) {
+                    throw new ProjectException(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다. userId: " + memberId);
+                }
 
                 ProjectMember member = ProjectMember.builder()
                         .project(savedProject)

@@ -32,6 +32,7 @@ public class JwtTokenProvider {
                 .claim("name", user.getName())
                 .claim("studentNumber", user.getStudentNumber())
                 .claim("role", user.getEffectiveRole().name())
+                .claim("gradeHead", user.isGradeHead())
                 .issuedAt(now)
                 .expiration(expiration)
                 .signWith(secretKey);

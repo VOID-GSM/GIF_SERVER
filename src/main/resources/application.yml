@@ -19,7 +19,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MariaDBDialect
+        dialect: org.hibernate.dialect.MySQLDialect
   servlet:
     multipart:
       max-file-size: 10MB
@@ -32,8 +32,7 @@ oauth:
   datagsm:
     client-id: ${DATAGSM_CLIENT_ID:}
     client-secret: ${DATAGSM_CLIENT_SECRET:}
-    redirect-uris:
-      - ${DATAGSM_REDIRECT_URIS:http://localhost:8080/api/auth/dg/callback}
+    redirect-uris: ${DATAGSM_REDIRECT_URIS:}
   google:
     client-id: ${OAUTH_GOOGLE_CLIENT_ID:}
     client-secret: ${OAUTH_GOOGLE_CLIENT_SECRET:}
@@ -41,8 +40,7 @@ oauth:
     token-uri: https://oauth2.googleapis.com/token
     user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
     scopes: ${OAUTH_GOOGLE_SCOPES:openid email profile}
-    redirect-uris:
-      - ${OAUTH_GOOGLE_REDIRECT_URIS}
+    redirect-uris: ${OAUTH_GOOGLE_REDIRECT_URIS:}
 
 jwt:
   secret: ${JWT_SECRET}

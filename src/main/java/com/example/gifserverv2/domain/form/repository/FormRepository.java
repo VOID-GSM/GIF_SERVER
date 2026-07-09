@@ -9,9 +9,7 @@ import java.util.Optional;
 public interface FormRepository extends JpaRepository<Form, Long> {
 
     List<Form> findAllByAnnouncedTrueOrderByDeadlineAsc();
-    List<Form> findAllByOrderByCreatedAtDesc();
     List<Form> findAllByAnnouncedFalseOrderByCreatedAtDesc();
     List<Form> findAllByTargetGrade(Integer targetGrade);
-    List<Form> findAllByAnnouncedTrueAndTargetGradeOrderByDeadlineAsc(Integer targetGrade);
     Optional<Form> findByIdAndAnnouncedFalse(Long id);
 }

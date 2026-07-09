@@ -9,6 +9,7 @@ public record CurrentUserResponse(
         String role,
         String adminRole,
         String adminTeam,
+        boolean gradeHead,
         String clientRole,
         Long projectId,
         String clientTeam) {

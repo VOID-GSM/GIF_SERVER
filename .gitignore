@@ -62,3 +62,7 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### 서버 배포 관련 (민감정보/로컬 산출물, 저장소에 포함 안 함) ###
+.env
+cloudflared.deb

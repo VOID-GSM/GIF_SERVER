@@ -11,7 +11,6 @@ import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.entity.ProjectMember;
-import java.util.Optional;
 import com.example.gifserverv2.global.security.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,8 +25,8 @@ import team.themoment.datagsm.sdk.oauth.model.Student;
 import team.themoment.datagsm.sdk.oauth.model.TokenResponse;
 import team.themoment.datagsm.sdk.oauth.model.UserInfo;
 
-import java.util.Set;
 import java.util.Map;
+import java.util.List;
 
 @Service
 public class AuthService {
@@ -106,6 +105,11 @@ public class AuthService {
                     log.warn("Invalid studentNumber format: {}", studentNumber);
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학번 형식이 유효하지 않습니다.", e);
                 }
+
+                if ("3".equals(grade)) {
+                    log.warn("Grade 3 student login blocked: email='{}', name='{}'", email, name);
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "3학년은 로그인할 수 없습니다.");
+                }
             }
 
             UserEntity user = findOrCreateUser(email, name, studentNumber, assignedRole, grade);
@@ -119,9 +123,10 @@ public class AuthService {
                     user.getStudentNumber(),
                     user.getGrade(),
                     user.getRole().name(),
-                    null,
-                    null,
-                    null);
+                    user.getAdminRole() != null ? user.getAdminRole().name() : null,
+                    user.getAdminTeam(),
+                    user.isGradeHead(),
+                    user.getClientRole() != null ? user.getClientRole().name() : null);
         } catch (DataGsmException e) {
             log.warn("DataGSM OAuth error: status={}, message={}", e.getStatusCode(), e.getMessage());
         throw new ResponseStatusException(resolveStatus(e.getStatusCode()), "OAuth 인증에 실패했습니다.", e);
@@ -134,7 +139,12 @@ public class AuthService {
     }
 
     public void assertAllowedRedirectUri(String redirectUri) {
-        if (redirectUri == null || redirectUri.isBlank() || !oauthProperties.getDatagsm().getRedirectUris().contains(redirectUri)) {
+        if (redirectUri == null || redirectUri.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "허용되지 않은 redirectUri입니다.");
+        }
+        List<String> allowed = oauthProperties.getDatagsm().getRedirectUris();
+
+        if (!allowed.contains(redirectUri)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "허용되지 않은 redirectUri입니다.");
         }
     }
@@ -145,15 +155,13 @@ public class AuthService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
     }
 
-    // Build CurrentUserResponse including projectId and clientTeam (if the user is a project member)
     @Transactional(readOnly = true)
     public CurrentUserResponse buildCurrentUserResponse(UserEntity user) {
         Long projectId = null;
         String clientTeam = null;
 
-        java.util.List<ProjectMember> members = projectMemberRepository.findAllByUserId(user.getId());
+        List<ProjectMember> members = projectMemberRepository.findAllByUserId(user.getId());
         if (members != null && !members.isEmpty()) {
-            // prefer leader membership
             ProjectMember pick = members.stream()
                     .filter(m -> m.getRole() == ProjectMember.MemberRole.LEADER)
                     .findFirst()
@@ -173,6 +181,7 @@ public class AuthService {
                 user.getEffectiveRole().name(),
                 user.getAdminRole() != null ? user.getAdminRole().name() : null,
                 user.getAdminTeam(),
+                user.isGradeHead(),
                 user.getClientRole() != null ? user.getClientRole().name() : null,
                 projectId,
                 clientTeam);
@@ -209,8 +218,12 @@ public class AuthService {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자 정보는 관리자(선생님)만 수정할 수 있습니다.");
             }
             AdminRole newAdminRole = request.adminRole() != null ? request.adminRole() : user.getAdminRole();
+            String validationMessage = AdminRole.subjectTeacherValidationMessage(newAdminRole);
+            if (validationMessage != null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, validationMessage);
+            }
             String newAdminTeam = request.adminTeam() != null ? request.adminTeam() : user.getAdminTeam();
-            user.updateAdminAdditionalInfo(newAdminRole, newAdminTeam);
+            user.updateAdminAdditionalInfo(newAdminRole, newAdminTeam, user.isGradeHead());
             changed = true;
         }
 
@@ -241,7 +254,6 @@ public class AuthService {
                 .orElseGet(() -> userRepository.save(new UserEntity(email, name, studentNumber, role, grade)));
     }
 
-    // Backwards-compatible overload: when grade is not known, delegate with null grade
     private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role) {
         return findOrCreateUser(email, name, studentNumber, role, null);
     }
@@ -273,6 +285,8 @@ public class AuthService {
                 user.getRole().name(),
                 user.getAdminRole() != null ? user.getAdminRole().name() : null,
                 user.getAdminTeam(),
+                user.isGradeHead(),
                 user.getClientRole() != null ? user.getClientRole().name() : null);
     }
+
 }
