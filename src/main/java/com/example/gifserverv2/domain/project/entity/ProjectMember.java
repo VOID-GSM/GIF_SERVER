@@ -1,6 +1,6 @@
 package com.example.gifserverv2.domain.project.entity;
 
-import com.example.gifserverv2.domain.user.entity.ClientRole; // ClientRole 임포트
+import com.example.gifserverv2.domain.user.entity.ClientRole;
 import jakarta.persistence.*;
 import lombok.*;
 
