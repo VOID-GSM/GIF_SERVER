@@ -23,7 +23,7 @@ public record DetailProjectResponse(
                     UserEntity user = userMap.get(m.getUserId());
                     String name = user != null ? user.getName() : null;
                     String studentNumber = user != null ? user.getStudentNumber() : null;
-                    return new MemberInfo(m.getUserId(), name, studentNumber, m.getRole().name());
+                    return new MemberInfo(m.getUserId(), name, studentNumber, m.getRole().name()); // 바뀐 ClientRole의 name()을 반환합니다.
                 })
                 .toList();
 

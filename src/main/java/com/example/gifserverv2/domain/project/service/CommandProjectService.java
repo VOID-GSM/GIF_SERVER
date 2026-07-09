@@ -9,6 +9,7 @@ import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.user.entity.ClientRole;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -57,7 +58,7 @@ public class CommandProjectService {
                     ProjectMember newMember = ProjectMember.builder()
                             .project(project)
                             .userId(memberId)
-                            .role(ProjectMember.MemberRole.MEMBER)
+                            .role(ClientRole.MEMBER)
                             .build();
                     projectMemberRepository.save(newMember);
                     memberMap.put(memberId, newMember);
@@ -70,7 +71,7 @@ public class CommandProjectService {
                     if (member == null) {
                         throw ProjectException.notMember();
                     }
-                    if (member.getRole() == ProjectMember.MemberRole.LEADER) {
+                    if (member.getRole() == ClientRole.LEADER) {
                         throw ProjectException.cannotRemoveLeader();
                     }
                     projectMemberRepository.delete(member);
@@ -98,7 +99,7 @@ public class CommandProjectService {
         ProjectMember leader = ProjectMember.builder()
                 .project(savedProject)
                 .userId(userId)
-                .role(ProjectMember.MemberRole.LEADER)
+                .role(ClientRole.LEADER)
                 .build();
         projectMemberRepository.save(leader);
 
@@ -120,7 +121,7 @@ public class CommandProjectService {
                 ProjectMember member = ProjectMember.builder()
                         .project(savedProject)
                         .userId(memberId)
-                        .role(ProjectMember.MemberRole.MEMBER)
+                        .role(ClientRole.MEMBER)
                         .build();
                 projectMemberRepository.save(member);
             }
@@ -151,7 +152,7 @@ public class CommandProjectService {
         ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
                 .orElseThrow(ProjectException::notMember);
 
-        if (member.getRole() != ProjectMember.MemberRole.LEADER) {
+        if (member.getRole() != ClientRole.LEADER) {
             throw ProjectException.notLeader();
         }
     }
@@ -176,14 +177,14 @@ public class CommandProjectService {
         ProjectMember currentLeader = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
                 .orElseThrow(ProjectException::notMember);
 
-        if (currentLeader.getRole() != ProjectMember.MemberRole.LEADER) {
+        if (currentLeader.getRole() != ClientRole.LEADER) {
             throw ProjectException.notLeader();
         }
 
         ProjectMember newLeader = projectMemberRepository.findByProjectIdAndUserId(projectId, request.newLeaderUserId())
                 .orElseThrow(ProjectException::notMember);
 
-        currentLeader.changeRole(ProjectMember.MemberRole.MEMBER);
-        newLeader.changeRole(ProjectMember.MemberRole.LEADER);
+        currentLeader.changeRole(ClientRole.MEMBER);
+        newLeader.changeRole(ClientRole.LEADER);
     }
 }
