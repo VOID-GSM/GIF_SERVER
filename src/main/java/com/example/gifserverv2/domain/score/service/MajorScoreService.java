@@ -2,7 +2,6 @@ package com.example.gifserverv2.domain.score.service;
 
 import com.example.gifserverv2.domain.score.dto.request.CreateMajorScoreRequest;
 import com.example.gifserverv2.domain.score.dto.request.PatchMajorScoreRequest;
-import com.example.gifserverv2.domain.score.dto.response.GetDetailScoreResponse;
 import com.example.gifserverv2.domain.score.entity.Score;
 import com.example.gifserverv2.domain.project.entity.Project;
 import lombok.RequiredArgsConstructor;
