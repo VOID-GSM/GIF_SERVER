@@ -32,7 +32,7 @@ public record SubmitDetailFormResponse(
     ) {}
 
     public static SubmitDetailFormResponse from(FormSubmit submit, String teamName) {
-        boolean deadlineComplied = !submit.getSubmittedAt().toLocalDate()
+        boolean deadlineComplied = !submit.getSubmittedAt()
                 .isAfter(submit.getForm().getDeadline());
 
         List<AnswerResponse> answerResponses = submit.getAnswers().stream()

@@ -3,11 +3,12 @@ package com.example.gifserverv2.domain.form.dto.response;
 import com.example.gifserverv2.domain.form.entity.Form;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public record ListFormResponse(
         Long id,
         String title,
-        LocalDate deadline,
+        LocalDateTime deadline,
         boolean announced,
         boolean submitted,
         Boolean deadlineComplied,
