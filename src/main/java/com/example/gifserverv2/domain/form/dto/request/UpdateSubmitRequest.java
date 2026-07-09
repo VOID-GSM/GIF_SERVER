@@ -12,7 +12,8 @@ public record UpdateSubmitRequest(
             String textAnswer,
             List<CalendarEventRequest> dateAnswer,
             String filePath,
-            Long fileSize
+            Long fileSize,
+            String originalFileName
     ) {}
 
     public record CalendarEventRequest(
