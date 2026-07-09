@@ -86,22 +86,6 @@ public class Score {
         calculateSubTotalScore();
     }
 
-    public void updateScore(Integer technicalCompleteness, Integer socialValueMajor, Integer aiUtilizationMajor, Integer presentationMajor, Integer reportWriting, Integer reportContent, Integer aiUsagePlan, Integer creativity, Integer userExperience, Integer socialValueCommunity, Integer aiUtilizationCommunity, Integer presentationCommunity) {
-        this.technicalCompleteness = technicalCompleteness;
-        this.socialValueMajor = socialValueMajor;
-        this.aiUtilizationMajor = aiUtilizationMajor;
-        this.presentationMajor = presentationMajor;
-        this.reportWriting = reportWriting;
-        this.reportContent = reportContent;
-        this.aiUsagePlan = aiUsagePlan;
-        this.creativity = creativity;
-        this.userExperience = userExperience;
-        this.socialValueCommunity = socialValueCommunity;
-        this.aiUtilizationCommunity = aiUtilizationCommunity;
-        this.presentationCommunity = presentationCommunity;
-        calculateSubTotalScore();
-    }
-
     private void calculateSubTotalScore() {
         this.subTotalScore = safe(this.technicalCompleteness)
                 + safe(this.socialValueMajor)
@@ -118,31 +102,31 @@ public class Score {
     }
 
     public void updateMajorScore(Integer technicalCompleteness, Integer socialValueMajor,
-                            Integer aiUtilizationMajor, Integer presentationMajor) {
-        this.technicalCompleteness = technicalCompleteness;
-        this.socialValueMajor = socialValueMajor;
-        this.aiUtilizationMajor = aiUtilizationMajor;
-        this.presentationMajor = presentationMajor;
+                                 Integer aiUtilizationMajor, Integer presentationMajor) {
+        this.technicalCompleteness = technicalCompleteness != null ? technicalCompleteness : this.technicalCompleteness;
+        this.socialValueMajor = socialValueMajor != null ? socialValueMajor : this.socialValueMajor;
+        this.aiUtilizationMajor = aiUtilizationMajor != null ? aiUtilizationMajor : this.aiUtilizationMajor;
+        this.presentationMajor = presentationMajor != null ? presentationMajor : this.presentationMajor;
 
         calculateSubTotalScore();
     }
 
     public void updateReportScore(Integer reportWriting, Integer reportContent,
                                   Integer aiUsagePlan, Integer creativity) {
-        this.reportWriting = reportWriting;
-        this.reportContent = reportContent;
-        this.aiUsagePlan = aiUsagePlan;
-        this.creativity = creativity;
+        this.reportWriting = reportWriting != null ? reportWriting : this.reportWriting;
+        this.reportContent = reportContent != null ? reportContent : this.reportContent;
+        this.aiUsagePlan = aiUsagePlan != null ? aiUsagePlan : this.aiUsagePlan;
+        this.creativity = creativity != null ? creativity : this.creativity;
 
         calculateSubTotalScore();
     }
 
     public void updateSocialScore(Integer userExperience, Integer socialValueCommunity,
                                   Integer aiUtilizationCommunity, Integer presentationCommunity) {
-        this.userExperience = userExperience;
-        this.socialValueCommunity = socialValueCommunity;
-        this.aiUtilizationCommunity = aiUtilizationCommunity;
-        this.presentationCommunity = presentationCommunity;
+        this.userExperience = userExperience != null ? userExperience : this.userExperience;
+        this.socialValueCommunity = socialValueCommunity != null ? socialValueCommunity : this.socialValueCommunity;
+        this.aiUtilizationCommunity = aiUtilizationCommunity != null ? aiUtilizationCommunity : this.aiUtilizationCommunity;
+        this.presentationCommunity = presentationCommunity != null ? presentationCommunity : this.presentationCommunity;
 
         calculateSubTotalScore();
     }
