@@ -96,15 +96,18 @@ public class ScoreController {
     }
 
     @GetMapping("/projects/averages")
-    public ResponseEntity<List<GetProjectFieldAverageResponse>> getAllProjectFieldAverages() {
-        return ResponseEntity.ok(scoreQueryService.getAllProjectFieldAverages());
+    public ResponseEntity<List<GetProjectFieldAverageResponse>> getAllProjectFieldAverages(
+            @AuthenticationPrincipal AuthenticatedUser user) {
+
+        return ResponseEntity.ok(scoreQueryService.getAllProjectFieldAverages(user));
     }
 
     @GetMapping("/projects/{projectId}/averages")
     public ResponseEntity<GetProjectFieldAverageResponse> getProjectFieldAverages(
+            @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable("projectId") Long projectId) {
 
-        GetProjectFieldAverageResponse response = scoreQueryService.getProjectFieldAverages(projectId);
+        GetProjectFieldAverageResponse response = scoreQueryService.getProjectFieldAverages(projectId, user);
         return ResponseEntity.ok(response);
     }
 
