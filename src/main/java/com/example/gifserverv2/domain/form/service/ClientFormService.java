@@ -1,6 +1,7 @@
 package com.example.gifserverv2.domain.form.service;
 
 import com.example.gifserverv2.domain.form.dto.request.SubmitFormRequest;
+import com.example.gifserverv2.domain.form.dto.request.UpdateSubmitAnswerRequest;
 import com.example.gifserverv2.domain.form.dto.request.UpdateSubmitRequest;
 import com.example.gifserverv2.domain.form.dto.response.DetailFormResponse;
 import com.example.gifserverv2.domain.form.dto.response.ListFormResponse;
@@ -161,8 +162,8 @@ public class ClientFormService {
         List<FormFieldAnswer> existing = formFieldAnswerRepository.findAllByFormSubmitId(request.submitId());
         formFieldAnswerRepository.deleteAll(existing);
 
-        Map<Long, UpdateSubmitRequest.AnswerRequest> answerMap = new HashMap<>();
-        for (UpdateSubmitRequest.AnswerRequest answer : request.answers()) {
+        Map<Long, UpdateSubmitAnswerRequest> answerMap = new HashMap<>();
+        for (UpdateSubmitAnswerRequest answer : request.answers()) {
             answerMap.put(answer.fieldId(), answer);
         }
 
@@ -177,7 +178,7 @@ public class ClientFormService {
                 throw new FormException(HttpStatus.BAD_REQUEST, "해당 양식에 존재하지 않는 항목입니다.");
             }
 
-            UpdateSubmitRequest.AnswerRequest answerReq = answerMap.get(field.getId());
+            UpdateSubmitAnswerRequest answerReq = answerMap.get(field.getId());
 
             FormFieldAnswer answer = FormFieldAnswer.builder()
                     .formSubmit(submit)
