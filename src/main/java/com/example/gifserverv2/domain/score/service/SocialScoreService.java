@@ -68,7 +68,15 @@ public class SocialScoreService {
         }
         support.validateCommonRequest(projectId, evaluator.userId().toString());
         Project project = support.getProjectOrThrow(projectId);
-        return support.getScoreOrThrow(project, evaluator.userId().toString().trim());
+
+        try {
+            return support.getScoreOrThrow(project, evaluator.userId().toString().trim());
+        } catch (ResponseStatusException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                return null;
+            }
+            throw e;
+        }
     }
 
     private void validateEvaluatorAndFields(AuthenticatedUser evaluator, Long projectId,
