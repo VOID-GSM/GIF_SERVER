@@ -100,15 +100,13 @@ public class FormController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadFile(
+    public ResponseEntity<FileUploadResponse> uploadFile(
             @AuthenticationPrincipal AuthenticatedUser user,
             @RequestParam Long submitId,
             @RequestParam Long fieldId,
             @RequestParam MultipartFile file
     ) {
-        return ResponseEntity.ok(
-                formFileService.uploadFile(user.userId(), submitId, fieldId, file)
-        );
+        return ResponseEntity.ok(formFileService.uploadFile(user.userId(), submitId, fieldId, file));
     }
 
     @DeleteMapping("/upload")
