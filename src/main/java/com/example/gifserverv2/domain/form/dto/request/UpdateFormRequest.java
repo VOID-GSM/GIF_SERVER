@@ -2,13 +2,13 @@ package com.example.gifserverv2.domain.form.dto.request;
 
 import com.example.gifserverv2.domain.form.entity.FormField;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record UpdateFormRequest(
         String title,
         String description,
-        LocalDate deadline,
+        LocalDateTime deadline,
         Integer targetGrade,
         List<FieldRequest> fields
 ) {

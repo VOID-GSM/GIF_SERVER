@@ -21,6 +21,7 @@ public record SubmitDetailFormResponse(
             String textAnswer,
             String filePath,
             Long fileSize,
+            String originalFileName,
             List<CalendarEventResponse> dateAnswer
     ) {}
 
@@ -32,7 +33,7 @@ public record SubmitDetailFormResponse(
     ) {}
 
     public static SubmitDetailFormResponse from(FormSubmit submit, String teamName) {
-        boolean deadlineComplied = !submit.getSubmittedAt().toLocalDate()
+        boolean deadlineComplied = !submit.getSubmittedAt()
                 .isAfter(submit.getForm().getDeadline());
 
         List<AnswerResponse> answerResponses = submit.getAnswers().stream()
@@ -53,6 +54,7 @@ public record SubmitDetailFormResponse(
                             a.getTextAnswer(),
                             a.getFilePath(),
                             a.getFileSize(),
+                            a.getOriginalFileName(),
                             events
                     );
                 })

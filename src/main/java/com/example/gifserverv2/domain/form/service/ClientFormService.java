@@ -1,6 +1,7 @@
 package com.example.gifserverv2.domain.form.service;
 
 import com.example.gifserverv2.domain.form.dto.request.SubmitFormRequest;
+import com.example.gifserverv2.domain.form.dto.request.UpdateSubmitAnswerRequest;
 import com.example.gifserverv2.domain.form.dto.request.UpdateSubmitRequest;
 import com.example.gifserverv2.domain.form.dto.response.DetailFormResponse;
 import com.example.gifserverv2.domain.form.dto.response.ListFormResponse;
@@ -59,7 +60,7 @@ public class ClientFormService {
                     boolean submitted = submit != null;
                     Boolean deadlineComplied = null;
                     if (submit != null) {
-                        deadlineComplied = !submit.getSubmittedAt().toLocalDate().isAfter(form.getDeadline());
+                        deadlineComplied = !submit.getSubmittedAt().isAfter(form.getDeadline());
                     }
                     return ListFormResponse.from(form, submitted, deadlineComplied);
                 })
@@ -74,7 +75,7 @@ public class ClientFormService {
         if (projectId != null) {
             deadlineComplied = formSubmitRepository
                     .findByFormIdAndProjectId(formId, projectId)
-                    .map(submit -> !submit.getSubmittedAt().toLocalDate().isAfter(form.getDeadline()))
+                    .map(submit -> !submit.getSubmittedAt().isAfter(form.getDeadline()))
                     .orElse(null);
         }
 
@@ -154,17 +155,17 @@ public class ClientFormService {
             throw new FormException(HttpStatus.FORBIDDEN, "본인이 제출한 양식만 수정할 수 있습니다.");
         }
 
-        if (submit.getForm().isDeadlinePassed()) {
-            throw FormException.deadlinePassed();
+        if (request.answers() == null) {
+            throw new FormException(HttpStatus.BAD_REQUEST, "답변 목록은 필수입니다.");
+        }
+
+        Map<Long, UpdateSubmitAnswerRequest> answerMap = new HashMap<>();
+        for (UpdateSubmitAnswerRequest answer : request.answers()) {
+            answerMap.put(answer.fieldId(), answer);
         }
 
         List<FormFieldAnswer> existing = formFieldAnswerRepository.findAllByFormSubmitId(request.submitId());
         formFieldAnswerRepository.deleteAll(existing);
-
-        Map<Long, UpdateSubmitRequest.AnswerRequest> answerMap = new HashMap<>();
-        for (UpdateSubmitRequest.AnswerRequest answer : request.answers()) {
-            answerMap.put(answer.fieldId(), answer);
-        }
 
         List<FormField> fields = formFieldRepository.findAllById(answerMap.keySet());
         if (fields.size() != answerMap.size()) {
@@ -177,7 +178,7 @@ public class ClientFormService {
                 throw new FormException(HttpStatus.BAD_REQUEST, "해당 양식에 존재하지 않는 항목입니다.");
             }
 
-            UpdateSubmitRequest.AnswerRequest answerReq = answerMap.get(field.getId());
+            UpdateSubmitAnswerRequest answerReq = answerMap.get(field.getId());
 
             FormFieldAnswer answer = FormFieldAnswer.builder()
                     .formSubmit(submit)
@@ -185,6 +186,7 @@ public class ClientFormService {
                     .textAnswer(answerReq.textAnswer())
                     .filePath(answerReq.filePath())
                     .fileSize(answerReq.fileSize())
+                    .originalFileName(answerReq.originalFileName())
                     .build();
 
             if (field.getType() == FormField.FieldType.CALENDAR && answerReq.dateAnswer() != null) {

@@ -2,6 +2,7 @@ package com.example.gifserverv2.domain.score.controller;
 
 import com.example.gifserverv2.domain.score.dto.request.*;
 import com.example.gifserverv2.domain.score.dto.response.GetProjectFieldAverageResponse;
+import com.example.gifserverv2.domain.score.entity.Score;
 import com.example.gifserverv2.domain.score.service.*;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +48,7 @@ public class ScoreController {
     @GetMapping("/major")
     public ResponseEntity<GetDetailScoreResponse> getMajor(@AuthenticationPrincipal AuthenticatedUser user,
                                                            @RequestParam Long projectId) {
-        var score = majorScoreService.getMajor(projectId, user);
+        Score score = majorScoreService.getMajor(projectId, user);
         return ResponseEntity.ok(new GetDetailScoreResponse(score));
     }
 
@@ -69,7 +70,7 @@ public class ScoreController {
     @GetMapping("/report")
     public ResponseEntity<GetDetailScoreResponse> getReport(@AuthenticationPrincipal AuthenticatedUser user,
                                                             @RequestParam Long projectId) {
-        var score = reportScoreService.getReport(projectId, user);
+        Score score = reportScoreService.getReport(projectId, user);
         return ResponseEntity.ok(new GetDetailScoreResponse(score));
     }
 
@@ -91,7 +92,7 @@ public class ScoreController {
     @GetMapping("/social")
     public ResponseEntity<GetDetailScoreResponse> getSocial(@AuthenticationPrincipal AuthenticatedUser user,
                                                             @RequestParam Long projectId) {
-        var score = socialScoreService.getSocial(projectId, user);
+        Score score = socialScoreService.getSocial(projectId, user);
         return ResponseEntity.ok(new GetDetailScoreResponse(score));
     }
 

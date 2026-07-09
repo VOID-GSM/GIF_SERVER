@@ -3,7 +3,6 @@ package com.example.gifserverv2.domain.form.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +23,7 @@ public class Form {
     private String title;
 
     @Column(nullable = false)
-    private LocalDate deadline;
+    private LocalDateTime deadline;
 
     @Column(nullable = false)
     private boolean announced;
@@ -48,7 +47,7 @@ public class Form {
         this.createdAt = LocalDateTime.now();
     }
 
-    public void update(String title, String description, LocalDate deadline, Integer targetGrade, List<FormField> newFields) {
+    public void update(String title, String description, LocalDateTime deadline, Integer targetGrade, List<FormField> newFields) {
         this.title = title;
         this.description = description;
         this.deadline = deadline;
@@ -64,6 +63,6 @@ public class Form {
     }
 
     public boolean isDeadlinePassed() {
-        return LocalDate.now().isAfter(this.deadline);
+        return LocalDateTime.now().isAfter(this.deadline);
     }
 }
