@@ -31,6 +31,10 @@ public class QueryProjectService {
 
     public List<UserSearchResponse> searchUsers(String keyword) {
         List<UserEntity> users = userSearchRepository.findByNameContainingOrStudentNumberContaining(keyword, keyword);
+        if (users.isEmpty()) {
+            return List.of();
+        }
+
         List<Long> userIds = users.stream().map(UserEntity::getId).toList();
         java.util.Set<Long> userIdsWithTeam = projectMemberRepository.findAllByUserIdIn(userIds).stream()
                 .map(ProjectMember::getUserId)

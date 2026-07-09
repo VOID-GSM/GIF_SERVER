@@ -103,15 +103,18 @@ public class CommandProjectService {
         projectMemberRepository.save(leader);
 
         if (request.memberIds() != null) {
-            for (Long memberId : request.memberIds()) {
-                if (memberId.equals(userId)) continue;
+            List<Long> memberIds = request.memberIds().stream()
+                    .filter(id -> !id.equals(userId))
+                    .toList();
 
+            List<ProjectMember> existingMembers = projectMemberRepository.findAllByUserIdIn(memberIds);
+            if (!existingMembers.isEmpty()) {
+                throw new ProjectException(HttpStatus.CONFLICT, "이미 다른 프로젝트에 소속된 팀원이 포함되어 있습니다.");
+            }
+
+            for (Long memberId : memberIds) {
                 if (!userRepository.existsById(memberId)) {
                     throw new ProjectException(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다. userId: " + memberId);
-                }
-
-                if (projectMemberRepository.existsByUserId(memberId)) {
-                    throw new ProjectException(HttpStatus.CONFLICT, "이미 다른 프로젝트에 소속된 팀원입니다.");
                 }
 
                 ProjectMember member = ProjectMember.builder()

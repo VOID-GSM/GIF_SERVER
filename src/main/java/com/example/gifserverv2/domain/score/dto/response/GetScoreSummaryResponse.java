@@ -1,6 +1,6 @@
 package com.example.gifserverv2.domain.score.dto.response;
 
-public record ScoreSummaryResponse(
+public record GetScoreSummaryResponse(
         Long projectId,
         String teamName,
         double averageScore,
