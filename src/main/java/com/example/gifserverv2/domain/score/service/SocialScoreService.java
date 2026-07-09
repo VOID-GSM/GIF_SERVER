@@ -63,25 +63,21 @@ public class SocialScoreService {
     }
 
     @Transactional(readOnly = true)
-    public GetDetailScoreResponse getSocial(Long projectId, AuthenticatedUser evaluator) {
+    public Score getSocial(Long projectId, AuthenticatedUser evaluator) {
         if (evaluator == null || evaluator.userId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "평가자 ID가 필요합니다.");
         }
         support.validateCommonRequest(projectId, evaluator.userId().toString());
         Project project = support.getProjectOrThrow(projectId);
 
-        Score score;
         try {
-            score = support.getScoreOrThrow(project, evaluator.userId().toString().trim());
+            return support.getScoreOrThrow(project, evaluator.userId().toString().trim());
         } catch (ResponseStatusException e) {
             if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-                score = null;
-            } else {
-                throw e;
+                return null;
             }
+            throw e;
         }
-
-        return new GetDetailScoreResponse(score);
     }
 
     private void validateEvaluatorAndFields(AuthenticatedUser evaluator, Long projectId,

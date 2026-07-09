@@ -2,6 +2,7 @@ package com.example.gifserverv2.domain.score.controller;
 
 import com.example.gifserverv2.domain.score.dto.request.*;
 import com.example.gifserverv2.domain.score.dto.response.GetProjectFieldAverageResponse;
+import com.example.gifserverv2.domain.score.entity.Score;
 import com.example.gifserverv2.domain.score.service.*;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
@@ -47,8 +48,8 @@ public class ScoreController {
     @GetMapping("/major")
     public ResponseEntity<GetDetailScoreResponse> getMajor(@AuthenticationPrincipal AuthenticatedUser user,
                                                            @RequestParam Long projectId) {
-        GetDetailScoreResponse response = majorScoreService.getMajor(projectId, user);
-        return ResponseEntity.ok(response);
+        Score score = majorScoreService.getMajor(projectId, user);
+        return ResponseEntity.ok(new GetDetailScoreResponse(score));
     }
 
     @PostMapping("/report")
@@ -69,8 +70,8 @@ public class ScoreController {
     @GetMapping("/report")
     public ResponseEntity<GetDetailScoreResponse> getReport(@AuthenticationPrincipal AuthenticatedUser user,
                                                             @RequestParam Long projectId) {
-        GetDetailScoreResponse response = reportScoreService.getReport(projectId, user);
-        return ResponseEntity.ok(response);
+        Score score = reportScoreService.getReport(projectId, user);
+        return ResponseEntity.ok(new GetDetailScoreResponse(score));
     }
 
     @PostMapping("/social")
@@ -91,8 +92,8 @@ public class ScoreController {
     @GetMapping("/social")
     public ResponseEntity<GetDetailScoreResponse> getSocial(@AuthenticationPrincipal AuthenticatedUser user,
                                                             @RequestParam Long projectId) {
-        GetDetailScoreResponse response = socialScoreService.getSocial(projectId, user);
-        return ResponseEntity.ok(response);
+        Score score = socialScoreService.getSocial(projectId, user);
+        return ResponseEntity.ok(new GetDetailScoreResponse(score));
     }
 
     @GetMapping("/projects/averages")
