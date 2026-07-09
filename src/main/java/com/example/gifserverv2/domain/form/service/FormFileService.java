@@ -1,5 +1,6 @@
 package com.example.gifserverv2.domain.form.service;
 
+import com.example.gifserverv2.domain.form.dto.response.FileUploadResponse;
 import com.example.gifserverv2.domain.form.exception.FormException;
 import com.example.gifserverv2.domain.form.entity.FormField;
 import com.example.gifserverv2.domain.form.entity.FormFieldAnswer;
@@ -24,7 +25,7 @@ public class FormFileService {
     private final FormFieldAnswerRepository formFieldAnswerRepository;
 
     @Transactional
-    public String uploadFile(Long userId, Long submitId, Long fieldId, MultipartFile file) {
+    public FileUploadResponse uploadFile(Long userId, Long submitId, Long fieldId, MultipartFile file)  {
         FormSubmit submit = formSubmitRepository.findById(submitId)
                 .orElseThrow(() -> new FormException(HttpStatus.NOT_FOUND, "제출 내역을 찾을 수 없습니다."));
 
@@ -52,15 +53,22 @@ public class FormFileService {
                 });
 
         String savedUrl = fileStorageService.save(file, "form");
+        String originalFileName = file.getOriginalFilename();
+        if (originalFileName != null) {
+            originalFileName = org.springframework.util.StringUtils.getFilename(
+                    org.springframework.util.StringUtils.cleanPath(originalFileName)
+            );
+        }
 
         formFieldAnswerRepository.save(FormFieldAnswer.builder()
                 .formSubmit(submit)
                 .formField(field)
                 .filePath(savedUrl)
                 .fileSize(file.getSize())
+                .originalFileName(originalFileName)
                 .build());
 
-        return savedUrl;
+        return new FileUploadResponse(savedUrl, originalFileName);
     }
 
     @Transactional
