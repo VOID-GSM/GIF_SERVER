@@ -5,6 +5,8 @@ import com.example.gifserverv2.domain.project.repository.ProjectRepository;
 import com.example.gifserverv2.domain.score.dto.response.GetProjectFieldAverageResponse;
 import com.example.gifserverv2.domain.score.entity.Score;
 import com.example.gifserverv2.domain.score.repository.ScoreRepository;
+import com.example.gifserverv2.domain.user.entity.Role;
+import com.example.gifserverv2.global.security.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -25,7 +27,9 @@ public class ScoreQueryService {
     private final ScoreRepository scoreRepository;
     private final ProjectRepository projectRepository;
 
-    public GetProjectFieldAverageResponse getProjectFieldAverages(Long projectId) {
+    public GetProjectFieldAverageResponse getProjectFieldAverages(Long projectId, AuthenticatedUser user) {
+        validateAdminAuthority(user);
+
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "프로젝트를 찾을 수 없습니다."));
 
@@ -34,7 +38,9 @@ public class ScoreQueryService {
         return calculateProjectAverage(projectId, scores);
     }
 
-    public List<GetProjectFieldAverageResponse> getAllProjectFieldAverages() {
+    public List<GetProjectFieldAverageResponse> getAllProjectFieldAverages(AuthenticatedUser user) {
+        validateAdminAuthority(user);
+
         List<Project> projects = projectRepository.findAll();
         List<Score> allScores = scoreRepository.findAll();
 
@@ -83,5 +89,11 @@ public class ScoreQueryService {
 
     private int safe(Integer value) {
         return Objects.requireNonNullElse(value, 0);
+    }
+
+    private void validateAdminAuthority(AuthenticatedUser user) {
+        if (user == null || user.role() != Role.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "조회 권한이 없습니다. 관리자(선생님)만 접근 가능합니다.");
+        }
     }
 }
