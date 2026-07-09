@@ -185,6 +185,7 @@ public class ClientFormService {
                     .textAnswer(answerReq.textAnswer())
                     .filePath(answerReq.filePath())
                     .fileSize(answerReq.fileSize())
+                    .originalFileName(answerReq.originalFileName())
                     .build();
 
             if (field.getType() == FormField.FieldType.CALENDAR && answerReq.dateAnswer() != null) {
