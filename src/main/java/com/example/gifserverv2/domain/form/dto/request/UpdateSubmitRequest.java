@@ -13,7 +13,7 @@ public record UpdateSubmitRequest(
             List<CalendarEventRequest> dateAnswer,
             String filePath,
             Long fileSize,
-            String originalFileName
+            @io.swagger.v3.oas.annotations.media.Schema(description = "원본 파일명") String originalFileName
     ) {}
 
     public record CalendarEventRequest(
