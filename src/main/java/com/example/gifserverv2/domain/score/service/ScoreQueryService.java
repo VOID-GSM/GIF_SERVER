@@ -93,7 +93,10 @@ public class ScoreQueryService {
     }
 
     private void validateAdminAuthority(AuthenticatedUser user) {
-        if (user == null || user.role() != Role.ADMIN) {
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증 정보가 없습니다. 로그인이 필요합니다.");
+        }
+        if (user.role() != Role.ADMIN) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "조회 권한이 없습니다. 관리자(선생님)만 접근 가능합니다.");
         }
     }
