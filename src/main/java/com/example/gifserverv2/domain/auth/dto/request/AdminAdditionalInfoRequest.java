@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 
 public record AdminAdditionalInfoRequest(
         @NotNull AdminRole adminRole,
+        String name,
         String adminTeam,
         boolean gradeHead) {
 }
