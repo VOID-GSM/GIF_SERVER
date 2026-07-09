@@ -122,8 +122,9 @@ public class UserEntity {
         this.role = role;
     }
 
-    public void updateAdminAdditionalInfo(AdminRole adminRole, String adminTeam, boolean gradeHead) {
+    public void updateAdminAdditionalInfo(AdminRole adminRole, String name, String adminTeam, boolean gradeHead) {
         this.adminRole = adminRole;
+        this.name = name;
         this.adminTeam = adminTeam;
         this.gradeHead = gradeHead;
         if (adminRole != null) {

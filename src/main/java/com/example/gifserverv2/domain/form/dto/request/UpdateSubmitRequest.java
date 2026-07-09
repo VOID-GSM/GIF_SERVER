@@ -5,17 +5,8 @@ import java.util.List;
 
 public record UpdateSubmitRequest(
         Long submitId,
-        List<AnswerRequest> answers
+        List<UpdateSubmitAnswerRequest> answers
 ) {
-    public record AnswerRequest(
-            Long fieldId,
-            String textAnswer,
-            List<CalendarEventRequest> dateAnswer,
-            String filePath,
-            Long fileSize,
-            String originalFileName
-    ) {}
-
     public record CalendarEventRequest(
             String eventName,
             LocalDate startDate,
