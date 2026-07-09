@@ -2,6 +2,7 @@ package com.example.gifserverv2.domain.score.service;
 
 import com.example.gifserverv2.domain.score.dto.request.CreateSocialScoreRequest;
 import com.example.gifserverv2.domain.score.dto.request.PatchSocialScoreRequest;
+import com.example.gifserverv2.domain.score.dto.response.GetDetailScoreResponse;
 import com.example.gifserverv2.domain.score.entity.Score;
 import com.example.gifserverv2.domain.project.entity.Project;
 import lombok.RequiredArgsConstructor;
@@ -62,13 +63,25 @@ public class SocialScoreService {
     }
 
     @Transactional(readOnly = true)
-    public Score getSocial(Long projectId, AuthenticatedUser evaluator) {
+    public GetDetailScoreResponse getSocial(Long projectId, AuthenticatedUser evaluator) {
         if (evaluator == null || evaluator.userId() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "평가자 ID가 필요합니다.");
         }
         support.validateCommonRequest(projectId, evaluator.userId().toString());
         Project project = support.getProjectOrThrow(projectId);
-        return support.getScoreOrThrow(project, evaluator.userId().toString().trim());
+
+        Score score;
+        try {
+            score = support.getScoreOrThrow(project, evaluator.userId().toString().trim());
+        } catch (ResponseStatusException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                score = null;
+            } else {
+                throw e;
+            }
+        }
+
+        return new GetDetailScoreResponse(score);
     }
 
     private void validateEvaluatorAndFields(AuthenticatedUser evaluator, Long projectId,

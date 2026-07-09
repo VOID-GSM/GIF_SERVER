@@ -47,8 +47,7 @@ public class ScoreController {
     @GetMapping("/major")
     public ResponseEntity<GetDetailScoreResponse> getMajor(@AuthenticationPrincipal AuthenticatedUser user,
                                                            @RequestParam Long projectId) {
-        var score = majorScoreService.getMajor(projectId, user);
-        return ResponseEntity.ok(new GetDetailScoreResponse(score));
+        return ResponseEntity.ok(majorScoreService.getMajor(projectId, user));
     }
 
     @PostMapping("/report")
