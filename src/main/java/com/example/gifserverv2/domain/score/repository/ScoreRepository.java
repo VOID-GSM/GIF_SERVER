@@ -14,7 +14,7 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
 
     java.util.List<Score> findByProject(Project project);
 
-    @Query("SELECT s FROM Score s WHERE s.project.id IN :projectIds")
+    @Query("SELECT s FROM Score s JOIN FETCH s.project WHERE s.project.id IN :projectIds")
     List<Score> findByProjectIds(@Param("projectIds") List<Long> projectIds);
 
     @Query("SELECT s FROM Score s JOIN FETCH s.project")
