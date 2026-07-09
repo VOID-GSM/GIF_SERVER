@@ -47,7 +47,8 @@ public class ScoreController {
     @GetMapping("/major")
     public ResponseEntity<GetDetailScoreResponse> getMajor(@AuthenticationPrincipal AuthenticatedUser user,
                                                            @RequestParam Long projectId) {
-        return ResponseEntity.ok(majorScoreService.getMajor(projectId, user));
+        GetDetailScoreResponse response = majorScoreService.getMajor(projectId, user);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/report")
@@ -68,8 +69,8 @@ public class ScoreController {
     @GetMapping("/report")
     public ResponseEntity<GetDetailScoreResponse> getReport(@AuthenticationPrincipal AuthenticatedUser user,
                                                             @RequestParam Long projectId) {
-        var score = reportScoreService.getReport(projectId, user);
-        return ResponseEntity.ok(new GetDetailScoreResponse(score));
+        GetDetailScoreResponse response = reportScoreService.getReport(projectId, user);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/social")
@@ -90,8 +91,8 @@ public class ScoreController {
     @GetMapping("/social")
     public ResponseEntity<GetDetailScoreResponse> getSocial(@AuthenticationPrincipal AuthenticatedUser user,
                                                             @RequestParam Long projectId) {
-        var score = socialScoreService.getSocial(projectId, user);
-        return ResponseEntity.ok(new GetDetailScoreResponse(score));
+        GetDetailScoreResponse response = socialScoreService.getSocial(projectId, user);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/projects/averages")
