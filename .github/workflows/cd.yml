@@ -14,11 +14,11 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -p 24157 158.247.251.109 >> ~/.ssh/known_hosts 2>/dev/null || true
+          ssh-keyscan -p 24157 ssh.gsmsv.site >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: 서버 배포 (SSH)
         run: |
-          ssh -p 24157 -i ~/.ssh/id_ed25519 ubuntu@158.247.251.109 << 'EOF'
+          ssh -p 24157 -i ~/.ssh/id_ed25519 ubuntu@ssh.gsmsv.site << 'EOF'
           set -e
           cd ~/GIF_SERVER
           git fetch origin main
