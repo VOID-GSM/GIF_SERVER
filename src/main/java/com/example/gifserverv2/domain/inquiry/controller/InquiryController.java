@@ -64,7 +64,7 @@ public class InquiryController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> answerInquiry(
             @PathVariable Long inquiryId,
-            @RequestBody AnswerInquiryRequest request
+            @RequestBody @Valid AnswerInquiryRequest request
     ) {
         adminInquiryService.answerInquiry(inquiryId, request.answerContent());
         return ResponseEntity.noContent().build();
