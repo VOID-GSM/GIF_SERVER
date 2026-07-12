@@ -47,4 +47,24 @@ public class FormException extends ResponseStatusException {
     public static FormException hasSubmittedAnswers() {
         return new FormException(HttpStatus.CONFLICT, "이미 제출된 답변이 있어 항목을 수정할 수 없습니다.");
     }
+
+    public static FormException titleTooLong() {
+        return new FormException(HttpStatus.BAD_REQUEST, "제목은 50자를 초과할 수 없습니다.");
+    }
+
+    public static FormException descriptionTooLong() {
+        return new FormException(HttpStatus.BAD_REQUEST, "설명은 1000자를 초과할 수 없습니다.");
+    }
+
+    public static FormException fieldTitleTooLong() {
+        return new FormException(HttpStatus.BAD_REQUEST, "항목 제목은 50자를 초과할 수 없습니다.");
+    }
+
+    public static FormException fieldDescriptionTooLong() {
+        return new FormException(HttpStatus.BAD_REQUEST, "항목 설명은 200자를 초과할 수 없습니다.");
+    }
+
+    public static FormException notProjectMember() {
+        return new FormException(HttpStatus.FORBIDDEN, "해당 프로젝트의 팀원만 수정할 수 있습니다.");
+    }
 }

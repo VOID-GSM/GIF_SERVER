@@ -163,8 +163,12 @@ public class ClientFormService {
         FormSubmit submit = formSubmitRepository.findById(request.submitId())
                 .orElseThrow(FormException::notSubmitted);
 
-        if (!submit.getSubmittedByUserId().equals(userId)) {
-            throw new FormException(HttpStatus.FORBIDDEN, "본인이 제출한 양식만 수정할 수 있습니다.");
+        if (!projectMemberRepository.existsByProjectIdAndUserId(submit.getProjectId(), userId)) {
+            throw FormException.notProjectMember();
+        }
+
+        if (submit.getForm().isDeadlinePassed()) {
+            throw FormException.deadlinePassed();
         }
 
         if (request.answers() == null) {
@@ -192,6 +196,12 @@ public class ClientFormService {
 
             UpdateSubmitAnswerRequest answerReq = answerMap.get(field.getId());
 
+            if (field.getType() == FormField.FieldType.TEXT
+                    && answerReq.textAnswer() != null
+                    && answerReq.textAnswer().length() > 1000) {
+                throw new FormException(HttpStatus.BAD_REQUEST, "텍스트 답변은 1000자를 초과할 수 없습니다.");
+            }
+
             FormFieldAnswer answer = FormFieldAnswer.builder()
                     .formSubmit(submit)
                     .formField(field)
@@ -200,12 +210,6 @@ public class ClientFormService {
                     .fileSize(answerReq.fileSize())
                     .originalFileName(answerReq.originalFileName())
                     .build();
-
-            if (field.getType() == FormField.FieldType.TEXT
-                    && answerReq.textAnswer() != null
-                    && answerReq.textAnswer().length() > 1000) {
-                throw new FormException(HttpStatus.BAD_REQUEST, "텍스트 답변은 1000자를 초과할 수 없습니다.");
-            }
 
             if (field.getType() == FormField.FieldType.CALENDAR && answerReq.dateAnswer() != null) {
                 answerReq.dateAnswer().forEach(eventReq -> {
@@ -222,6 +226,5 @@ public class ClientFormService {
             newAnswers.add(answer);
         }
         formFieldAnswerRepository.saveAll(newAnswers);
-
     }
 }
