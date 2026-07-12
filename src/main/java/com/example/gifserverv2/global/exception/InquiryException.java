@@ -1,4 +1,4 @@
-package com.example.gifserverv2.domain.inquiry.exception;
+package com.example.gifserverv2.global.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;

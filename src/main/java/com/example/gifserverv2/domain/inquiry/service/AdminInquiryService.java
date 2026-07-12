@@ -3,7 +3,7 @@ package com.example.gifserverv2.domain.inquiry.service;
 import com.example.gifserverv2.domain.inquiry.dto.response.DetailInquiryResponse;
 import com.example.gifserverv2.domain.inquiry.dto.response.ListInquiryResponse;
 import com.example.gifserverv2.domain.inquiry.entity.Inquiry;
-import com.example.gifserverv2.domain.inquiry.exception.InquiryException;
+import com.example.gifserverv2.global.exception.InquiryException;
 import com.example.gifserverv2.domain.inquiry.repository.InquiryRepository;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
