@@ -9,13 +9,16 @@ import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.ClientRole;
+import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -170,19 +173,26 @@ public class CommandProjectService {
     }
 
     public void transferLeader(Long projectId, Long userId, TransferLeaderRequest request) {
-        if (userId.equals(request.newLeaderUserId())) {
-            throw new ProjectException(HttpStatus.BAD_REQUEST, "본인에게 팀장을 양도할 수 없습니다.");
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ProjectException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+        if (user.getAdminRole() != AdminRole.MASTER) {
+            throw new ProjectException(HttpStatus.FORBIDDEN, "팀장 양도 권한이 없습니다. (Master 선생님 전용)");
         }
 
-        ProjectMember currentLeader = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
-                .orElseThrow(ProjectException::notMember);
-
-        if (currentLeader.getRole() != ClientRole.LEADER) {
-            throw ProjectException.notLeader();
-        }
+        ProjectMember currentLeader = projectMemberRepository.findByProjectIdAndRole(projectId, ClientRole.LEADER)
+                .orElseThrow(() -> new ProjectException(HttpStatus.NOT_FOUND, "해당 프로젝트에 팀장이 존재하지 않습니다."));
 
         ProjectMember newLeader = projectMemberRepository.findByProjectIdAndUserId(projectId, request.newLeaderUserId())
-                .orElseThrow(ProjectException::notMember);
+                .orElseThrow(() -> new ProjectException(HttpStatus.NOT_FOUND, "새로운 팀장 대상자가 프로젝트의 멤버가 아닙니다."));
+
+        if (currentLeader.getUserId().equals(newLeader.getUserId())) {
+            throw new ProjectException(HttpStatus.BAD_REQUEST, "대상자는 이미 해당 프로젝트의 팀장입니다.");
+        }
+
+        boolean isAlreadyLeaderElsewhere = projectMemberRepository.existsByUserIdAndRole(newLeader.getUserId(), ClientRole.LEADER);
+        if (isAlreadyLeaderElsewhere) {
+            throw new ProjectException(HttpStatus.CONFLICT, "대상자는 이미 다른 프로젝트의 팀장으로 지정되어 있습니다.");
+        }
 
         currentLeader.changeRole(ClientRole.MEMBER);
         newLeader.changeRole(ClientRole.LEADER);
