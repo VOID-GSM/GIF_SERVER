@@ -9,6 +9,8 @@ import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.global.file.FileStorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -44,10 +46,9 @@ public class ClientInquiryService {
         return inquiryRepository.save(inquiry).getId();
     }
 
-    public List<InquiryListResponse> getMyInquiries(Long userId) {
-        return inquiryRepository.findAllByCreatedByUserIdOrderByCreatedAtDesc(userId).stream()
-                .map(inquiry -> InquiryListResponse.from(inquiry, null))
-                .toList();
+    public Page<InquiryListResponse> getMyInquiries(Long userId, Pageable pageable) {
+        return inquiryRepository.findAllByCreatedByUserId(userId, pageable)
+                .map(inquiry -> InquiryListResponse.from(inquiry, null));
     }
 
     public InquiryDetailResponse getMyInquiryDetail(Long userId, Long inquiryId) {

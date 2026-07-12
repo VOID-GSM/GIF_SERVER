@@ -9,6 +9,10 @@ import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.global.file.FileStorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,8 +30,11 @@ public class AdminInquiryService {
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
 
-    public List<InquiryListResponse> getAllInquiries() {
-        List<Inquiry> inquiries = inquiryRepository.findAllByOrderByCreatedAtDesc();
+    public Page<InquiryListResponse> getAllInquiries(Pageable pageable) {
+        Pageable sorted = pageable.getSort().isSorted()
+                ? pageable
+                : PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("createdAt").descending());
+        Page<Inquiry> inquiries = inquiryRepository.findAll(sorted);
 
         Set<Long> userIds = inquiries.stream()
                 .map(Inquiry::getCreatedByUserId)
@@ -35,9 +42,7 @@ public class AdminInquiryService {
         Map<Long, String> userNameMap = userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(UserEntity::getId, UserEntity::getName));
 
-        return inquiries.stream()
-                .map(inquiry -> InquiryListResponse.from(inquiry, userNameMap.get(inquiry.getCreatedByUserId())))
-                .toList();
+        return inquiries.map(inquiry -> InquiryListResponse.from(inquiry, userNameMap.get(inquiry.getCreatedByUserId())));
     }
 
     public InquiryDetailResponse getInquiryDetail(Long inquiryId) {

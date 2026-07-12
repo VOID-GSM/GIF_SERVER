@@ -9,6 +9,8 @@ import com.example.gifserverv2.domain.inquiry.service.ClientInquiryService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -34,11 +36,13 @@ public class InquiryController {
     }
 
     @GetMapping("/my")
-    public ResponseEntity<List<InquiryListResponse>> getMyInquiries(
-            @AuthenticationPrincipal AuthenticatedUser user
+    public ResponseEntity<Page<InquiryListResponse>> getMyInquiries(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            Pageable pageable
     ) {
-        return ResponseEntity.ok(clientInquiryService.getMyInquiries(user.userId()));
+        return ResponseEntity.ok(clientInquiryService.getMyInquiries(user.userId(), pageable));
     }
+
 
     @GetMapping("/my/{inquiryId}")
     public ResponseEntity<InquiryDetailResponse> getMyInquiryDetail(
@@ -50,8 +54,8 @@ public class InquiryController {
 
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<InquiryListResponse>> getAllInquiries() {
-        return ResponseEntity.ok(adminInquiryService.getAllInquiries());
+    public ResponseEntity<Page<InquiryListResponse>> getAllInquiries(Pageable pageable) {
+        return ResponseEntity.ok(adminInquiryService.getAllInquiries(pageable));
     }
 
     @GetMapping("/admin/{inquiryId}")
