@@ -23,10 +23,10 @@ public class Inquiry {
     @Column(nullable = false, length = 2000)
     private String content;
 
-    @Column
+    @Column(length = 1000)
     private String filePath;
 
-    @Column
+    @Column(length = 500)
     private String originalFileName;
 
     @Column
