@@ -22,9 +22,14 @@ public class AiSummaryService {
     private final FormSubmitRepository formSubmitRepository;
     private final OpenAiService openAiService;
 
+    @Transactional
     public String summarizeProject(Long projectId) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(ProjectException::notFound);
+
+        if (project.getAiSummary() != null) {
+            return project.getAiSummary();
+        }
 
         StringBuilder prompt = new StringBuilder();
         prompt.append("다음 프로젝트 정보를 한줄로 요약해주세요:\n\n");
@@ -34,12 +39,20 @@ public class AiSummaryService {
             prompt.append("설명: ").append(project.getDescription()).append("\n");
         }
 
-        return openAiService.summarize(prompt.toString());
+        String summary = openAiService.summarize(prompt.toString());
+        project.updateAiSummary(summary);
+        projectRepository.save(project);
+        return summary;
     }
 
+    @Transactional
     public String summarizeFormSubmit(Long submitId) {
         FormSubmit submit = formSubmitRepository.findByIdWithAnswersAndFields(submitId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제출 내역을 찾을 수 없습니다."));
+
+        if (submit.getAiSummary() != null) {
+            return submit.getAiSummary();
+        }
 
         StringBuilder prompt = new StringBuilder();
         prompt.append("다음 양식 제출 내용을 한줄로 요약해주세요:\n\n");
@@ -71,6 +84,9 @@ public class AiSummaryService {
             }
         }
 
-        return openAiService.summarize(prompt.toString());
+        String summary = openAiService.summarize(prompt.toString());
+        submit.updateAiSummary(summary);
+        formSubmitRepository.save(submit);
+        return summary;
     }
 }
