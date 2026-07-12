@@ -1,10 +1,17 @@
 package com.example.gifserverv2.domain.inquiry.service;
 
+import com.example.gifserverv2.domain.inquiry.dto.response.DetailInquiryResponse;
+import com.example.gifserverv2.domain.inquiry.dto.response.ListInquiryResponse;
+import com.example.gifserverv2.domain.inquiry.entity.Inquiry;
+import com.example.gifserverv2.domain.inquiry.repository.InquiryRepository;
+import com.example.gifserverv2.global.exception.InquiryException;
 import com.example.gifserverv2.global.file.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -13,6 +20,7 @@ public class ClientInquiryService {
 
     private final InquiryWriter inquiryWriter;
     private final FileStorageService fileStorageService;
+    private final InquiryRepository inquiryRepository;
 
     private static final String INQUIRY_DIRECTORY = "inquiry";
 
@@ -35,5 +43,22 @@ public class ClientInquiryService {
             }
             throw e;
         }
+    }
+
+    public List<ListInquiryResponse> getMyInquiries(Long userId) {
+        return inquiryRepository.findAllByCreatedByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(ListInquiryResponse::from)
+                .toList();
+    }
+
+    public DetailInquiryResponse getMyInquiryDetail(Long userId, Long inquiryId) {
+        Inquiry inquiry = inquiryRepository.findById(inquiryId)
+                .orElseThrow(InquiryException::notFound);
+
+        if (!inquiry.getCreatedByUserId().equals(userId)) {
+            throw InquiryException.forbidden();
+        }
+
+        return InquiryDetailResponse.from(inquiry);
     }
 }
