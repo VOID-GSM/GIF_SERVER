@@ -1,0 +1,79 @@
+package com.example.gifserverv2.domain.inquiry.controller;
+
+import com.example.gifserverv2.domain.inquiry.dto.request.AnswerInquiryRequest;
+import com.example.gifserverv2.domain.inquiry.dto.response.InquiryDetailResponse;
+import com.example.gifserverv2.domain.inquiry.dto.response.InquiryListResponse;
+import com.example.gifserverv2.domain.inquiry.service.AdminInquiryService;
+import com.example.gifserverv2.domain.inquiry.service.ClientInquiryService;
+import com.example.gifserverv2.global.security.AuthenticatedUser;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/inquiry")
+@RequiredArgsConstructor
+public class InquiryController {
+
+    private final ClientInquiryService clientInquiryService;
+    private final AdminInquiryService adminInquiryService;
+
+    @PostMapping
+    public ResponseEntity<Long> createInquiry(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestParam String title,
+            @RequestParam String content,
+            @RequestParam(required = false) MultipartFile file
+    ) {
+        return ResponseEntity.ok(clientInquiryService.createInquiry(user.userId(), title, content, file));
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<List<InquiryListResponse>> getMyInquiries(
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return ResponseEntity.ok(clientInquiryService.getMyInquiries(user.userId()));
+    }
+
+    @GetMapping("/my/{inquiryId}")
+    public ResponseEntity<InquiryDetailResponse> getMyInquiryDetail(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long inquiryId
+    ) {
+        return ResponseEntity.ok(clientInquiryService.getMyInquiryDetail(user.userId(), inquiryId));
+    }
+
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<InquiryListResponse>> getAllInquiries() {
+        return ResponseEntity.ok(adminInquiryService.getAllInquiries());
+    }
+
+    @GetMapping("/admin/{inquiryId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<InquiryDetailResponse> getInquiryDetail(@PathVariable Long inquiryId) {
+        return ResponseEntity.ok(adminInquiryService.getInquiryDetail(inquiryId));
+    }
+
+    @PatchMapping("/admin/{inquiryId}/answer")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> answerInquiry(
+            @PathVariable Long inquiryId,
+            @RequestBody AnswerInquiryRequest request
+    ) {
+        adminInquiryService.answerInquiry(inquiryId, request.answerContent());
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/admin/{inquiryId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteInquiry(@PathVariable Long inquiryId) {
+        adminInquiryService.deleteInquiry(inquiryId);
+        return ResponseEntity.noContent().build();
+    }
+}
