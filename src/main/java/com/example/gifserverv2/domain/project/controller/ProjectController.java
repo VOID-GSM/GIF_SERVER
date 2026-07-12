@@ -117,6 +117,7 @@ public class ProjectController {
     }
 
     @PutMapping("/{projectId}/note")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> writeOrUpdateNote(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId,
@@ -127,6 +128,7 @@ public class ProjectController {
     }
 
     @GetMapping("/{projectId}/note")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<GetProjectNoteResponse> getMyNote(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId
