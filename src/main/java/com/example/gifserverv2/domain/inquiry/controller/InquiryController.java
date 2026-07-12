@@ -1,5 +1,4 @@
 package com.example.gifserverv2.domain.inquiry.controller;
-import com.example.gifserverv2.domain.inquiry.service.AdminInquiryService;
 import com.example.gifserverv2.domain.inquiry.service.ClientInquiryService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +13,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class InquiryController {
 
     private final ClientInquiryService clientInquiryService;
-    private final AdminInquiryService adminInquiryService;
 
     @PostMapping
     public ResponseEntity<Long> createInquiry(
