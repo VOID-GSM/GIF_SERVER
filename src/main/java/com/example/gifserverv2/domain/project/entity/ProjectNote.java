@@ -22,7 +22,7 @@ public class ProjectNote {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(nullable = false, length = 1000)
     private String content;
 
     @Builder
