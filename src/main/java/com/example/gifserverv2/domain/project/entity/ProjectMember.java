@@ -1,5 +1,6 @@
 package com.example.gifserverv2.domain.project.entity;
 
+import com.example.gifserverv2.domain.user.entity.ClientRole;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,13 +25,9 @@ public class ProjectMember {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private MemberRole role;
+    private ClientRole role;
 
-    public enum MemberRole {
-        LEADER, MEMBER
-    }
-
-    public void changeRole(MemberRole role){
+    public void changeRole(ClientRole role){
         this.role = role;
     }
 }

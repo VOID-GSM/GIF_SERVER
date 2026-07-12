@@ -34,7 +34,7 @@ public class Form {
     @Column
     private Integer targetGrade;
 
-    @Column(length = 500)
+    @Column(length = 1000)
     private String description;
 
     @OneToMany(mappedBy = "form", cascade = CascadeType.ALL, orphanRemoval = true)

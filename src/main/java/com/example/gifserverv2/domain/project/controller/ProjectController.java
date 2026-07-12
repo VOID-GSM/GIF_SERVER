@@ -4,6 +4,7 @@ import com.example.gifserverv2.domain.ai.service.AiSummaryService;
 import com.example.gifserverv2.domain.project.dto.request.*;
 import com.example.gifserverv2.domain.project.dto.response.*;
 import com.example.gifserverv2.domain.project.service.CommandProjectService;
+import com.example.gifserverv2.domain.project.service.ProjectNoteService;
 import com.example.gifserverv2.domain.project.service.QueryProjectService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -27,6 +28,7 @@ public class ProjectController {
     private final QueryProjectService projectQueryService;
     private final CommandProjectService projectCommandService;
     private final AiSummaryService aiSummaryService;
+    private final ProjectNoteService projectNoteService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Long> createProject(
@@ -104,6 +106,7 @@ public class ProjectController {
     }
 
     @PatchMapping("/{projectId}/transfer-leader")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> transferLeader(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId,
@@ -111,5 +114,25 @@ public class ProjectController {
     ) {
         projectCommandService.transferLeader(projectId, user.userId(), request);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{projectId}/note")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> writeOrUpdateNote(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long projectId,
+            @Valid @RequestBody CreateProjectNoteRequest request
+    ) {
+        projectNoteService.writeOrUpdateNote(projectId, user.userId(), request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{projectId}/note")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<GetProjectNoteResponse> getMyNote(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long projectId
+    ) {
+        return ResponseEntity.ok(projectNoteService.getMyNote(projectId, user.userId()));
     }
 }

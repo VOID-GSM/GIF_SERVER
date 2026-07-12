@@ -7,17 +7,23 @@ import com.example.gifserverv2.domain.form.dto.response.ListFormResponse;
 import com.example.gifserverv2.domain.form.dto.response.SubmitDetailFormResponse;
 import com.example.gifserverv2.domain.form.entity.Form;
 import com.example.gifserverv2.domain.form.entity.FormField;
+import com.example.gifserverv2.domain.form.entity.FormSubmit;
 import com.example.gifserverv2.domain.form.exception.FormException;
 import com.example.gifserverv2.domain.form.repository.FormRepository;
 import com.example.gifserverv2.domain.form.repository.FormSubmitRepository;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.user.entity.UserEntity;
+import com.example.gifserverv2.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +34,7 @@ public class AdminFormService {
     private final FormSubmitRepository formSubmitRepository;
     private final QueryFormService queryFormService;
     private final ProjectRepository projectRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public Long createForm(CreateFormRequest request) {
@@ -97,12 +104,28 @@ public class AdminFormService {
 
     public List<SubmitDetailFormResponse> getSubmitListByForm(Long formId) {
         Form form = queryFormService.getFormOrThrow(formId);
-        return formSubmitRepository.findAllByFormId(form.getId()).stream()
+        List<FormSubmit> submits = formSubmitRepository.findAllByFormId(form.getId());
+
+        Set<Long> projectIds = submits.stream()
+                .map(FormSubmit::getProjectId)
+                .collect(Collectors.toSet());
+        Set<Long> userIds = submits.stream()
+                .map(FormSubmit::getSubmittedByUserId)
+                .collect(Collectors.toSet());
+
+        Map<Long, String> teamNameMap = projectRepository.findAllById(projectIds).stream()
+                .collect(Collectors.toMap(Project::getId, Project::getTeamName));
+
+        Map<Long, UserEntity> userMap = userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(UserEntity::getId, user -> user));
+
+        return submits.stream()
                 .map(submit -> {
-                    String teamName = projectRepository.findById(submit.getProjectId())
-                            .map(Project::getTeamName)
-                            .orElse(null);
-                    return SubmitDetailFormResponse.from(submit, teamName);
+                    String teamName = teamNameMap.get(submit.getProjectId());
+                    UserEntity user = userMap.get(submit.getSubmittedByUserId());
+                    String submittedByName = user != null ? user.getName() : null;
+                    String submittedByStudentNumber = user != null ? user.getStudentNumber() : null;
+                    return SubmitDetailFormResponse.from(submit, teamName, submittedByName, submittedByStudentNumber);
                 })
                 .toList();
     }

@@ -10,6 +10,8 @@ public record SubmitDetailFormResponse(
         Long projectId,
         String teamName,
         Long submittedByUserId,
+        String submittedByName,
+        String submittedByStudentNumber,
         LocalDateTime submittedAt,
         boolean deadlineComplied,
         List<AnswerResponse> answers
@@ -32,9 +34,8 @@ public record SubmitDetailFormResponse(
             String color
     ) {}
 
-    public static SubmitDetailFormResponse from(FormSubmit submit, String teamName) {
-        boolean deadlineComplied = !submit.getSubmittedAt()
-                .isAfter(submit.getForm().getDeadline());
+    public static SubmitDetailFormResponse from(FormSubmit submit, String teamName, String submittedByName, String submittedByStudentNumber) {
+        boolean deadlineComplied = !submit.getSubmittedAt().isAfter(submit.getForm().getDeadline());
 
         List<AnswerResponse> answerResponses = submit.getAnswers().stream()
                 .map(a -> {
@@ -65,6 +66,8 @@ public record SubmitDetailFormResponse(
                 submit.getProjectId(),
                 teamName,
                 submit.getSubmittedByUserId(),
+                submittedByName,
+                submittedByStudentNumber,
                 submit.getSubmittedAt(),
                 deadlineComplied,
                 answerResponses
