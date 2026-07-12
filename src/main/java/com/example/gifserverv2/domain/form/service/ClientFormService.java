@@ -110,6 +110,12 @@ public class ClientFormService {
             FormField field = formFieldRepository.findById(answerReq.fieldId())
                     .orElseThrow(FormException::fieldNotFound);
 
+            if (field.getType() == FormField.FieldType.TEXT
+                    && answerReq.textAnswer() != null
+                    && answerReq.textAnswer().length() > 1000) {
+                throw new FormException(HttpStatus.BAD_REQUEST, "답변은 1000자를 초과할 수 없습니다.");
+            }
+
             FormFieldAnswer answer = FormFieldAnswer.builder()
                     .formSubmit(submit)
                     .formField(field)
@@ -117,7 +123,6 @@ public class ClientFormService {
                     .filePath(answerReq.filePath())
                     .fileSize(answerReq.fileSize())
                     .build();
-            formFieldAnswerRepository.save(answer);
 
             if (field.getType() == FormField.FieldType.CALENDAR && answerReq.dateAnswer() != null) {
                 answerReq.dateAnswer().forEach(eventReq -> {
@@ -131,18 +136,8 @@ public class ClientFormService {
                     answer.getCalendarEvents().add(event);
                 });
             }
+
             formFieldAnswerRepository.save(answer);
-        });
-
-        request.answers().forEach(answerReq -> {
-            FormField field = formFieldRepository.findById(answerReq.fieldId())
-                    .orElseThrow(FormException::fieldNotFound);
-
-            if (field.getType() == FormField.FieldType.TEXT
-                    && answerReq.textAnswer() != null
-                    && answerReq.textAnswer().length() > 1000) {
-                throw new FormException(HttpStatus.BAD_REQUEST, "답변은 1000자를 초과할 수 없습니다.");
-            }
         });
 
         return submit.getId();
