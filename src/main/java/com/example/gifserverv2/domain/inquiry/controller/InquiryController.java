@@ -37,7 +37,7 @@ public class InquiryController {
     public ResponseEntity<List<ListInquiryResponse>> getMyInquiries(
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
-        return ResponseEntity.ok(clientInquiryService.getMyInquiries(user.userId()));
+        return ResponseEntity.ok(clientInquiryService.getMyInquiries(user.userId(), user.name()));
     }
 
     @GetMapping("/my/{inquiryId}")
@@ -45,6 +45,6 @@ public class InquiryController {
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long inquiryId
     ) {
-        return ResponseEntity.ok(clientInquiryService.getMyInquiryDetail(user.userId(), inquiryId));
+        return ResponseEntity.ok(clientInquiryService.getMyInquiryDetail(user.userId(), user.name(), inquiryId));
     }
 }
