@@ -5,7 +5,7 @@ import com.example.gifserverv2.domain.inquiry.entity.InquiryStatus;
 
 import java.time.LocalDateTime;
 
-public record InquiryDetailResponse(
+public record DetailInquiryResponse(
         Long id,
         String title,
         String content,
@@ -18,8 +18,8 @@ public record InquiryDetailResponse(
         String createdByName,
         LocalDateTime createdAt
 ) {
-    public static InquiryDetailResponse from(Inquiry inquiry, String createdByName) {
-        return new InquiryDetailResponse(
+    public static DetailInquiryResponse from(Inquiry inquiry, String createdByName) {
+        return new DetailInquiryResponse(
                 inquiry.getId(),
                 inquiry.getTitle(),
                 inquiry.getContent(),

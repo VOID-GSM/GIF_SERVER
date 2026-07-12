@@ -1,7 +1,7 @@
 package com.example.gifserverv2.domain.inquiry.service;
 
-import com.example.gifserverv2.domain.inquiry.dto.response.InquiryDetailResponse;
-import com.example.gifserverv2.domain.inquiry.dto.response.InquiryListResponse;
+import com.example.gifserverv2.domain.inquiry.dto.response.DetailInquiryResponse;
+import com.example.gifserverv2.domain.inquiry.dto.response.ListInquiryResponse;
 import com.example.gifserverv2.domain.inquiry.entity.Inquiry;
 import com.example.gifserverv2.domain.inquiry.exception.InquiryException;
 import com.example.gifserverv2.domain.inquiry.repository.InquiryRepository;
@@ -16,7 +16,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -30,7 +29,7 @@ public class AdminInquiryService {
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
 
-    public Page<InquiryListResponse> getAllInquiries(Pageable pageable) {
+    public Page<ListInquiryResponse> getAllInquiries(Pageable pageable) {
         Pageable sorted = pageable.getSort().isSorted()
                 ? pageable
                 : PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("createdAt").descending());
@@ -42,17 +41,17 @@ public class AdminInquiryService {
         Map<Long, String> userNameMap = userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(UserEntity::getId, UserEntity::getName));
 
-        return inquiries.map(inquiry -> InquiryListResponse.from(inquiry, userNameMap.get(inquiry.getCreatedByUserId())));
+        return inquiries.map(inquiry -> ListInquiryResponse.from(inquiry, userNameMap.get(inquiry.getCreatedByUserId())));
     }
 
-    public InquiryDetailResponse getInquiryDetail(Long inquiryId) {
+    public DetailInquiryResponse getInquiryDetail(Long inquiryId) {
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(InquiryException::notFound);
 
         UserEntity user = userRepository.findById(inquiry.getCreatedByUserId()).orElse(null);
         String createdByName = user != null ? user.getName() : null;
 
-        return InquiryDetailResponse.from(inquiry, createdByName);
+        return DetailInquiryResponse.from(inquiry, createdByName);
     }
 
     @Transactional

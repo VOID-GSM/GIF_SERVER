@@ -1,7 +1,7 @@
 package com.example.gifserverv2.domain.inquiry.service;
 
-import com.example.gifserverv2.domain.inquiry.dto.response.InquiryDetailResponse;
-import com.example.gifserverv2.domain.inquiry.dto.response.InquiryListResponse;
+import com.example.gifserverv2.domain.inquiry.dto.response.DetailInquiryResponse;
+import com.example.gifserverv2.domain.inquiry.dto.response.ListInquiryResponse;
 import com.example.gifserverv2.domain.inquiry.entity.Inquiry;
 import com.example.gifserverv2.domain.inquiry.exception.InquiryException;
 import com.example.gifserverv2.domain.inquiry.repository.InquiryRepository;
@@ -49,7 +49,6 @@ public class ClientInquiryService {
         }
     }
 
-
     @Transactional
     protected Long saveInquiry(Long userId, String title, String content,
                                String filePath, String originalFileName, Long fileSize) {
@@ -66,12 +65,12 @@ public class ClientInquiryService {
     }
 
 
-    public Page<InquiryListResponse> getMyInquiries(Long userId, Pageable pageable) {
+    public Page<ListInquiryResponse> getMyInquiries(Long userId, Pageable pageable) {
         return inquiryRepository.findAllByCreatedByUserId(userId, pageable)
-                .map(inquiry -> InquiryListResponse.from(inquiry, null));
+                .map(inquiry -> ListInquiryResponse.from(inquiry, null));
     }
 
-    public InquiryDetailResponse getMyInquiryDetail(Long userId, Long inquiryId) {
+    public DetailInquiryResponse getMyInquiryDetail(Long userId, Long inquiryId) {
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(InquiryException::notFound);
 
@@ -82,6 +81,6 @@ public class ClientInquiryService {
         UserEntity user = userRepository.findById(userId).orElse(null);
         String createdByName = user != null ? user.getName() : null;
 
-        return InquiryDetailResponse.from(inquiry, createdByName);
+        return DetailInquiryResponse.from(inquiry, createdByName);
     }
 }
