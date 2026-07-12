@@ -47,14 +47,7 @@ public class ScoreNoticeService {
 
     @Transactional
     public void publish(AuthenticatedUser caller) {
-        if (caller == null || caller.role() != Role.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자(선생님)만 공지할 수 있습니다.");
-        }
-
-        UserEntity user = userRepository.findById(caller.userId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
-
-        if (user.getAdminRole() != AdminRole.MASTER) {
+        if (caller.adminRole() != AdminRole.MASTER) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "성적 공지 권한이 없습니다. (Master 선생님 전용)");
         }
 
