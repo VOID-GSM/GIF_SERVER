@@ -104,6 +104,7 @@ public class ProjectController {
     }
 
     @PatchMapping("/{projectId}/transfer-leader")
+    @PreAuthorize("hasRole('MASTER')")
     public ResponseEntity<Void> transferLeader(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId,
