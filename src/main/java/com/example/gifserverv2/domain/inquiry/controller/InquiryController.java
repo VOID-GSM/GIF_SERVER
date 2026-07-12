@@ -1,11 +1,13 @@
 package com.example.gifserverv2.domain.inquiry.controller;
+
 import com.example.gifserverv2.domain.inquiry.service.ClientInquiryService;
+import com.example.gifserverv2.domain.inquiry.dto.request.CreateInquiryRequest;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/inquiry")
@@ -17,10 +19,13 @@ public class InquiryController {
     @PostMapping
     public ResponseEntity<Long> createInquiry(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestParam String title,
-            @RequestParam String content,
-            @RequestParam(required = false) MultipartFile file
+            @Valid @ModelAttribute CreateInquiryRequest request
     ) {
-        return ResponseEntity.ok(clientInquiryService.createInquiry(user.userId(), title, content, file));
+        return ResponseEntity.ok(clientInquiryService.createInquiry(
+                user.userId(),
+                request.title(),
+                request.content(),
+                request.file()
+        ));
     }
 }
