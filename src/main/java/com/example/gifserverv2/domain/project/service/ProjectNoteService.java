@@ -24,13 +24,6 @@ public class ProjectNoteService {
 
     @Transactional
     public void writeOrUpdateNote(Long projectId, Long userId, CreateProjectNoteRequest request) {
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
-
-        if (user.getEffectiveRole() != Role.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "선생님 권한만 메모를 작성할 수 있습니다.");
-        }
-
         projectQueryService.getProjectOrThrow(projectId);
 
         projectNoteRepository.findByProjectIdAndUserId(projectId, userId)
@@ -49,12 +42,7 @@ public class ProjectNoteService {
 
     @Transactional(readOnly = true)
     public GetProjectNoteResponse getMyNote(Long projectId, Long userId) {
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
-
-        if (user.getEffectiveRole() != Role.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "선생님 권한만 메모를 조회할 수 있습니다.");
-        }
+        projectQueryService.getProjectOrThrow(projectId);
 
         String content = projectNoteRepository.findByProjectIdAndUserId(projectId, userId)
                 .map(ProjectNote::getContent)
