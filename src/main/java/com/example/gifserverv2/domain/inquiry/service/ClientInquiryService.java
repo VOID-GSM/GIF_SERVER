@@ -47,20 +47,18 @@ public class ClientInquiryService {
         }
     }
 
-    public List<ListInquiryResponse> getMyInquiries(Long userId) {
+    public List<ListInquiryResponse> getMyInquiries(Long userId, String username) {
         return inquiryRepository.findAllByCreatedByUserIdOrderByCreatedAtDesc(userId).stream()
-                .map(ListInquiryResponse::from)
+                .map(inquiry -> ListInquiryResponse.from(inquiry, username))
                 .toList();
     }
 
-    public DetailInquiryResponse getMyInquiryDetail(Long userId, Long inquiryId) {
+    public DetailInquiryResponse getMyInquiryDetail(Long userId, String username, Long inquiryId) {
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(InquiryException::notFound);
-
         if (!inquiry.getCreatedByUserId().equals(userId)) {
             throw InquiryException.forbidden();
         }
-
-        return InquiryDetailResponse.from(inquiry);
+        return DetailInquiryResponse.from(inquiry, username);
     }
 }
