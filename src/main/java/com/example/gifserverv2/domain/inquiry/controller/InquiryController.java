@@ -43,7 +43,6 @@ public class InquiryController {
         return ResponseEntity.ok(clientInquiryService.getMyInquiries(user.userId(), pageable));
     }
 
-
     @GetMapping("/my/{inquiryId}")
     public ResponseEntity<InquiryDetailResponse> getMyInquiryDetail(
             @AuthenticationPrincipal AuthenticatedUser user,
