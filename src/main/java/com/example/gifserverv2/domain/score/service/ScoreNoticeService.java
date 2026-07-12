@@ -9,6 +9,9 @@ import com.example.gifserverv2.domain.score.entity.ScoreNotice;
 import com.example.gifserverv2.domain.score.entity.Score;
 import com.example.gifserverv2.domain.score.repository.ScoreNoticeRepository;
 import com.example.gifserverv2.domain.score.repository.ScoreRepository;
+import com.example.gifserverv2.domain.user.entity.AdminRole;
+import com.example.gifserverv2.domain.user.entity.UserEntity;
+import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import com.example.gifserverv2.domain.user.entity.Role;
 import org.springframework.stereotype.Service;
@@ -31,12 +34,14 @@ public class ScoreNoticeService {
     private final ProjectRepository projectRepository;
     private final ScoreRepository scoreRepository;
     private final ScoreNoticeRepository scoreNoticeRepository;
+    private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
-    public ScoreNoticeService(ProjectRepository projectRepository, ScoreRepository scoreRepository, ScoreNoticeRepository scoreNoticeRepository, ObjectMapper objectMapper) {
+    public ScoreNoticeService(ProjectRepository projectRepository, ScoreRepository scoreRepository, ScoreNoticeRepository scoreNoticeRepository, UserRepository userRepository,ObjectMapper objectMapper) {
         this.projectRepository = projectRepository;
         this.scoreRepository = scoreRepository;
         this.scoreNoticeRepository = scoreNoticeRepository;
+        this.userRepository = userRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -44,6 +49,13 @@ public class ScoreNoticeService {
     public void publish(AuthenticatedUser caller) {
         if (caller == null || caller.role() != Role.ADMIN) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자(선생님)만 공지할 수 있습니다.");
+        }
+
+        UserEntity user = userRepository.findById(caller.userId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        if (user.getAdminRole() != AdminRole.MASTER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "성적 공지 권한이 없습니다. (Master 선생님 전용)");
         }
 
         List<Project> projects = projectRepository.findAll();
