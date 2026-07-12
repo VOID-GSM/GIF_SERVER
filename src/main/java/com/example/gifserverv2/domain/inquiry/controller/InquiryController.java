@@ -1,11 +1,13 @@
 package com.example.gifserverv2.domain.inquiry.controller;
 
 import com.example.gifserverv2.domain.inquiry.dto.request.AnswerInquiryRequest;
+import com.example.gifserverv2.domain.inquiry.dto.request.CreateInquiryRequest;
 import com.example.gifserverv2.domain.inquiry.dto.response.InquiryDetailResponse;
 import com.example.gifserverv2.domain.inquiry.dto.response.InquiryListResponse;
 import com.example.gifserverv2.domain.inquiry.service.AdminInquiryService;
 import com.example.gifserverv2.domain.inquiry.service.ClientInquiryService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,11 +28,9 @@ public class InquiryController {
     @PostMapping
     public ResponseEntity<Long> createInquiry(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestParam String title,
-            @RequestParam String content,
-            @RequestParam(required = false) MultipartFile file
+            @ModelAttribute @Valid CreateInquiryRequest request
     ) {
-        return ResponseEntity.ok(clientInquiryService.createInquiry(user.userId(), title, content, file));
+        return ResponseEntity.ok(clientInquiryService.createInquiry(user.userId(), request.title(), request.content(), request.file()));
     }
 
     @GetMapping("/my")
