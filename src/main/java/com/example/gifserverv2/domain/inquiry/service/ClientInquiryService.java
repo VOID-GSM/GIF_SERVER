@@ -15,36 +15,56 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ClientInquiryService {
 
+    private final InquiryWriter inquiryWriter;
     private final InquiryRepository inquiryRepository;
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
 
     private static final String INQUIRY_DIRECTORY = "inquiry";
 
-    @Transactional
     public Long createInquiry(Long userId, String title, String content, MultipartFile file) {
-        Inquiry.InquiryBuilder builder = Inquiry.builder()
-                .title(title)
-                .content(content)
-                .createdByUserId(userId);
+        String savedPath = null;
+        String originalFileName = null;
+        Long fileSize = null;
 
         if (file != null && !file.isEmpty()) {
-            String savedPath = fileStorageService.save(file, INQUIRY_DIRECTORY);
-            builder.filePath(savedPath)
-                    .originalFileName(file.getOriginalFilename())
-                    .fileSize(file.getSize());
+            savedPath = fileStorageService.save(file, INQUIRY_DIRECTORY);
+            originalFileName = file.getOriginalFilename();
+            fileSize = file.getSize();
         }
 
-        Inquiry inquiry = builder.build();
+        try {
+            return inquiryWriter.save(userId, title, content, savedPath, originalFileName, fileSize);
+        } catch (RuntimeException e) {
+            if (savedPath != null) {
+                fileStorageService.delete(savedPath);
+            }
+            throw e;
+        }
+    }
+
+
+    @Transactional
+    protected Long saveInquiry(Long userId, String title, String content,
+                               String filePath, String originalFileName, Long fileSize) {
+        Inquiry inquiry = Inquiry.builder()
+                .title(title)
+                .content(content)
+                .createdByUserId(userId)
+                .filePath(filePath)
+                .originalFileName(originalFileName)
+                .fileSize(fileSize)
+                .build();
+
         return inquiryRepository.save(inquiry).getId();
     }
+
 
     public Page<InquiryListResponse> getMyInquiries(Long userId, Pageable pageable) {
         return inquiryRepository.findAllByCreatedByUserId(userId, pageable)
