@@ -41,6 +41,7 @@ public class AiSummaryService {
 
         String summary = openAiService.summarize(prompt.toString());
         project.updateAiSummary(summary);
+        projectRepository.save(project);
         return summary;
     }
 
