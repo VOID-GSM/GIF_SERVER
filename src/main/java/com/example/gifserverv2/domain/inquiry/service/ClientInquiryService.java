@@ -8,6 +8,7 @@ import com.example.gifserverv2.global.exception.InquiryException;
 import com.example.gifserverv2.global.file.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,6 +25,7 @@ public class ClientInquiryService {
 
     private static final String INQUIRY_DIRECTORY = "inquiry";
 
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Long createInquiry(Long userId, String title, String content, MultipartFile file) {
         String savedPath = null;
         String originalFileName = null;
