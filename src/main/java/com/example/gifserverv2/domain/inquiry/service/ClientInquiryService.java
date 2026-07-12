@@ -16,6 +16,7 @@ public class ClientInquiryService {
 
     private static final String INQUIRY_DIRECTORY = "inquiry";
 
+    @Transactional(readOnly = false)
     public Long createInquiry(Long userId, String title, String content, MultipartFile file) {
         String savedPath = null;
         String originalFileName = null;
