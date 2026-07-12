@@ -12,6 +12,8 @@ import com.example.gifserverv2.domain.form.repository.FormRepository;
 import com.example.gifserverv2.domain.form.repository.FormSubmitRepository;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.user.entity.UserEntity;
+import com.example.gifserverv2.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +30,7 @@ public class AdminFormService {
     private final FormSubmitRepository formSubmitRepository;
     private final QueryFormService queryFormService;
     private final ProjectRepository projectRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public Long createForm(CreateFormRequest request) {
@@ -102,7 +105,11 @@ public class AdminFormService {
                     String teamName = projectRepository.findById(submit.getProjectId())
                             .map(Project::getTeamName)
                             .orElse(null);
-                    return SubmitDetailFormResponse.from(submit, teamName);
+                    UserEntity user = userRepository.findById(submit.getSubmittedByUserId())
+                            .orElse(null);
+                    String submittedByName = user != null ? user.getName() : null;
+                    String submittedByStudentNumber = user != null ? user.getStudentNumber() : null;
+                    return SubmitDetailFormResponse.from(submit, teamName, submittedByName, submittedByStudentNumber);
                 })
                 .toList();
     }
