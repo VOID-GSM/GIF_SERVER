@@ -2,7 +2,6 @@ package com.example.gifserverv2.domain.score.service;
 
 import com.example.gifserverv2.domain.score.dto.request.CreateMajorScoreRequest;
 import com.example.gifserverv2.domain.score.dto.request.PatchMajorScoreRequest;
-import com.example.gifserverv2.domain.score.dto.response.GetDetailScoreResponse;
 import com.example.gifserverv2.domain.score.entity.Score;
 import com.example.gifserverv2.domain.project.entity.Project;
 import lombok.RequiredArgsConstructor;
@@ -70,7 +69,15 @@ public class MajorScoreService {
         }
         support.validateCommonRequest(projectId, evaluator.userId().toString());
         Project project = support.getProjectOrThrow(projectId);
-        return support.getScoreOrThrow(project, evaluator.userId().toString().trim()); // 순수 엔티티 반환
+
+        try {
+            return support.getScoreOrThrow(project, evaluator.userId().toString().trim());
+        } catch (ResponseStatusException e) {
+            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                return null;
+            }
+            throw e;
+        }
     }
 
     private void validateEvaluatorAndFields(AuthenticatedUser evaluator, Long projectId,

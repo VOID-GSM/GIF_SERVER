@@ -195,7 +195,6 @@ public class AuthService {
         }
 
         UserEntity user = requireUser(caller.userId());
-
         boolean changed = false;
 
         String newName = (request.name() != null && !request.name().isBlank()) ? request.name() : user.getName();
@@ -218,13 +217,16 @@ public class AuthService {
             if (caller.role() == null || caller.role() != Role.ADMIN) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자 정보는 관리자(선생님)만 수정할 수 있습니다.");
             }
+
             AdminRole newAdminRole = request.adminRole() != null ? request.adminRole() : user.getAdminRole();
             String validationMessage = AdminRole.subjectTeacherValidationMessage(newAdminRole);
             if (validationMessage != null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, validationMessage);
             }
+
             String newAdminTeam = request.adminTeam() != null ? request.adminTeam() : user.getAdminTeam();
-            user.updateAdminAdditionalInfo(newAdminRole, newAdminTeam, user.isGradeHead());
+
+            user.updateAdminAdditionalInfo(newAdminRole, newName, newAdminTeam, user.isGradeHead());
             changed = true;
         }
 
