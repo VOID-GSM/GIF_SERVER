@@ -28,8 +28,11 @@ public class FormController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Long> createForm(@RequestBody CreateFormRequest request) {
-        return ResponseEntity.ok(adminFormService.createForm(request));
+    public ResponseEntity<Long> createForm(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestBody CreateFormRequest request
+    ) {
+        return ResponseEntity.ok(adminFormService.createForm(user.userId(), request));
     }
 
     @PatchMapping("/update")
@@ -49,10 +52,13 @@ public class FormController {
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/delete")
+    @DeleteMapping("/{formId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteForm(@RequestParam Long formId) {
-        adminFormService.deleteForm(formId);
+    public ResponseEntity<Void> deleteForm(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestParam Long formId
+    ) {
+        adminFormService.deleteForm(user.userId(), formId);
         return ResponseEntity.noContent().build();
     }
 

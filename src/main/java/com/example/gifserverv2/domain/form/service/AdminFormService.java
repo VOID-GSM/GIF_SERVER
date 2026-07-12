@@ -13,11 +13,14 @@ import com.example.gifserverv2.domain.form.repository.FormRepository;
 import com.example.gifserverv2.domain.form.repository.FormSubmitRepository;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +40,14 @@ public class AdminFormService {
     private final UserRepository userRepository;
 
     @Transactional
-    public Long createForm(CreateFormRequest request) {
+    public Long createForm(Long userId, CreateFormRequest request) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        if (user.getAdminRole() != AdminRole.MASTER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "양식 생성 권한이 없습니다. (Master 선생님 전용)");
+        }
+
         Form form = Form.builder()
                 .title(request.title())
                 .deadline(request.deadline())
@@ -97,7 +107,14 @@ public class AdminFormService {
     }
 
     @Transactional
-    public void deleteForm(Long formId) {
+    public void deleteForm(Long userId, Long formId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        if (user.getAdminRole() != AdminRole.MASTER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "양식 생성 권한이 없습니다. (Master 선생님 전용)");
+        }
+
         Form form = queryFormService.getFormOrThrow(formId);
         formRepository.delete(form);
     }
