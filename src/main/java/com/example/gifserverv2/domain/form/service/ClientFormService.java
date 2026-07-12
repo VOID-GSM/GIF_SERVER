@@ -20,6 +20,8 @@ import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.user.entity.UserEntity;
+import com.example.gifserverv2.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -39,6 +41,7 @@ public class ClientFormService {
     private final ProjectMemberRepository projectMemberRepository;
     private final QueryFormService queryFormService;
     private final ProjectRepository projectRepository;
+    private final UserRepository userRepository;
 
     public List<ListFormResponse> getAnnouncedForms(Long projectId) {
         List<Form> forms = formRepository.findAllByAnnouncedTrueOrderByDeadlineAsc();
@@ -107,6 +110,12 @@ public class ClientFormService {
             FormField field = formFieldRepository.findById(answerReq.fieldId())
                     .orElseThrow(FormException::fieldNotFound);
 
+            if (field.getType() == FormField.FieldType.TEXT
+                    && answerReq.textAnswer() != null
+                    && answerReq.textAnswer().length() > 1000) {
+                throw new FormException(HttpStatus.BAD_REQUEST, "답변은 1000자를 초과할 수 없습니다.");
+            }
+
             FormFieldAnswer answer = FormFieldAnswer.builder()
                     .formSubmit(submit)
                     .formField(field)
@@ -114,7 +123,6 @@ public class ClientFormService {
                     .filePath(answerReq.filePath())
                     .fileSize(answerReq.fileSize())
                     .build();
-            formFieldAnswerRepository.save(answer);
 
             if (field.getType() == FormField.FieldType.CALENDAR && answerReq.dateAnswer() != null) {
                 answerReq.dateAnswer().forEach(eventReq -> {
@@ -128,6 +136,7 @@ public class ClientFormService {
                     answer.getCalendarEvents().add(event);
                 });
             }
+
             formFieldAnswerRepository.save(answer);
         });
 
@@ -142,10 +151,13 @@ public class ClientFormService {
         String teamName = projectRepository.findById(projectId)
                 .map(Project::getTeamName)
                 .orElse(null);
+        UserEntity user = userRepository.findById(submit.getSubmittedByUserId())
+                .orElse(null);
+        String submittedByName = user != null ? user.getName() : null;
+        String submittedByStudentNumber = user != null ? user.getStudentNumber() : null;
 
-        return SubmitDetailFormResponse.from(submit, teamName);
+        return SubmitDetailFormResponse.from(submit, teamName, submittedByName, submittedByStudentNumber);
     }
-
     @Transactional
     public void updateSubmit(Long userId, UpdateSubmitRequest request) {
         FormSubmit submit = formSubmitRepository.findById(request.submitId())
@@ -189,6 +201,12 @@ public class ClientFormService {
                     .originalFileName(answerReq.originalFileName())
                     .build();
 
+            if (field.getType() == FormField.FieldType.TEXT
+                    && answerReq.textAnswer() != null
+                    && answerReq.textAnswer().length() > 1000) {
+                throw new FormException(HttpStatus.BAD_REQUEST, "텍스트 답변은 1000자를 초과할 수 없습니다.");
+            }
+
             if (field.getType() == FormField.FieldType.CALENDAR && answerReq.dateAnswer() != null) {
                 answerReq.dateAnswer().forEach(eventReq -> {
                     CalendarEvent event = CalendarEvent.builder()
@@ -204,5 +222,6 @@ public class ClientFormService {
             newAnswers.add(answer);
         }
         formFieldAnswerRepository.saveAll(newAnswers);
+
     }
 }

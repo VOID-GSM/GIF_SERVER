@@ -4,6 +4,7 @@ import com.example.gifserverv2.domain.auth.dto.request.OAuthSignInRequest;
 import com.example.gifserverv2.domain.auth.dto.response.OAuthSignInResponse;
 import com.example.gifserverv2.domain.auth.dto.response.CurrentUserResponse;
 import com.example.gifserverv2.domain.auth.dto.request.UpdateCurrentUserRequest;
+import com.example.gifserverv2.domain.user.entity.ClientRole;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.Role;
@@ -163,7 +164,7 @@ public class AuthService {
         List<ProjectMember> members = projectMemberRepository.findAllByUserId(user.getId());
         if (members != null && !members.isEmpty()) {
             ProjectMember pick = members.stream()
-                    .filter(m -> m.getRole() == ProjectMember.MemberRole.LEADER)
+                    .filter(m -> m.getRole() == ClientRole.LEADER)
                     .findFirst()
                     .orElse(members.get(0));
             if (pick != null && pick.getProject() != null) {
