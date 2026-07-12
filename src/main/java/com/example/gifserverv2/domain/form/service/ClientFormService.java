@@ -199,7 +199,7 @@ public class ClientFormService {
             if (field.getType() == FormField.FieldType.TEXT
                     && answerReq.textAnswer() != null
                     && answerReq.textAnswer().length() > 1000) {
-                throw new FormException(HttpStatus.BAD_REQUEST, "텍스트 답변은 1000자를 초과할 수 없습니다.");
+                throw FormException.textAnswerTooLong();
             }
 
             FormFieldAnswer answer = FormFieldAnswer.builder()
