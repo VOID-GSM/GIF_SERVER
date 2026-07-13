@@ -5,16 +5,15 @@ import com.example.gifserverv2.domain.auth.dto.request.ClientAdditionalInfoReque
 import com.example.gifserverv2.domain.auth.service.AdditionalInfoService;
 import com.example.gifserverv2.domain.auth.service.AuthService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders; // 임포트 추가
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie; // 임포트 추가
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/additional-info")
@@ -25,10 +24,9 @@ public class AdditionalInfoController {
     private final AuthService authService;
 
     @PostMapping("/admin")
-    public ResponseEntity<Void> updateAdminInfo(
+    public ResponseEntity<Map<String, String>> updateAdminInfo(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @Valid @RequestBody AdminAdditionalInfoRequest request, // @Valid 추가
-            HttpServletResponse response
+            @Valid @RequestBody AdminAdditionalInfoRequest request
     ) {
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증 정보가 필요합니다.");
@@ -38,29 +36,22 @@ public class AdditionalInfoController {
 
         String newAccessToken = authService.renewToken(user.userId());
 
-        ResponseCookie cookie = ResponseCookie.from("access_token", newAccessToken)
-                .path("/")
-                .httpOnly(true)
-                .secure(true)
-                .sameSite("None")
-                .maxAge(3600)
-                .build();
-
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(Map.of("accessToken", newAccessToken));
     }
 
     @PostMapping("/client")
-    public ResponseEntity<Void> updateClientAdditionalInfo(
-            @AuthenticationPrincipal AuthenticatedUser currentUser,
+    public ResponseEntity<Map<String, String>> updateClientAdditionalInfo(
+            @AuthenticationPrincipal AuthenticatedUser user,
             @Valid @RequestBody ClientAdditionalInfoRequest request
     ) {
-        if (currentUser == null) {
+        if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증 정보가 필요합니다.");
         }
 
-        additionalInfoService.updateClientAdditionalInfo(currentUser.userId(), request);
-        return ResponseEntity.noContent().build();
+        additionalInfoService.updateClientAdditionalInfo(user.userId(), request);
+
+        String newAccessToken = authService.renewToken(user.userId());
+
+        return ResponseEntity.ok(Map.of("accessToken", newAccessToken));
     }
 }
