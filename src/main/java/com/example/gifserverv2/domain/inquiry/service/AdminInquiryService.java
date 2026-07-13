@@ -8,6 +8,7 @@ import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.global.exception.InquiryException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,10 +22,11 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class AdminInquiryService {
 
-    private static final String MASTER_EMAIL = "teamvoid0107@gmail.com";
-
     private final InquiryRepository inquiryRepository;
     private final UserRepository userRepository;
+
+    @Value("${app.admin-email}")
+    private String masterEmail;
 
     public List<ListInquiryResponse> getAllInquiries(String email) {
         validateMaster(email);
@@ -64,7 +66,7 @@ public class AdminInquiryService {
     }
 
     private void validateMaster(String email) {
-        if (!MASTER_EMAIL.equalsIgnoreCase(email)) {
+        if (!masterEmail.equalsIgnoreCase(email)) {
             throw InquiryException.notMaster();
         }
     }
