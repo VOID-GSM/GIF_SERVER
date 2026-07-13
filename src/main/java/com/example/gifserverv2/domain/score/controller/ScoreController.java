@@ -34,7 +34,7 @@ public class ScoreController {
     public ResponseEntity<Void> createMajor(@AuthenticationPrincipal AuthenticatedUser user,
                                             @RequestBody CreateMajorScoreRequest request) {
         majorScoreService.createMajor(request, user);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/major/{projectId}")
@@ -56,7 +56,7 @@ public class ScoreController {
     public ResponseEntity<Void> createReport(@AuthenticationPrincipal AuthenticatedUser user,
                                              @RequestBody CreateReportScoreRequest request) {
         reportScoreService.createReport(request, user);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/report/{projectId}")
@@ -78,7 +78,7 @@ public class ScoreController {
     public ResponseEntity<Void> createSocial(@AuthenticationPrincipal AuthenticatedUser user,
                                              @RequestBody CreateSocialScoreRequest request) {
         socialScoreService.createSocial(request, user);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/social/{projectId}")
