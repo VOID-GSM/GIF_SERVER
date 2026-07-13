@@ -67,4 +67,12 @@ public class FormException extends ResponseStatusException {
     public static FormException textAnswerTooLong() {
         return new FormException(HttpStatus.BAD_REQUEST, "답변은 1000자를 초과할 수 없습니다.");
     }
+
+    public static FormException disallowedFileExtension() {
+        return new FormException(HttpStatus.BAD_REQUEST, "허용되지 않는 파일 형식입니다.");
+    }
+
+    public static FormException invalidAllowedExtension() {
+        return new FormException(HttpStatus.BAD_REQUEST, "지원하지 않는 확장자가 포함되어 있습니다.");
+    }
 }

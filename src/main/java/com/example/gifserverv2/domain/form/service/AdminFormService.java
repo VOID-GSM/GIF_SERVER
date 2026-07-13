@@ -16,6 +16,7 @@ import com.example.gifserverv2.domain.project.repository.ProjectRepository;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
+import com.example.gifserverv2.global.file.AllowedFileExtensions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -41,16 +42,10 @@ public class AdminFormService {
 
     @Transactional
     public Long createForm(Long userId, CreateFormRequest request) {
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
-
-        if (user.getAdminRole() != AdminRole.MASTER) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "양식 생성 권한이 없습니다. (Master 선생님 전용)");
-        }
-
         Form form = Form.builder()
                 .title(request.title())
                 .deadline(request.deadline())
+                .createdByUserId(userId)
                 .fields(new ArrayList<>())
                 .build();
 
@@ -62,6 +57,7 @@ public class AdminFormService {
                             .description(fieldReq.description())
                             .type(fieldReq.type())
                             .orderIndex(fieldReq.orderIndex())
+                            .allowedExtensions(normalizeExtensions(fieldReq.type(), fieldReq.allowedExtensions()))
                             .build())
                     .toList();
             form.getFields().addAll(formFields);
@@ -83,6 +79,7 @@ public class AdminFormService {
                             .description(fieldReq.description())
                             .type(fieldReq.type())
                             .orderIndex(fieldReq.orderIndex())
+                            .allowedExtensions(normalizeExtensions(fieldReq.type(), fieldReq.allowedExtensions()))
                             .build())
                     .toList();
         }
@@ -90,14 +87,27 @@ public class AdminFormService {
         form.update(request.title(), request.description(), request.deadline(), request.targetGrade(), newFields);
     }
 
-    public List<ListFormResponse> getAllFormsForAdmin(Integer grade) {
-        List<Form> forms = (grade == null)
-                ? formRepository.findAll()
-                : formRepository.findAllByTargetGrade(grade);
+    private String normalizeExtensions(FormField.FieldType type, List<String> extensions) {
+        if (type != FormField.FieldType.FILE || extensions == null || extensions.isEmpty()) {
+            return null;
+        }
 
-        return forms.stream()
-                .map(ListFormResponse::from)
+        List<String> normalized = extensions.stream()
+                .filter(ext -> ext != null && !ext.isBlank())
+                .map(ext -> {
+                    String trimmed = ext.trim().toLowerCase();
+                    return trimmed.startsWith(".") ? trimmed.substring(1) : trimmed;
+                })
+                .distinct()
                 .toList();
+
+        for (String ext : normalized) {
+            if (!AllowedFileExtensions.ALL.contains(ext)) {
+                throw FormException.invalidAllowedExtension();
+            }
+        }
+
+        return String.join(",", normalized);
     }
 
     @Transactional
@@ -117,6 +127,16 @@ public class AdminFormService {
 
         Form form = queryFormService.getFormOrThrow(formId);
         formRepository.delete(form);
+    }
+
+    public List<ListFormResponse> getAllFormsForAdmin(Integer grade) {
+        List<Form> forms = (grade == null)
+                ? formRepository.findAll()
+                : formRepository.findAllByTargetGrade(grade);
+
+        return forms.stream()
+                .map(ListFormResponse::from)
+                .toList();
     }
 
     public List<SubmitDetailFormResponse> getSubmitListByForm(Long formId) {
