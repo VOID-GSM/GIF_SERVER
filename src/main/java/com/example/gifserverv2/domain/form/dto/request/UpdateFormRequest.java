@@ -16,6 +16,7 @@ public record UpdateFormRequest(
             String title,
             String description,
             FormField.FieldType type,
-            int orderIndex
+            int orderIndex,
+            List<String> allowedExtensions
     ) { }
 }

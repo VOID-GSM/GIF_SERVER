@@ -37,6 +37,9 @@ public class Form {
     @Column(length = 1000)
     private String description;
 
+    @Column(name = "created_by_user_id")
+    private Long createdByUserId;
+
     @OneToMany(mappedBy = "form", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("orderIndex ASC")
     @Builder.Default
