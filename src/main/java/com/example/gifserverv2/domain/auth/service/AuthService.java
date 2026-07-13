@@ -244,7 +244,9 @@ public class AuthService {
             userRepository.save(user);
         }
 
-        return buildCurrentUserResponse(user);
+        String newAccessToken = jwtTokenProvider.createToken(user);
+
+        return buildCurrentUserResponseWithToken(user, newAccessToken);
     }
 
     private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role, String grade) {
@@ -310,15 +312,10 @@ public class AuthService {
         }
 
         return new CurrentUserResponse(
-                user.getId(),
-                user.getEmail(),
-                user.getName(),
-                user.getStudentNumber(),
-                user.getGrade(),
+                user.getId(), user.getEmail(), user.getName(), user.getStudentNumber(), user.getGrade(),
                 user.getEffectiveRole().name(),
                 user.getAdminRole() != null ? user.getAdminRole().name() : null,
-                user.getAdminTeam(),
-                user.isGradeHead(),
+                user.getAdminTeam(), user.isGradeHead(),
                 user.getClientRole() != null ? user.getClientRole().name() : null,
                 projectId,
                 clientTeam,
