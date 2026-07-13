@@ -77,7 +77,7 @@ public class ScoreQueryService {
                         + safe(score.getAiUtilizationCommunity()) + safe(score.getPresentationCommunity()))
                 .average().orElse(0.0);
 
-        double grandTotalAvg = majorAvg + reportAvg + communityAvg;
+        double grandTotalAvg = (majorAvg + reportAvg + communityAvg) / 3.0;
 
         return new GetProjectFieldAverageResponse(
                 projectId,
