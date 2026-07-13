@@ -9,6 +9,8 @@ import com.example.gifserverv2.domain.inquiry.dto.request.CreateInquiryRequest;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -52,10 +54,11 @@ public class InquiryController {
     }
 
     @GetMapping("/admin")
-    public ResponseEntity<List<ListInquiryResponse>> getAllInquiries(
-            @AuthenticationPrincipal AuthenticatedUser user
+    public ResponseEntity<Page<ListInquiryResponse>> getAllInquiries(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            Pageable pageable
     ) {
-        return ResponseEntity.ok(adminInquiryService.getAllInquiries(user.email()));
+        return ResponseEntity.ok(adminInquiryService.getAllInquiries(user.email(), pageable));
     }
 
     @GetMapping("/admin/{inquiryId}")
@@ -70,7 +73,7 @@ public class InquiryController {
     public ResponseEntity<Void> answerInquiry(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long inquiryId,
-            @RequestBody AnswerInquiryRequest request
+            @Valid @RequestBody AnswerInquiryRequest request
     ) {
         adminInquiryService.answerInquiry(user.email(), inquiryId, request.answerContent());
         return ResponseEntity.noContent().build();
