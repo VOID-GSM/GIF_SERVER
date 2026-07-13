@@ -58,6 +58,9 @@ public class FormSubmit {
     }
 
     public void updateSubmitter(Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId must not be null");
+        }
         this.submittedByUserId = userId;
         this.submittedAt = LocalDateTime.now();
     }
