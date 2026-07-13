@@ -19,12 +19,20 @@ public record DetailFormResponse(
             String title,
             String description,
             String type,
-            int orderIndex
+            int orderIndex,
+            List<String> allowedExtensions
     ) {}
 
     public static DetailFormResponse from(Form form, Boolean deadlineComplied) {
         List<FieldResponse> fieldResponses = form.getFields().stream()
-                .map(f -> new FieldResponse(f.getId(), f.getTitle(), f.getDescription(), f.getType().name(), f.getOrderIndex()))
+                .map(f -> new FieldResponse(
+                        f.getId(),
+                        f.getTitle(),
+                        f.getDescription(),
+                        f.getType().name(),
+                        f.getOrderIndex(),
+                        f.getAllowedExtensionList()
+                ))
                 .toList();
 
         return new DetailFormResponse(
