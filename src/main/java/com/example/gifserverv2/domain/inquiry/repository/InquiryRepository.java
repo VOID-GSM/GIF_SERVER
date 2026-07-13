@@ -9,9 +9,9 @@ import java.util.List;
 
 public interface InquiryRepository extends JpaRepository<Inquiry, Long> {
 
-    List<Inquiry> findAllByCreatedByUserIdOrderByCreatedAtDesc(Long userId);
     Page<Inquiry> findAllByCreatedByUserId(Long userId, Pageable pageable);
-    Page<Inquiry> findAll(Pageable pageable);
     List<Inquiry> findAllByOrderByCreatedAtDesc();
+    List<Inquiry> findAllByCreatedByUserIdOrderByCreatedAtDesc(Long userId);
+    Page<Inquiry> findAll(Pageable pageable);
 
 }

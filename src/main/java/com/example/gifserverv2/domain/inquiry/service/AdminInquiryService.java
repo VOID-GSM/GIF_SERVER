@@ -9,10 +9,13 @@ import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.global.exception.InquiryException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -28,10 +31,14 @@ public class AdminInquiryService {
     @Value("${app.admin-email}")
     private String masterEmail;
 
-    public List<ListInquiryResponse> getAllInquiries(String email) {
+    public Page<ListInquiryResponse> getAllInquiries(String email, Pageable pageable) {
         validateMaster(email);
 
-        List<Inquiry> inquiries = inquiryRepository.findAllByOrderByCreatedAtDesc();
+        Pageable sorted = pageable.getSort().isSorted()
+                ? pageable
+                : PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), Sort.by("createdAt").descending());
+
+        Page<Inquiry> inquiries = inquiryRepository.findAll(sorted);
 
         Set<Long> userIds = inquiries.stream()
                 .map(Inquiry::getCreatedByUserId)
@@ -39,9 +46,7 @@ public class AdminInquiryService {
         Map<Long, String> userNameMap = userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(UserEntity::getId, UserEntity::getName));
 
-        return inquiries.stream()
-                .map(inquiry -> ListInquiryResponse.from(inquiry, userNameMap.get(inquiry.getCreatedByUserId())))
-                .toList();
+        return inquiries.map(inquiry -> ListInquiryResponse.from(inquiry, userNameMap.get(inquiry.getCreatedByUserId())));
     }
 
     public DetailInquiryResponse getInquiryDetail(String email, Long inquiryId) {
