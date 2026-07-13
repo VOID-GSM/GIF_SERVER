@@ -1,6 +1,5 @@
 package com.example.gifserverv2.global.file;
 
-
 import org.springframework.web.multipart.MultipartFile;
 
 public interface FileStorageService {
