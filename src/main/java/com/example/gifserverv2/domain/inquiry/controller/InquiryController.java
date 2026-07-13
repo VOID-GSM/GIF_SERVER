@@ -1,7 +1,9 @@
 package com.example.gifserverv2.domain.inquiry.controller;
 
+import com.example.gifserverv2.domain.inquiry.dto.request.AnswerInquiryRequest;
 import com.example.gifserverv2.domain.inquiry.dto.response.DetailInquiryResponse;
 import com.example.gifserverv2.domain.inquiry.dto.response.ListInquiryResponse;
+import com.example.gifserverv2.domain.inquiry.service.AdminInquiryService;
 import com.example.gifserverv2.domain.inquiry.service.ClientInquiryService;
 import com.example.gifserverv2.domain.inquiry.dto.request.CreateInquiryRequest;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
@@ -19,6 +21,7 @@ import java.util.List;
 public class InquiryController {
 
     private final ClientInquiryService clientInquiryService;
+    private final AdminInquiryService adminInquiryService;
 
     @PostMapping
     public ResponseEntity<Long> createInquiry(
@@ -46,5 +49,30 @@ public class InquiryController {
             @PathVariable Long inquiryId
     ) {
         return ResponseEntity.ok(clientInquiryService.getMyInquiryDetail(user.userId(), user.name(), inquiryId));
+    }
+
+    @GetMapping("/admin")
+    public ResponseEntity<List<ListInquiryResponse>> getAllInquiries(
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return ResponseEntity.ok(adminInquiryService.getAllInquiries(user.email()));
+    }
+
+    @GetMapping("/admin/{inquiryId}")
+    public ResponseEntity<DetailInquiryResponse> getInquiryDetail(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long inquiryId
+    ) {
+        return ResponseEntity.ok(adminInquiryService.getInquiryDetail(user.email(), inquiryId));
+    }
+
+    @PatchMapping("/admin/{inquiryId}/answer")
+    public ResponseEntity<Void> answerInquiry(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long inquiryId,
+            @RequestBody AnswerInquiryRequest request
+    ) {
+        adminInquiryService.answerInquiry(user.email(), inquiryId, request.answerContent());
+        return ResponseEntity.noContent().build();
     }
 }
