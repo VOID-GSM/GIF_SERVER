@@ -198,9 +198,4 @@ public class CommandProjectService {
         newLeader.changeRole(ClientRole.LEADER);
     }
 
-    @Transactional
-    public void deleteProject(Long projectId) {
-        Project project = projectQueryService.getProjectOrThrow(projectId);
-        projectRepository.delete(project);
-    }
 }

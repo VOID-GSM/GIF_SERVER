@@ -135,12 +135,4 @@ public class ProjectController {
     ) {
         return ResponseEntity.ok(projectNoteService.getMyNote(projectId, user.userId()));
     }
-
-    @DeleteMapping("/{projectId}")
-    public ResponseEntity<Void> deleteProject(
-            @PathVariable Long projectId
-    ) {
-        projectCommandService.deleteProject(projectId);
-        return ResponseEntity.noContent().build();
-    }
 }
