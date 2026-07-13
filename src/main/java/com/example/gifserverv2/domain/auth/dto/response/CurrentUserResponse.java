@@ -12,5 +12,6 @@ public record CurrentUserResponse(
         boolean gradeHead,
         String clientRole,
         Long projectId,
-        String clientTeam) {
-}
+        String clientTeam,
+        String accessToken
+) {}
