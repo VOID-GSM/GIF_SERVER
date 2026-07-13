@@ -185,7 +185,9 @@ public class AuthService {
                 user.isGradeHead(),
                 user.getClientRole() != null ? user.getClientRole().name() : null,
                 projectId,
-                clientTeam);
+                clientTeam,
+                null
+        );
     }
 
     @Transactional
@@ -242,7 +244,9 @@ public class AuthService {
             userRepository.save(user);
         }
 
-        return buildCurrentUserResponse(user);
+        String newAccessToken = jwtTokenProvider.createToken(user);
+
+        return buildCurrentUserResponseWithToken(user, newAccessToken);
     }
 
     private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role, String grade) {
@@ -262,7 +266,6 @@ public class AuthService {
     }
 
     @Transactional
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public OAuthSignInResponse signInWithGoogle(String accessToken, Map userInfo) {
         String email = userInfo.get("email") != null ? userInfo.get("email").toString() : null;
         String name = userInfo.get("name") != null ? userInfo.get("name").toString() : null;
@@ -292,4 +295,37 @@ public class AuthService {
                 user.getClientRole() != null ? user.getClientRole().name() : null);
     }
 
+    private CurrentUserResponse buildCurrentUserResponseWithToken(UserEntity user, String accessToken) {
+        Long projectId = null;
+        String clientTeam = null;
+
+        List<ProjectMember> members = projectMemberRepository.findAllByUserId(user.getId());
+        if (members != null && !members.isEmpty()) {
+            ProjectMember pick = members.stream()
+                    .filter(m -> m.getRole() == ClientRole.LEADER)
+                    .findFirst()
+                    .orElse(members.get(0));
+            if (pick != null && pick.getProject() != null) {
+                projectId = pick.getProject().getId();
+                clientTeam = pick.getProject().getTeamName();
+            }
+        }
+
+        return new CurrentUserResponse(
+                user.getId(), user.getEmail(), user.getName(), user.getStudentNumber(), user.getGrade(),
+                user.getEffectiveRole().name(),
+                user.getAdminRole() != null ? user.getAdminRole().name() : null,
+                user.getAdminTeam(), user.isGradeHead(),
+                user.getClientRole() != null ? user.getClientRole().name() : null,
+                projectId,
+                clientTeam,
+                accessToken
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public String renewToken(Long userId) {
+        UserEntity user = requireUser(userId);
+        return jwtTokenProvider.createToken(user);
+    }
 }
