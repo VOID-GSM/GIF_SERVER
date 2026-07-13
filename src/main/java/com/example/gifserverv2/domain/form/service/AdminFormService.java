@@ -94,7 +94,10 @@ public class AdminFormService {
 
         List<String> normalized = extensions.stream()
                 .filter(ext -> ext != null && !ext.isBlank())
-                .map(ext -> ext.trim().toLowerCase())
+                .map(ext -> {
+                    String trimmed = ext.trim().toLowerCase();
+                    return trimmed.startsWith(".") ? trimmed.substring(1) : trimmed;
+                })
                 .distinct()
                 .toList();
 
