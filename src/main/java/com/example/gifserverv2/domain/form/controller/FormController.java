@@ -65,9 +65,18 @@ public class FormController {
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ListFormResponse>> getAllFormsForAdmin(
-            @RequestParam(required = false) Integer grade
+            @RequestParam(required = false) String grade
     ) {
-        return ResponseEntity.ok(adminFormService.getAllFormsForAdmin(grade));
+        Integer numericGrade = null;
+        if (grade != null && !grade.isBlank() && !grade.equals("null")
+                && !grade.equals("undefined")) {
+            try {
+                numericGrade = Integer.parseInt(grade);
+            } catch (NumberFormatException e) {
+                numericGrade = null;
+            }
+        }
+        return ResponseEntity.ok(adminFormService.getAllFormsForAdmin(numericGrade));
     }
 
     @GetMapping("/admin/submit")
