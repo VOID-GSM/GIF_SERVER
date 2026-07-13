@@ -56,7 +56,7 @@ public class FormController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteForm(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestParam Long formId
+            @PathVariable Long formId
     ) {
         adminFormService.deleteForm(user.userId(), formId);
         return ResponseEntity.noContent().build();
