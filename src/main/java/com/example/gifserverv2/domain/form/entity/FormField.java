@@ -57,7 +57,14 @@ public class FormField {
     }
 
     public boolean isExtensionAllowed(String extension) {
+        if (extension == null || extension.isBlank()) {
+            return false;
+        }
+        String normalized = extension.trim().toLowerCase();
+        if (normalized.startsWith(".")) {
+            normalized = normalized.substring(1);
+        }
         List<String> allowed = getAllowedExtensionList();
-        return allowed.isEmpty() || allowed.contains(extension.toLowerCase());
+        return allowed.isEmpty() || allowed.contains(normalized);
     }
 }

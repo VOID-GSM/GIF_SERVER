@@ -25,7 +25,7 @@ public class FormFileService {
     private final FormFieldAnswerRepository formFieldAnswerRepository;
 
     @Transactional
-    public FileUploadResponse uploadFile(Long userId, Long submitId, Long fieldId, MultipartFile file)  {
+    public FileUploadResponse uploadFile(Long userId, Long submitId, Long fieldId, MultipartFile file) {
         FormSubmit submit = formSubmitRepository.findById(submitId)
                 .orElseThrow(() -> new FormException(HttpStatus.NOT_FOUND, "제출 내역을 찾을 수 없습니다."));
 
@@ -44,6 +44,18 @@ public class FormFileService {
             throw FormException.deadlinePassed();
         }
 
+        String originalFileName = file.getOriginalFilename();
+        if (originalFileName != null) {
+            originalFileName = org.springframework.util.StringUtils.getFilename(
+                    org.springframework.util.StringUtils.cleanPath(originalFileName)
+            );
+        }
+
+        String extension = extractExtension(originalFileName);
+        if (!field.isExtensionAllowed(extension)) {
+            throw FormException.disallowedFileExtension();
+        }
+
         formFieldAnswerRepository.findByFormSubmitIdAndFormFieldId(submitId, fieldId)
                 .ifPresent(existing -> {
                     if (existing.getFilePath() != null) {
@@ -53,12 +65,6 @@ public class FormFileService {
                 });
 
         String savedUrl = fileStorageService.save(file, "form");
-        String originalFileName = file.getOriginalFilename();
-        if (originalFileName != null) {
-            originalFileName = org.springframework.util.StringUtils.getFilename(
-                    org.springframework.util.StringUtils.cleanPath(originalFileName)
-            );
-        }
 
         formFieldAnswerRepository.save(FormFieldAnswer.builder()
                 .formSubmit(submit)
@@ -69,6 +75,13 @@ public class FormFileService {
                 .build());
 
         return new FileUploadResponse(savedUrl, originalFileName);
+    }
+
+    private String extractExtension(String filename) {
+        if (filename == null || !filename.contains(".")) {
+            throw new FormException(HttpStatus.BAD_REQUEST, "파일 확장자가 없습니다.");
+        }
+        return filename.substring(filename.lastIndexOf(".") + 1);
     }
 
     @Transactional
