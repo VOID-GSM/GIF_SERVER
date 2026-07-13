@@ -129,7 +129,6 @@ public class AdminFormService {
         formRepository.delete(form);
     }
 
-    @Transactional(readOnly = true)
     public List<ListFormResponse> getAllFormsForAdmin(Integer grade) {
         List<Form> forms = (grade == null)
                 ? formRepository.findAll()
