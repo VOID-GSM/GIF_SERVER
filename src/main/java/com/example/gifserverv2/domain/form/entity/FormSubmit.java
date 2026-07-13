@@ -56,4 +56,9 @@ public class FormSubmit {
         this.aiSummary = null;
         this.aiSummarizedAt = null;
     }
+
+    public void updateSubmitter(Long userId) {
+        this.submittedByUserId = userId;
+        this.submittedAt = LocalDateTime.now();
+    }
 }
