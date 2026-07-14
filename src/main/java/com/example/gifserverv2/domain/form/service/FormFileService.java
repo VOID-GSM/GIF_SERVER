@@ -92,6 +92,7 @@ public class FormFileService {
         if (submit.getForm().isDeadlinePassed()) {
             throw FormException.deadlinePassed();
         }
+        submit.clearAiSummary();
 
         FormFieldAnswer answer = formFieldAnswerRepository
                 .findByFormSubmitIdAndFormFieldId(submitId, fieldId)
