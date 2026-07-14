@@ -9,16 +9,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class SocialScoreService {
 
     private final ScoreSupport support;
 
+    @Transactional
     public void createSocial(CreateSocialScoreRequest request, AuthenticatedUser evaluator) {
         validateEvaluatorAndFields(evaluator, request.getProjectId(),
                 request.getUserExperience(), request.getSocialValueCommunity(),
@@ -47,6 +45,7 @@ public class SocialScoreService {
         );
     }
 
+    @Transactional
     public void updateSocial(Long projectId, PatchSocialScoreRequest request, AuthenticatedUser evaluator) {
         validateEvaluatorAndFields(evaluator, projectId,
                 request.getUserExperience(), request.getSocialValueCommunity(),
@@ -63,31 +62,17 @@ public class SocialScoreService {
 
     @Transactional(readOnly = true)
     public Score getSocial(Long projectId, AuthenticatedUser evaluator) {
-        if (evaluator == null || evaluator.userId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "평가자 ID가 필요합니다.");
-        }
+        support.requireEvaluatorId(evaluator);
         support.validateCommonRequest(projectId, evaluator.userId().toString());
         Project project = support.getProjectOrThrow(projectId);
 
-        try {
-            return support.getScoreOrThrow(project, evaluator.userId().toString().trim());
-        } catch (ResponseStatusException e) {
-            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-                return null;
-            }
-            throw e;
-        }
+        return support.getScoreOrNull(project, evaluator.userId().toString().trim());
     }
 
     private void validateEvaluatorAndFields(AuthenticatedUser evaluator, Long projectId,
                                             Integer userExp, Integer socialVal, Integer aiUtil, Integer presentation) {
-        if (evaluator == null || evaluator.adminRole() == null || evaluator.adminRole() != AdminRole.GENERAL_TEACHER) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "사회 중심 영역 점수는 일반 교과 선생님만 접근 가능합니다.");
-        }
-        if (evaluator.userId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "평가자 ID가 필요합니다.");
-        }
-
+        support.validateEvaluator(evaluator, e -> e.adminRole() == AdminRole.GENERAL_TEACHER,
+                "사회 중심 영역 점수는 일반 교과 선생님만 접근 가능합니다.");
         support.validateCommonRequest(projectId, evaluator.userId().toString());
         support.requireScore(userExp, "userExperience");
         support.requireScore(socialVal, "socialValueCommunity");

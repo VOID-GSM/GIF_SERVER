@@ -8,16 +8,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class ReportScoreService {
 
     private final ScoreSupport support;
 
+    @Transactional
     public void createReport(CreateReportScoreRequest request, AuthenticatedUser evaluator) {
         validateEvaluatorAndFields(evaluator, request.getProjectId(),
                 request.getReportWriting(), request.getReportContent(),
@@ -46,6 +44,7 @@ public class ReportScoreService {
         );
     }
 
+    @Transactional
     public void updateReport(Long projectId, PatchReportScoreRequest request, AuthenticatedUser evaluator) {
         validateEvaluatorAndFields(evaluator, projectId,
                 request.getReportWriting(), request.getReportContent(),
@@ -62,31 +61,17 @@ public class ReportScoreService {
 
     @Transactional(readOnly = true)
     public Score getReport(Long projectId, AuthenticatedUser evaluator) {
-        if (evaluator == null || evaluator.userId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "평가자 ID가 필요합니다.");
-        }
+        support.requireEvaluatorId(evaluator);
         support.validateCommonRequest(projectId, evaluator.userId().toString());
         Project project = support.getProjectOrThrow(projectId);
 
-        try {
-            return support.getScoreOrThrow(project, evaluator.userId().toString().trim());
-        } catch (ResponseStatusException e) {
-            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-                return null;
-            }
-            throw e;
-        }
+        return support.getScoreOrNull(project, evaluator.userId().toString().trim());
     }
 
     private void validateEvaluatorAndFields(AuthenticatedUser evaluator, Long projectId,
                                             Integer writing, Integer content, Integer plan, Integer creativity) {
-        if (evaluator == null || !evaluator.gradeHead()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "보고서 영역 점수는 학년부 부장만 접근 가능합니다.");
-        }
-        if (evaluator.userId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "평가자 ID가 필요합니다.");
-        }
-
+        support.validateEvaluator(evaluator, AuthenticatedUser::gradeHead,
+                "보고서 영역 점수는 학년부 부장만 접근 가능합니다.");
         support.validateCommonRequest(projectId, evaluator.userId().toString());
         support.requireScore(writing, "reportWriting");
         support.requireScore(content, "reportContent");

@@ -51,7 +51,6 @@ public class InquiryWriterService {
             inquiry.updateFile(newFilePath, originalFileName, fileSize);
             return oldFilePath;
         }
-
         return null;
     }
 }
