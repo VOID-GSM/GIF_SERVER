@@ -50,16 +50,6 @@ public class ClientInquiryService {
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void updateInquiry(Long userId, Long inquiryId, String title, String content, MultipartFile file) {
-        Inquiry inquiry = inquiryRepository.findById(inquiryId)
-                .orElseThrow(InquiryException::notFound);
-
-        if (!inquiry.getCreatedByUserId().equals(userId)) {
-            throw InquiryException.forbidden();
-        }
-        if (inquiry.getStatus() == InquiryStatus.ANSWERED) {
-            throw InquiryException.alreadyAnswered();
-        }
-
         boolean fileReplaced = file != null && !file.isEmpty();
         String savedPath = null;
         String originalFileName = null;
@@ -85,7 +75,6 @@ public class ClientInquiryService {
             throw e;
         }
     }
-
     public List<ListInquiryResponse> getMyInquiries(Long userId, String username) {
         return inquiryRepository.findAllByCreatedByUserIdOrderByCreatedAtDesc(userId).stream()
                 .map(inquiry -> ListInquiryResponse.from(inquiry, username))
