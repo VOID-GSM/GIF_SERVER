@@ -31,7 +31,6 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class ClientFormService {
 
     private final FormRepository formRepository;
@@ -43,6 +42,7 @@ public class ClientFormService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
 
+    @Transactional(readOnly = true)
     public List<ListFormResponse> getAnnouncedForms(Long projectId) {
         List<Form> forms = formRepository.findAllByAnnouncedTrueOrderByDeadlineAsc();
 
@@ -70,6 +70,7 @@ public class ClientFormService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public DetailFormResponse getForm(Long formId, Long projectId) {
         Form form = queryFormService.getFormOrThrow(formId);
         if (!form.isAnnounced()) throw FormException.notAnnounced();
@@ -143,6 +144,7 @@ public class ClientFormService {
         return submit.getId();
     }
 
+    @Transactional(readOnly = true)
     public SubmitDetailFormResponse getMySubmit(Long formId, Long projectId) {
         FormSubmit submit = formSubmitRepository
                 .findByFormIdAndProjectId(formId, projectId)

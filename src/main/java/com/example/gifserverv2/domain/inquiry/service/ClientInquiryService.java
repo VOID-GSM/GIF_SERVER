@@ -16,7 +16,6 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class ClientInquiryService {
 
     private final InquiryWriter inquiryWriter;
@@ -47,12 +46,14 @@ public class ClientInquiryService {
         }
     }
 
+    @Transactional(readOnly = true)
     public List<ListInquiryResponse> getMyInquiries(Long userId, String username) {
         return inquiryRepository.findAllByCreatedByUserIdOrderByCreatedAtDesc(userId).stream()
                 .map(inquiry -> ListInquiryResponse.from(inquiry, username))
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public DetailInquiryResponse getMyInquiryDetail(Long userId, String username, Long inquiryId) {
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(InquiryException::notFound);

@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class AdminFormService {
 
     private final FormRepository formRepository;
@@ -129,6 +128,7 @@ public class AdminFormService {
         formRepository.delete(form);
     }
 
+    @Transactional(readOnly = true)
     public List<ListFormResponse> getAllFormsForAdmin(Integer grade) {
         List<Form> forms = (grade == null)
                 ? formRepository.findAll()
@@ -139,6 +139,7 @@ public class AdminFormService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<SubmitDetailFormResponse> getSubmitListByForm(Long formId) {
         Form form = queryFormService.getFormOrThrow(formId);
         List<FormSubmit> submits = formSubmitRepository.findAllByFormId(form.getId());
@@ -167,12 +168,14 @@ public class AdminFormService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<ListFormResponse> getDraftForms() {
         return formRepository.findAllByAnnouncedFalseOrderByCreatedAtDesc().stream()
                 .map(ListFormResponse::from)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public DetailFormResponse getDraftForm(Long formId) {
         Form form = formRepository.findByIdAndAnnouncedFalse(formId)
                 .orElseThrow(FormException::notFound);

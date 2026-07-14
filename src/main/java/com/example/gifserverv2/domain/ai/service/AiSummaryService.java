@@ -15,7 +15,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class AiSummaryService {
 
     private final ProjectRepository projectRepository;

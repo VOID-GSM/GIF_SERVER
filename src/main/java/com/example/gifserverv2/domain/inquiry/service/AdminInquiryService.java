@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class AdminInquiryService {
 
     private final InquiryRepository inquiryRepository;
@@ -31,6 +30,7 @@ public class AdminInquiryService {
     @Value("${app.admin-email}")
     private String masterEmail;
 
+    @Transactional(readOnly = true)
     public Page<ListInquiryResponse> getAllInquiries(String email, Pageable pageable) {
         validateMaster(email);
 
@@ -49,6 +49,7 @@ public class AdminInquiryService {
         return inquiries.map(inquiry -> ListInquiryResponse.from(inquiry, userNameMap.get(inquiry.getCreatedByUserId())));
     }
 
+    @Transactional(readOnly = true)
     public DetailInquiryResponse getInquiryDetail(String email, Long inquiryId) {
         validateMaster(email);
 

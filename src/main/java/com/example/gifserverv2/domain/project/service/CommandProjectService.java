@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class CommandProjectService {
 
     private final ProjectRepository projectRepository;
@@ -35,6 +34,7 @@ public class CommandProjectService {
     private final ProjectLogoStorageService projectLogoStorageService;
     private final UserRepository userRepository;
 
+    @Transactional
     public void updateProject(Long projectId, Long userId, UpdateProjectRequest request, MultipartFile logo) {
         Project project = projectQueryService.getProjectOrThrow(projectId);
         validateLeader(projectId, userId);
@@ -99,6 +99,7 @@ public class CommandProjectService {
         }
     }
 
+    @Transactional
     public Long createProject(Long userId, CreateProjectRequest request) {
         Project project = Project.builder()
                 .name(request.name())
@@ -148,6 +149,7 @@ public class CommandProjectService {
         return savedProject.getId();
     }
 
+    @Transactional
     public void uploadLogo(Long projectId, Long userId, MultipartFile file) {
         Project project = projectQueryService.getProjectOrThrow(projectId);
         validateLeader(projectId, userId);
@@ -175,6 +177,7 @@ public class CommandProjectService {
         }
     }
 
+    @Transactional
     public void updateDescription(Long projectId, Long userId, UpdateProjectDescriptionRequest request) {
         Project project = projectQueryService.getProjectOrThrow(projectId);
 
@@ -188,6 +191,7 @@ public class CommandProjectService {
         }
     }
 
+    @Transactional
     public void transferLeader(Long projectId, Long userId, TransferLeaderRequest request) {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new ProjectException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));

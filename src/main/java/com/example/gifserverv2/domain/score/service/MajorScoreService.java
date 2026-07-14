@@ -9,16 +9,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class MajorScoreService {
 
     private final ScoreSupport support;
 
+    @Transactional
     public void createMajor(CreateMajorScoreRequest request, AuthenticatedUser evaluator) {
         validateEvaluatorAndFields(evaluator, request.getProjectId(),
                 request.getTechnicalCompleteness(), request.getSocialValueMajor(),
@@ -48,6 +49,7 @@ public class MajorScoreService {
         );
     }
 
+    @Transactional
     public void updateMajor(Long projectId, PatchMajorScoreRequest request, AuthenticatedUser evaluator) {
         validateEvaluatorAndFields(evaluator, projectId,
                 request.getTechnicalCompleteness(), request.getSocialValueMajor(),
@@ -64,36 +66,24 @@ public class MajorScoreService {
 
     @Transactional(readOnly = true)
     public Score getMajor(Long projectId, AuthenticatedUser evaluator) {
-        if (evaluator == null || evaluator.userId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "평가자 ID가 필요합니다.");
-        }
+        support.requireEvaluatorId(evaluator);
         support.validateCommonRequest(projectId, evaluator.userId().toString());
         Project project = support.getProjectOrThrow(projectId);
 
-        try {
-            return support.getScoreOrThrow(project, evaluator.userId().toString().trim());
-        } catch (ResponseStatusException e) {
-            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-                return null;
-            }
-            throw e;
-        }
+        return support.getScoreOrNull(project, evaluator.userId().toString().trim());
     }
 
     private void validateEvaluatorAndFields(AuthenticatedUser evaluator, Long projectId,
                                             Integer tech, Integer social, Integer ai, Integer presentation) {
-        if (evaluator == null || evaluator.adminRole() == null ||
-                (evaluator.adminRole() != AdminRole.MAJOR_TEACHER && evaluator.adminRole() != AdminRole.MASTER)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "전공 교과 선생님 또는 마스터 권한만 접근 가능합니다.");
-        }
-        if (evaluator.userId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "평가자 ID가 필요합니다.");
-        }
-
+        support.validateEvaluator(evaluator,
+                e -> e.adminRole() == AdminRole.MAJOR_TEACHER || e.adminRole() == AdminRole.MASTER,
+                "전공 교과 선생님 또는 마스터 권한만 접근 가능합니다.");
         support.validateCommonRequest(projectId, evaluator.userId().toString());
-        support.requireScore(tech, "technicalCompleteness");
-        support.requireScore(social, "socialValueMajor");
-        support.requireScore(ai, "aiUtilityMajorScore");
-        support.requireScore(presentation, "presentationMajor");
+        Map<String, Integer> scores = new LinkedHashMap<>();
+        scores.put("technicalCompleteness", tech);
+        scores.put("socialValueMajor", social);
+        scores.put("aiUtilityMajorScore", ai);
+        scores.put("presentationMajor", presentation);
+        support.requireScores(scores);
     }
 }
