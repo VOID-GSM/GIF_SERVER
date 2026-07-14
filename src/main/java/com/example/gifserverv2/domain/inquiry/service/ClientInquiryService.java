@@ -3,6 +3,7 @@ package com.example.gifserverv2.domain.inquiry.service;
 import com.example.gifserverv2.domain.inquiry.dto.response.DetailInquiryResponse;
 import com.example.gifserverv2.domain.inquiry.dto.response.ListInquiryResponse;
 import com.example.gifserverv2.domain.inquiry.entity.Inquiry;
+import com.example.gifserverv2.domain.inquiry.entity.InquiryStatus;
 import com.example.gifserverv2.domain.inquiry.repository.InquiryRepository;
 import com.example.gifserverv2.global.exception.InquiryException;
 import com.example.gifserverv2.global.file.FileStorageService;
@@ -19,7 +20,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class ClientInquiryService {
 
-    private final InquiryWriter inquiryWriter;
+    private final InquiryWriterService inquiryWriter;
     private final FileStorageService fileStorageService;
     private final InquiryRepository inquiryRepository;
 
@@ -47,6 +48,33 @@ public class ClientInquiryService {
         }
     }
 
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void updateInquiry(Long userId, Long inquiryId, String title, String content, MultipartFile file) {
+        boolean fileReplaced = file != null && !file.isEmpty();
+        String savedPath = null;
+        String originalFileName = null;
+        Long fileSize = null;
+
+        if (fileReplaced) {
+            savedPath = fileStorageService.save(file, INQUIRY_DIRECTORY);
+            originalFileName = file.getOriginalFilename();
+            fileSize = file.getSize();
+        }
+
+        try {
+            String oldFilePath = inquiryWriter.update(
+                    userId, inquiryId, title, content, savedPath, originalFileName, fileSize, fileReplaced
+            );
+            if (oldFilePath != null) {
+                fileStorageService.delete(oldFilePath);
+            }
+        } catch (RuntimeException e) {
+            if (savedPath != null) {
+                fileStorageService.delete(savedPath);
+            }
+            throw e;
+        }
+    }
     public List<ListInquiryResponse> getMyInquiries(Long userId, String username) {
         return inquiryRepository.findAllByCreatedByUserIdOrderByCreatedAtDesc(userId).stream()
                 .map(inquiry -> ListInquiryResponse.from(inquiry, username))
