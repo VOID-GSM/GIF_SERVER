@@ -44,14 +44,14 @@ public class InquiryWriterService {
             throw InquiryException.alreadyAnswered();
         }
 
-        String oldFilePath = inquiry.getFilePath();
+        inquiry.update(title, content);
 
         if (fileReplaced) {
-            inquiry.update(title, content, newFilePath, originalFileName, fileSize);
-        } else {
-            inquiry.update(title, content, inquiry.getFilePath(), inquiry.getOriginalFileName(), inquiry.getFileSize());
+            String oldFilePath = inquiry.getFilePath();
+            inquiry.updateFile(newFilePath, originalFileName, fileSize);
+            return oldFilePath;
         }
 
-        return fileReplaced ? oldFilePath : null;
+        return null;
     }
 }

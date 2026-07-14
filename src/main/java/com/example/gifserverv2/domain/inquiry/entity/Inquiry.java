@@ -60,9 +60,12 @@ public class Inquiry {
         this.status = InquiryStatus.ANSWERED;
     }
 
-    public void update(String title, String content, String filePath, String originalFileName, Long fileSize) {
+    public void update(String title, String content) {
         this.title = title;
         this.content = content;
+    }
+
+    public void updateFile(String filePath, String originalFileName, Long fileSize) {
         this.filePath = filePath;
         this.originalFileName = originalFileName;
         this.fileSize = fileSize;
