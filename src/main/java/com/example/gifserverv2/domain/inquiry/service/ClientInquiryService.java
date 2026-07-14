@@ -74,6 +74,8 @@ public class ClientInquiryService {
             throw e;
         }
     }
+
+    @Transactional(readOnly = true)
     public List<ListInquiryResponse> getMyInquiries(Long userId, String username) {
         return inquiryRepository.findAllByCreatedByUserIdOrderByCreatedAtDesc(userId).stream()
                 .map(inquiry -> ListInquiryResponse.from(inquiry, username))
