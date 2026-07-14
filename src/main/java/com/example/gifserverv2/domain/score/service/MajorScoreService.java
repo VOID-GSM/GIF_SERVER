@@ -10,9 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 @Service
 @RequiredArgsConstructor
 public class MajorScoreService {
@@ -79,11 +76,9 @@ public class MajorScoreService {
                 e -> e.adminRole() == AdminRole.MAJOR_TEACHER || e.adminRole() == AdminRole.MASTER,
                 "전공 교과 선생님 또는 마스터 권한만 접근 가능합니다.");
         support.validateCommonRequest(projectId, evaluator.userId().toString());
-        Map<String, Integer> scores = new LinkedHashMap<>();
-        scores.put("technicalCompleteness", tech);
-        scores.put("socialValueMajor", social);
-        scores.put("aiUtilityMajorScore", ai);
-        scores.put("presentationMajor", presentation);
-        support.requireScores(scores);
+        support.requireScore(tech, "technicalCompleteness");
+        support.requireScore(social, "socialValueMajor");
+        support.requireScore(ai, "aiUtilityMajorScore");
+        support.requireScore(presentation, "presentationMajor");
     }
 }

@@ -9,9 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 @Service
 @RequiredArgsConstructor
 public class ReportScoreService {
@@ -76,11 +73,9 @@ public class ReportScoreService {
         support.validateEvaluator(evaluator, AuthenticatedUser::gradeHead,
                 "보고서 영역 점수는 학년부 부장만 접근 가능합니다.");
         support.validateCommonRequest(projectId, evaluator.userId().toString());
-        Map<String, Integer> scores = new LinkedHashMap<>();
-        scores.put("reportWriting", writing);
-        scores.put("reportContent", content);
-        scores.put("aiUsagePlan", plan);
-        scores.put("creativity", creativity);
-        support.requireScores(scores);
+        support.requireScore(writing, "reportWriting");
+        support.requireScore(content, "reportContent");
+        support.requireScore(plan, "aiUsagePlan");
+        support.requireScore(creativity, "creativity");
     }
 }

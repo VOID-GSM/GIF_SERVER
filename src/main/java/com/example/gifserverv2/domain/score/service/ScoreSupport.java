@@ -9,7 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -36,14 +35,8 @@ public class ScoreSupport {
     }
 
     public Score getScoreOrNull(Project project, String evaluatorId) {
-        try {
-            return getScoreOrThrow(project, evaluatorId);
-        } catch (ResponseStatusException e) {
-            if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
-                return null;
-            }
-            throw e;
-        }
+        return scoreRepository.findByProjectAndEvaluatorId(project, evaluatorId)
+                .orElse(null);
     }
 
     public void validateCommonRequest(Long projectId, String evaluatorId) {
@@ -62,20 +55,16 @@ public class ScoreSupport {
     }
 
     public void validateEvaluator(AuthenticatedUser evaluator, Predicate<AuthenticatedUser> roleAllowed, String forbiddenMessage) {
-        if (evaluator == null || !roleAllowed.test(evaluator)) {
+        requireEvaluatorId(evaluator);
+        if (!roleAllowed.test(evaluator)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, forbiddenMessage);
         }
-        requireEvaluatorId(evaluator);
     }
 
     public void requireScore(Integer score, String fieldName) {
         if (score == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, fieldName + "는 필수입니다.");
         }
-    }
-
-    public void requireScores(Map<String, Integer> scores) {
-        scores.forEach((fieldName, score) -> requireScore(score, fieldName));
     }
 
     public Score upsertScore(Project project, String evaluatorId, Supplier<Score> createSupplier, Consumer<Score> updateConsumer) {

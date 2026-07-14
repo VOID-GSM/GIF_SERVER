@@ -10,9 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 @Service
 @RequiredArgsConstructor
 public class SocialScoreService {
@@ -77,11 +74,9 @@ public class SocialScoreService {
         support.validateEvaluator(evaluator, e -> e.adminRole() == AdminRole.GENERAL_TEACHER,
                 "사회 중심 영역 점수는 일반 교과 선생님만 접근 가능합니다.");
         support.validateCommonRequest(projectId, evaluator.userId().toString());
-        Map<String, Integer> scores = new LinkedHashMap<>();
-        scores.put("userExperience", userExp);
-        scores.put("socialValueCommunity", socialVal);
-        scores.put("aiUtilizationCommunity", aiUtil);
-        scores.put("presentationCommunity", presentation);
-        support.requireScores(scores);
+        support.requireScore(userExp, "userExperience");
+        support.requireScore(socialVal, "socialValueCommunity");
+        support.requireScore(aiUtil, "aiUtilizationCommunity");
+        support.requireScore(presentation, "presentationCommunity");
     }
 }
