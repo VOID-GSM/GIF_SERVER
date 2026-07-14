@@ -1,6 +1,7 @@
 package com.example.gifserverv2.domain.inquiry.service;
 
 import com.example.gifserverv2.domain.inquiry.entity.Inquiry;
+import com.example.gifserverv2.domain.inquiry.entity.InquiryStatus;
 import com.example.gifserverv2.domain.inquiry.repository.InquiryRepository;
 import com.example.gifserverv2.global.exception.InquiryException;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +40,7 @@ public class InquiryWriterService {
             throw InquiryException.forbidden();
         }
 
-        if (inquiry.getStatus() == com.example.gifserverv2.domain.inquiry.entity.InquiryStatus.ANSWERED) {
+        if (inquiry.getStatus() == InquiryStatus.ANSWERED) {
             throw InquiryException.alreadyAnswered();
         }
 
