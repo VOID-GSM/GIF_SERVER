@@ -77,6 +77,8 @@ public class FormFileService {
                 .originalFileName(originalFileName)
                 .build());
 
+        submit.clearAiSummary();
+
         return new FileUploadResponse(savedUrl, originalFileName);
     }
 
@@ -92,7 +94,6 @@ public class FormFileService {
         if (submit.getForm().isDeadlinePassed()) {
             throw FormException.deadlinePassed();
         }
-        submit.clearAiSummary();
 
         FormFieldAnswer answer = formFieldAnswerRepository
                 .findByFormSubmitIdAndFormFieldId(submitId, fieldId)
@@ -102,6 +103,8 @@ public class FormFileService {
             fileStorageService.delete(answer.getFilePath());
         }
         formFieldAnswerRepository.delete(answer);
+
+        submit.clearAiSummary();
     }
 
     private String extractExtension(String filename) {
