@@ -59,4 +59,12 @@ public class Inquiry {
         this.answeredAt = LocalDateTime.now();
         this.status = InquiryStatus.ANSWERED;
     }
+
+    public void update(String title, String content, String filePath, String originalFileName, Long fileSize) {
+        this.title = title;
+        this.content = content;
+        this.filePath = filePath;
+        this.originalFileName = originalFileName;
+        this.fileSize = fileSize;
+    }
 }
