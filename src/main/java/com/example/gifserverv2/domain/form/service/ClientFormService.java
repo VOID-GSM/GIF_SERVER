@@ -228,5 +228,6 @@ public class ClientFormService {
         formFieldAnswerRepository.saveAll(newAnswers);
 
         submit.updateSubmitter(userId);
+        submit.clearAiSummary();
     }
 }
