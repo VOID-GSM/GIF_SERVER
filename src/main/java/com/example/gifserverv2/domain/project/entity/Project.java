@@ -49,7 +49,7 @@ public class Project {
 
     public void updateName(String name) { this.name = name; }
     public void updateTeamName(String teamName) { this.teamName = teamName; }
-    public void updateDescription(String description) { this.description = description; this.clearAiSummary(); }
+    public void updateDescription(String description) { this.description = description; }
     public void updateLogo(String logo) { this.logo = logo; }
     public void updateGrade(Integer grade) { this.grade = grade; }
     public void assignAdvisorTeacher(Long teacherId) { this.advisorTeacherId = teacherId; }

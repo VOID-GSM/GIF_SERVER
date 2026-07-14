@@ -39,10 +39,25 @@ public class CommandProjectService {
         Project project = projectQueryService.getProjectOrThrow(projectId);
         validateLeader(projectId, userId);
 
-        if (request.getName() != null) project.updateName(request.getName());
-        if (request.getTeamName() != null) project.updateTeamName(request.getTeamName());
-        if (request.getDescription() != null) project.updateDescription(request.getDescription());
+        boolean summaryAffected = false;
+
+        if (request.getName() != null) {
+            project.updateName(request.getName());
+            summaryAffected = true;
+        }
+        if (request.getTeamName() != null) {
+            project.updateTeamName(request.getTeamName());
+            summaryAffected = true;
+        }
+        if (request.getDescription() != null) {
+            project.updateDescription(request.getDescription());
+            summaryAffected = true;
+        }
         if (request.getGrade() != null) project.updateGrade(request.getGrade());
+
+        if (summaryAffected) {
+            project.clearAiSummary();
+        }
 
         if (logo != null && !logo.isEmpty()) {
             replaceLogo(project, logo);
@@ -169,6 +184,7 @@ public class CommandProjectService {
 
         if (request != null && request.description() != null) {
             project.updateDescription(request.description());
+            project.clearAiSummary();
         }
     }
 
