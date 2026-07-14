@@ -122,7 +122,7 @@ public class AdminFormService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
 
         if (user.getAdminRole() != AdminRole.MASTER) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "양식 생성 권한이 없습니다.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "양식 삭제 권한이 없습니다.");
         }
 
         Form form = queryFormService.getFormOrThrow(formId);
