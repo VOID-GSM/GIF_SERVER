@@ -24,7 +24,7 @@ public class NoticeController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Long> createNotice(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestBody CreateNoticeRequest request
+            @jakarta.validation.Valid @RequestBody CreateNoticeRequest request
     ) {
         return ResponseEntity.ok(noticeService.createNotice(user.userId(), request));
     }
