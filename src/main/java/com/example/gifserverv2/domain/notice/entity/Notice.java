@@ -34,17 +34,14 @@ public class Notice {
     @ElementCollection
     @CollectionTable(name = "notice_target_grade", joinColumns = @JoinColumn(name = "notice_id"))
     @Column(name = "grade")
+    @org.hibernate.annotations.BatchSize(size = 100)
     @Builder.Default
     private List<Integer> targetGrades = new ArrayList<>();
 
     @ElementCollection
     @CollectionTable(name = "notice_target_project", joinColumns = @JoinColumn(name = "notice_id"))
     @Column(name = "project_id")
+    @org.hibernate.annotations.BatchSize(size = 100)
     @Builder.Default
     private List<Long> targetProjectIds = new ArrayList<>();
-
-    @PrePersist
-    public void prePersist() {
-        this.createdAt = LocalDateTime.now();
-    }
 }
