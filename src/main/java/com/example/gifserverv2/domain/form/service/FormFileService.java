@@ -43,10 +43,6 @@ public class FormFileService {
             throw new FormException(HttpStatus.BAD_REQUEST, "파일 업로드 항목이 아닙니다.");
         }
 
-        if (submit.getForm().isDeadlinePassed()) {
-            throw FormException.deadlinePassed();
-        }
-
         String originalFileName = file.getOriginalFilename();
         if (originalFileName != null) {
             originalFileName = org.springframework.util.StringUtils.getFilename(
@@ -89,10 +85,6 @@ public class FormFileService {
 
         if (!projectMemberRepository.existsByProjectIdAndUserId(submit.getProjectId(), userId)) {
             throw ProjectException.notMember();
-        }
-
-        if (submit.getForm().isDeadlinePassed()) {
-            throw FormException.deadlinePassed();
         }
 
         FormFieldAnswer answer = formFieldAnswerRepository

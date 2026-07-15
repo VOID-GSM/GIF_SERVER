@@ -31,6 +31,7 @@ import java.util.*;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ClientFormService {
 
     private final FormRepository formRepository;
@@ -42,7 +43,6 @@ public class ClientFormService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
 
-    @Transactional(readOnly = true)
     public List<ListFormResponse> getAnnouncedForms(Long projectId) {
         List<Form> forms = formRepository.findAllByAnnouncedTrueOrderByDeadlineAsc();
 
@@ -70,7 +70,6 @@ public class ClientFormService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
     public DetailFormResponse getForm(Long formId, Long projectId) {
         Form form = queryFormService.getFormOrThrow(formId);
         if (!form.isAnnounced()) throw FormException.notAnnounced();
@@ -144,7 +143,6 @@ public class ClientFormService {
         return submit.getId();
     }
 
-    @Transactional(readOnly = true)
     public SubmitDetailFormResponse getMySubmit(Long formId, Long projectId) {
         FormSubmit submit = formSubmitRepository
                 .findByFormIdAndProjectId(formId, projectId)
@@ -160,6 +158,7 @@ public class ClientFormService {
 
         return SubmitDetailFormResponse.from(submit, teamName, submittedByName, submittedByStudentNumber);
     }
+
     @Transactional
     public void updateSubmit(Long userId, UpdateSubmitRequest request) {
         FormSubmit submit = formSubmitRepository.findById(request.submitId())
@@ -167,10 +166,6 @@ public class ClientFormService {
 
         if (!projectMemberRepository.existsByProjectIdAndUserId(submit.getProjectId(), userId)) {
             throw ProjectException.notMember();
-        }
-
-        if (submit.getForm().isDeadlinePassed()) {
-            throw FormException.deadlinePassed();
         }
 
         if (request.answers() == null) {
