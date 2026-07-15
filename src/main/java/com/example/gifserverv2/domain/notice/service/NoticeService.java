@@ -44,8 +44,14 @@ public class NoticeService {
                 .build();
 
         Notice saved = noticeRepository.save(notice);
-
-        sendDiscordNotification(saved);
+        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        sendDiscordNotification(saved);
+                    }
+                }
+        );
 
         return saved.getId();
     }
