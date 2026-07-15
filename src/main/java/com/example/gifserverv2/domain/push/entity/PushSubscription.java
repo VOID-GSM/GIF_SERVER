@@ -19,7 +19,7 @@ public class PushSubscription {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column(length = 512, nullable = false, unique = true)
     private String endpoint;
 
     @Column(nullable = false)
