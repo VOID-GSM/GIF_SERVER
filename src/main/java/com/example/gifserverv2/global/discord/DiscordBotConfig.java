@@ -25,7 +25,6 @@ public class DiscordBotConfig {
 
         JDA jda = JDABuilder.createLight(botToken, Collections.emptyList())
                 .build();
-        jda.awaitReady();
         log.info("디스코드 봇 로그인 완료");
         return jda;
     }
