@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class AdminFormService {
 
     private final FormRepository formRepository;
@@ -122,13 +121,14 @@ public class AdminFormService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
 
         if (user.getAdminRole() != AdminRole.MASTER) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "양식 생성 권한이 없습니다. (Master 선생님 전용)");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "양식 삭제 권한이 없습니다.");
         }
 
         Form form = queryFormService.getFormOrThrow(formId);
         formRepository.delete(form);
     }
 
+    @Transactional(readOnly = true)
     public List<ListFormResponse> getAllFormsForAdmin(Integer grade) {
         List<Form> forms = (grade == null)
                 ? formRepository.findAll()
@@ -139,6 +139,7 @@ public class AdminFormService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<SubmitDetailFormResponse> getSubmitListByForm(Long formId) {
         Form form = queryFormService.getFormOrThrow(formId);
         List<FormSubmit> submits = formSubmitRepository.findAllByFormId(form.getId());
@@ -167,12 +168,14 @@ public class AdminFormService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<ListFormResponse> getDraftForms() {
         return formRepository.findAllByAnnouncedFalseOrderByCreatedAtDesc().stream()
                 .map(ListFormResponse::from)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public DetailFormResponse getDraftForm(Long formId) {
         Form form = formRepository.findByIdAndAnnouncedFalse(formId)
                 .orElseThrow(FormException::notFound);

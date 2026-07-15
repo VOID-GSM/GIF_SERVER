@@ -9,11 +9,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class QueryFormService {
 
     private final FormRepository formRepository;
 
+    @Transactional(readOnly = true)
     public Form getFormOrThrow(Long formId) {
         return formRepository.findById(formId)
                 .orElseThrow(FormException::notFound);

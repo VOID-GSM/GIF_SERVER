@@ -158,6 +158,7 @@ public class ClientFormService {
 
         return SubmitDetailFormResponse.from(submit, teamName, submittedByName, submittedByStudentNumber);
     }
+
     @Transactional
     public void updateSubmit(Long userId, UpdateSubmitRequest request) {
         FormSubmit submit = formSubmitRepository.findById(request.submitId())
@@ -165,10 +166,6 @@ public class ClientFormService {
 
         if (!projectMemberRepository.existsByProjectIdAndUserId(submit.getProjectId(), userId)) {
             throw ProjectException.notMember();
-        }
-
-        if (submit.getForm().isDeadlinePassed()) {
-            throw FormException.deadlinePassed();
         }
 
         if (request.answers() == null) {
@@ -228,5 +225,6 @@ public class ClientFormService {
         formFieldAnswerRepository.saveAll(newAnswers);
 
         submit.updateSubmitter(userId);
+        submit.clearAiSummary();
     }
 }

@@ -21,12 +21,12 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class ScoreQueryService {
 
     private final ScoreRepository scoreRepository;
     private final ProjectRepository projectRepository;
 
+    @Transactional(readOnly = true)
     public GetProjectFieldAverageResponse getProjectFieldAverages(Long projectId, AuthenticatedUser user) {
         validateAdminAuthority(user);
 
@@ -38,6 +38,7 @@ public class ScoreQueryService {
         return calculateProjectAverage(projectId, scores);
     }
 
+    @Transactional(readOnly = true)
     public List<GetProjectFieldAverageResponse> getAllProjectFieldAverages(AuthenticatedUser user) {
         validateAdminAuthority(user);
 

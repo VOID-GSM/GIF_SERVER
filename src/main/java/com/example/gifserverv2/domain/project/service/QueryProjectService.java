@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class QueryProjectService {
 
     private final ProjectRepository projectRepository;
@@ -29,6 +28,7 @@ public class QueryProjectService {
     private final UserSearchRepository userSearchRepository;
     private final UserRepository userRepository;
 
+    @Transactional(readOnly = true)
     public List<UserSearchResponse> searchUsers(String keyword) {
         List<UserEntity> users = userSearchRepository.findByNameContainingOrStudentNumberContaining(keyword, keyword);
         if (users.isEmpty()) {
@@ -45,18 +45,21 @@ public class QueryProjectService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<ListProjectResponse> getAllProjects() {
         return projectRepository.findAll().stream()
                 .map(ListProjectResponse::from)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<ListProjectResponse> getMyProjects(Long userId) {
         return projectMemberRepository.findAllByUserId(userId).stream()
                 .map(m -> ListProjectResponse.from(m.getProject()))
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<ListProjectResponse> getProjectsByGrade(Integer grade) {
         if (grade == null) return getAllProjects();
         return projectRepository.findByGrade(grade).stream()
@@ -64,6 +67,7 @@ public class QueryProjectService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public DetailProjectResponse getProject(Long projectId) {
         Project project = getProjectOrThrow(projectId);
         List<Long> memberIds = project.getMembers().stream()
@@ -76,6 +80,7 @@ public class QueryProjectService {
         return DetailProjectResponse.from(project, userMap);
     }
 
+    @Transactional(readOnly = true)
     public Project getProjectOrThrow(Long projectId) {
         return projectRepository.findById(projectId)
                 .orElseThrow(ProjectException::notFound);
