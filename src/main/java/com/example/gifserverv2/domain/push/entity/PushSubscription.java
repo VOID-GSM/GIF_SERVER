@@ -34,4 +34,11 @@ public class PushSubscription {
     @Builder.Default
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    public void update(Long userId, String p256dh, String auth, String userAgent) {
+        this.userId = userId;
+        this.p256dh = p256dh;
+        this.auth = auth;
+        this.userAgent = userAgent;
+    }
 }
