@@ -70,3 +70,8 @@ springdoc:
 
 openai:
   api-key: ${OPEN_API_KEY:}
+
+vapid:
+  public-key: ${VAPID_PUBLIC_KEY}
+  private-key: ${VAPID_PRIVATE_KEY}
+  subject: ${VAPID_SUBJECT}
