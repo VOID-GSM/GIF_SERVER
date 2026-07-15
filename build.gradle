@@ -45,6 +45,8 @@ dependencies {
     runtimeOnly 'com.mysql:mysql-connector-j'
     implementation 'org.mariadb.jdbc:mariadb-java-client'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+    implementation 'nl.martijndwars:web-push:5.1.1'
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
 }
 
 tasks.named('test') {
