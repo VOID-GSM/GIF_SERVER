@@ -28,8 +28,11 @@ public class FormController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Long> createForm(@RequestBody CreateFormRequest request) {
-        return ResponseEntity.ok(adminFormService.createForm(request));
+    public ResponseEntity<Long> createForm(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestBody CreateFormRequest request
+    ) {
+        return ResponseEntity.ok(adminFormService.createForm(user.userId(), request));
     }
 
     @PatchMapping("/update")
@@ -49,19 +52,31 @@ public class FormController {
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/delete")
+    @DeleteMapping("/{formId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteForm(@RequestParam Long formId) {
-        adminFormService.deleteForm(formId);
+    public ResponseEntity<Void> deleteForm(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable("formId") Long formId
+    ) {
+        adminFormService.deleteForm(user.userId(), formId);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ListFormResponse>> getAllFormsForAdmin(
-            @RequestParam(required = false) Integer grade
+            @RequestParam(required = false) String grade
     ) {
-        return ResponseEntity.ok(adminFormService.getAllFormsForAdmin(grade));
+        Integer numericGrade = null;
+        if (grade != null && !grade.isBlank() && !grade.equals("null")
+                && !grade.equals("undefined")) {
+            try {
+                numericGrade = Integer.parseInt(grade);
+            } catch (NumberFormatException e) {
+                numericGrade = null;
+            }
+        }
+        return ResponseEntity.ok(adminFormService.getAllFormsForAdmin(numericGrade));
     }
 
     @GetMapping("/admin/submit")
@@ -100,15 +115,13 @@ public class FormController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadFile(
+    public ResponseEntity<FileUploadResponse> uploadFile(
             @AuthenticationPrincipal AuthenticatedUser user,
             @RequestParam Long submitId,
             @RequestParam Long fieldId,
             @RequestParam MultipartFile file
     ) {
-        return ResponseEntity.ok(
-                formFileService.uploadFile(user.userId(), submitId, fieldId, file)
-        );
+        return ResponseEntity.ok(formFileService.uploadFile(user.userId(), submitId, fieldId, file));
     }
 
     @DeleteMapping("/upload")

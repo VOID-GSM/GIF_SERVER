@@ -23,7 +23,6 @@ public class OAuthProperties {
         public List<String> getRedirectUris() { return redirectUris; }
         public void setRedirectUris(List<String> redirectUris) { this.redirectUris = redirectUris; }
     }
-
     public static class Google {
         private List<String> redirectUris = new ArrayList<>();
         public List<String> getRedirectUris() { return redirectUris; }

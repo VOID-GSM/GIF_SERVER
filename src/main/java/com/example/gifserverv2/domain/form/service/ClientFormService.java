@@ -1,6 +1,7 @@
 package com.example.gifserverv2.domain.form.service;
 
 import com.example.gifserverv2.domain.form.dto.request.SubmitFormRequest;
+import com.example.gifserverv2.domain.form.dto.request.UpdateSubmitAnswerRequest;
 import com.example.gifserverv2.domain.form.dto.request.UpdateSubmitRequest;
 import com.example.gifserverv2.domain.form.dto.response.DetailFormResponse;
 import com.example.gifserverv2.domain.form.dto.response.ListFormResponse;
@@ -19,6 +20,8 @@ import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.user.entity.UserEntity;
+import com.example.gifserverv2.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -38,6 +41,7 @@ public class ClientFormService {
     private final ProjectMemberRepository projectMemberRepository;
     private final QueryFormService queryFormService;
     private final ProjectRepository projectRepository;
+    private final UserRepository userRepository;
 
     public List<ListFormResponse> getAnnouncedForms(Long projectId) {
         List<Form> forms = formRepository.findAllByAnnouncedTrueOrderByDeadlineAsc();
@@ -59,7 +63,7 @@ public class ClientFormService {
                     boolean submitted = submit != null;
                     Boolean deadlineComplied = null;
                     if (submit != null) {
-                        deadlineComplied = !submit.getSubmittedAt().toLocalDate().isAfter(form.getDeadline());
+                        deadlineComplied = !submit.getSubmittedAt().isAfter(form.getDeadline());
                     }
                     return ListFormResponse.from(form, submitted, deadlineComplied);
                 })
@@ -74,7 +78,7 @@ public class ClientFormService {
         if (projectId != null) {
             deadlineComplied = formSubmitRepository
                     .findByFormIdAndProjectId(formId, projectId)
-                    .map(submit -> !submit.getSubmittedAt().toLocalDate().isAfter(form.getDeadline()))
+                    .map(submit -> !submit.getSubmittedAt().isAfter(form.getDeadline()))
                     .orElse(null);
         }
 
@@ -106,6 +110,12 @@ public class ClientFormService {
             FormField field = formFieldRepository.findById(answerReq.fieldId())
                     .orElseThrow(FormException::fieldNotFound);
 
+            if (field.getType() == FormField.FieldType.TEXT
+                    && answerReq.textAnswer() != null
+                    && answerReq.textAnswer().length() > 1000) {
+                throw new FormException(HttpStatus.BAD_REQUEST, "답변은 1000자를 초과할 수 없습니다.");
+            }
+
             FormFieldAnswer answer = FormFieldAnswer.builder()
                     .formSubmit(submit)
                     .formField(field)
@@ -113,7 +123,6 @@ public class ClientFormService {
                     .filePath(answerReq.filePath())
                     .fileSize(answerReq.fileSize())
                     .build();
-            formFieldAnswerRepository.save(answer);
 
             if (field.getType() == FormField.FieldType.CALENDAR && answerReq.dateAnswer() != null) {
                 answerReq.dateAnswer().forEach(eventReq -> {
@@ -127,6 +136,7 @@ public class ClientFormService {
                     answer.getCalendarEvents().add(event);
                 });
             }
+
             formFieldAnswerRepository.save(answer);
         });
 
@@ -141,8 +151,12 @@ public class ClientFormService {
         String teamName = projectRepository.findById(projectId)
                 .map(Project::getTeamName)
                 .orElse(null);
+        UserEntity user = userRepository.findById(submit.getSubmittedByUserId())
+                .orElse(null);
+        String submittedByName = user != null ? user.getName() : null;
+        String submittedByStudentNumber = user != null ? user.getStudentNumber() : null;
 
-        return SubmitDetailFormResponse.from(submit, teamName);
+        return SubmitDetailFormResponse.from(submit, teamName, submittedByName, submittedByStudentNumber);
     }
 
     @Transactional
@@ -150,21 +164,21 @@ public class ClientFormService {
         FormSubmit submit = formSubmitRepository.findById(request.submitId())
                 .orElseThrow(FormException::notSubmitted);
 
-        if (!submit.getSubmittedByUserId().equals(userId)) {
-            throw new FormException(HttpStatus.FORBIDDEN, "본인이 제출한 양식만 수정할 수 있습니다.");
+        if (!projectMemberRepository.existsByProjectIdAndUserId(submit.getProjectId(), userId)) {
+            throw ProjectException.notMember();
         }
 
-        if (submit.getForm().isDeadlinePassed()) {
-            throw FormException.deadlinePassed();
+        if (request.answers() == null) {
+            throw new FormException(HttpStatus.BAD_REQUEST, "답변 목록은 필수입니다.");
+        }
+
+        Map<Long, UpdateSubmitAnswerRequest> answerMap = new HashMap<>();
+        for (UpdateSubmitAnswerRequest answer : request.answers()) {
+            answerMap.put(answer.fieldId(), answer);
         }
 
         List<FormFieldAnswer> existing = formFieldAnswerRepository.findAllByFormSubmitId(request.submitId());
         formFieldAnswerRepository.deleteAll(existing);
-
-        Map<Long, UpdateSubmitRequest.AnswerRequest> answerMap = new HashMap<>();
-        for (UpdateSubmitRequest.AnswerRequest answer : request.answers()) {
-            answerMap.put(answer.fieldId(), answer);
-        }
 
         List<FormField> fields = formFieldRepository.findAllById(answerMap.keySet());
         if (fields.size() != answerMap.size()) {
@@ -177,7 +191,13 @@ public class ClientFormService {
                 throw new FormException(HttpStatus.BAD_REQUEST, "해당 양식에 존재하지 않는 항목입니다.");
             }
 
-            UpdateSubmitRequest.AnswerRequest answerReq = answerMap.get(field.getId());
+            UpdateSubmitAnswerRequest answerReq = answerMap.get(field.getId());
+
+            if (field.getType() == FormField.FieldType.TEXT
+                    && answerReq.textAnswer() != null
+                    && answerReq.textAnswer().length() > 1000) {
+                throw FormException.textAnswerTooLong();
+            }
 
             FormFieldAnswer answer = FormFieldAnswer.builder()
                     .formSubmit(submit)
@@ -185,6 +205,7 @@ public class ClientFormService {
                     .textAnswer(answerReq.textAnswer())
                     .filePath(answerReq.filePath())
                     .fileSize(answerReq.fileSize())
+                    .originalFileName(answerReq.originalFileName())
                     .build();
 
             if (field.getType() == FormField.FieldType.CALENDAR && answerReq.dateAnswer() != null) {
@@ -202,5 +223,8 @@ public class ClientFormService {
             newAnswers.add(answer);
         }
         formFieldAnswerRepository.saveAll(newAnswers);
+
+        submit.updateSubmitter(userId);
+        submit.clearAiSummary();
     }
 }

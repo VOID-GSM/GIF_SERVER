@@ -2,13 +2,16 @@ package com.example.gifserverv2.domain.score.service;
 
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
-import com.example.gifserverv2.domain.score.dto.response.ScoreNoticeResponse;
-import com.example.gifserverv2.domain.score.dto.response.ScoreSummaryResponse;
-import com.example.gifserverv2.domain.score.dto.response.ScoreRankResponse;
+import com.example.gifserverv2.domain.score.dto.response.GetScoreNoticeResponse;
+import com.example.gifserverv2.domain.score.dto.response.GetScoreSummaryResponse;
+import com.example.gifserverv2.domain.score.dto.response.GetScoreRankResponse;
 import com.example.gifserverv2.domain.score.entity.ScoreNotice;
 import com.example.gifserverv2.domain.score.entity.Score;
 import com.example.gifserverv2.domain.score.repository.ScoreNoticeRepository;
 import com.example.gifserverv2.domain.score.repository.ScoreRepository;
+import com.example.gifserverv2.domain.user.entity.AdminRole;
+import com.example.gifserverv2.domain.user.entity.UserEntity;
+import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import com.example.gifserverv2.domain.user.entity.Role;
 import org.springframework.stereotype.Service;
@@ -31,19 +34,21 @@ public class ScoreNoticeService {
     private final ProjectRepository projectRepository;
     private final ScoreRepository scoreRepository;
     private final ScoreNoticeRepository scoreNoticeRepository;
+    private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
-    public ScoreNoticeService(ProjectRepository projectRepository, ScoreRepository scoreRepository, ScoreNoticeRepository scoreNoticeRepository, ObjectMapper objectMapper) {
+    public ScoreNoticeService(ProjectRepository projectRepository, ScoreRepository scoreRepository, ScoreNoticeRepository scoreNoticeRepository, UserRepository userRepository,ObjectMapper objectMapper) {
         this.projectRepository = projectRepository;
         this.scoreRepository = scoreRepository;
         this.scoreNoticeRepository = scoreNoticeRepository;
+        this.userRepository = userRepository;
         this.objectMapper = objectMapper;
     }
 
     @Transactional
     public void publish(AuthenticatedUser caller) {
-        if (caller == null || caller.role() != Role.ADMIN) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자(선생님)만 공지할 수 있습니다.");
+        if (caller.adminRole() != AdminRole.MASTER) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "성적 공지 권한이 없습니다. (Master 선생님 전용)");
         }
 
         List<Project> projects = projectRepository.findAll();
@@ -51,7 +56,7 @@ public class ScoreNoticeService {
         Map<Long, List<Score>> scoresByProject =
                 allScores.stream().collect(Collectors.groupingBy(s -> s.getProject().getId()));
 
-        List<ScoreSummaryResponse> summaries = new ArrayList<>();
+        List<GetScoreSummaryResponse> summaries = new ArrayList<>();
 
         for (Project p : projects) {
             List<Score> scores = scoresByProject.getOrDefault(p.getId(), List.of());
@@ -61,7 +66,7 @@ public class ScoreNoticeService {
                 double sum = scores.stream().mapToInt(Score::getSubTotalScore).sum();
                 avg = sum / count;
             }
-            summaries.add(new ScoreSummaryResponse(p.getId(), p.getTeamName(), avg, count));
+            summaries.add(new GetScoreSummaryResponse(p.getId(), p.getTeamName(), avg, count));
         }
 
         try {
@@ -74,66 +79,64 @@ public class ScoreNoticeService {
     }
 
     @Transactional(readOnly = true)
-    public ScoreNoticeResponse getCurrentNotice() {
+    public GetScoreNoticeResponse getCurrentNotice() {
         return scoreNoticeRepository.findTopByOrderByPublishedAtDesc()
                 .map(n -> {
                     try {
-                        List<ScoreSummaryResponse> summaries = objectMapper.readValue(n.getSnapshot(), new TypeReference<List<ScoreSummaryResponse>>(){});
-                        return new ScoreNoticeResponse(true, n.getPublishedAt(), summaries);
+                        List<GetScoreSummaryResponse> summaries = objectMapper.readValue(n.getSnapshot(), new TypeReference<List<GetScoreSummaryResponse>>(){});
+                        return new GetScoreNoticeResponse(true, n.getPublishedAt(), summaries);
                     } catch (Exception e) {
                         throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "공지 데이터 파싱 중 오류가 발생했습니다.", e);
                     }
                 })
-                .orElseGet(() -> new ScoreNoticeResponse(false, null, List.of()));
+                .orElseGet(() -> new GetScoreNoticeResponse(false, null, List.of()));
     }
 
     @Transactional(readOnly = true)
-    public List<ScoreRankResponse> getRankByGrade(Integer grade) {
-        List<Project> projects;
-        if (grade == null) {
-            projects = projectRepository.findAll();
-        } else {
-            projects = projectRepository.findByGrade(grade);
+    public List<GetScoreRankResponse> getRankByGradeAndRank(Integer grade, Integer targetRank) {
+        List<Project> projects = (grade == null) ? projectRepository.findAll() : projectRepository.findByGrade(grade);
+
+        if (projects.isEmpty()) {
+            return List.of();
         }
 
-        List<Score> allScores = scoreRepository.findAll();
-        Map<Long, List<Score>> scoresByProject =
-                allScores.stream().collect(Collectors.groupingBy(s -> s.getProject().getId()));
+        List<Long> projectIds = projects.stream()
+                .map(Project::getId)
+                .collect(Collectors.toList());
 
-        List<ScoreRankResponse> results = new ArrayList<>();
+        List<Score> targetScores = scoreRepository.findByProjectIds(projectIds);
 
+        Map<Long, List<Score>> scoresByProject = targetScores.stream()
+                .collect(Collectors.groupingBy(s -> s.getProject().getId()));
+
+        List<GetScoreRankResponse> results = new ArrayList<>();
         for (Project p : projects) {
             List<Score> scores = scoresByProject.getOrDefault(p.getId(), List.of());
-            int count = scores.size();
-            double avg = 0.0;
-            if (count > 0) {
-                double sum = scores.stream().mapToInt(Score::getSubTotalScore).sum();
-                avg = sum / count;
-            }
-            int totalScore = (int) Math.round(avg);
-            results.add(new ScoreRankResponse(0, p.getTeamName(), totalScore));
+            double avg = scores.isEmpty() ? 0.0 : scores.stream().mapToInt(Score::getSubTotalScore).sum() / (double) scores.size();
+            results.add(new GetScoreRankResponse(0, p.getTeamName(), (int) Math.round(avg)));
         }
 
         results.sort((a, b) -> Integer.compare(b.totalScore(), a.totalScore()));
 
+        List<GetScoreRankResponse> rankedResults = new ArrayList<>();
         int prevScore = Integer.MIN_VALUE;
         int prevRank = 0;
         for (int i = 0; i < results.size(); i++) {
-            ScoreRankResponse r = results.get(i);
+            GetScoreRankResponse r = results.get(i);
             int currentScore = r.totalScore();
-            int currentRank;
-            if (i == 0) {
-                currentRank = 1;
-            } else if (currentScore == prevScore) {
-                currentRank = prevRank;
-            } else {
-                currentRank = i + 1; // standard competition ranking: ranks skip after ties
-            }
-            results.set(i, new ScoreRankResponse(currentRank, r.teamName(), currentScore));
+            int currentRank = (i == 0) ? 1 : (currentScore == prevScore) ? prevRank : i + 1;
+
+            rankedResults.add(new GetScoreRankResponse(currentRank, r.teamName(), currentScore));
             prevScore = currentScore;
             prevRank = currentRank;
         }
 
-        return results;
+        if (targetRank != null) {
+            return rankedResults.stream()
+                    .filter(r -> r.rank() == targetRank)
+                    .collect(Collectors.toList());
+        }
+
+        return rankedResults;
     }
 }

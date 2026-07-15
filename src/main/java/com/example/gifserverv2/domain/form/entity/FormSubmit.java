@@ -32,12 +32,36 @@ public class FormSubmit {
     @Column(nullable = false)
     private LocalDateTime submittedAt;
 
+    @Column(length = 1000)
+    private String aiSummary;
+
+    @Column
+    private LocalDateTime aiSummarizedAt;
+
     @OneToMany(mappedBy = "formSubmit", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<FormFieldAnswer> answers = new ArrayList<>();
 
     @PrePersist
     public void prePersist() {
+        this.submittedAt = LocalDateTime.now();
+    }
+
+    public void updateAiSummary(String aiSummary) {
+        this.aiSummary = aiSummary;
+        this.aiSummarizedAt = LocalDateTime.now();
+    }
+
+    public void clearAiSummary() {
+        this.aiSummary = null;
+        this.aiSummarizedAt = null;
+    }
+
+    public void updateSubmitter(Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("userId must not be null");
+        }
+        this.submittedByUserId = userId;
         this.submittedAt = LocalDateTime.now();
     }
 }

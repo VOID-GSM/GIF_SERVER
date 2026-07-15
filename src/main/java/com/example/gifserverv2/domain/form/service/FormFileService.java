@@ -1,5 +1,6 @@
 package com.example.gifserverv2.domain.form.service;
 
+import com.example.gifserverv2.domain.form.dto.response.FileUploadResponse;
 import com.example.gifserverv2.domain.form.exception.FormException;
 import com.example.gifserverv2.domain.form.entity.FormField;
 import com.example.gifserverv2.domain.form.entity.FormFieldAnswer;
@@ -7,6 +8,8 @@ import com.example.gifserverv2.domain.form.entity.FormSubmit;
 import com.example.gifserverv2.domain.form.repository.FormFieldAnswerRepository;
 import com.example.gifserverv2.domain.form.repository.FormFieldRepository;
 import com.example.gifserverv2.domain.form.repository.FormSubmitRepository;
+import com.example.gifserverv2.domain.project.exception.ProjectException;
+import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.global.file.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,14 +25,15 @@ public class FormFileService {
     private final FormSubmitRepository formSubmitRepository;
     private final FormFieldRepository formFieldRepository;
     private final FormFieldAnswerRepository formFieldAnswerRepository;
+    private final ProjectMemberRepository projectMemberRepository;
 
     @Transactional
-    public String uploadFile(Long userId, Long submitId, Long fieldId, MultipartFile file) {
+    public FileUploadResponse uploadFile(Long userId, Long submitId, Long fieldId, MultipartFile file) {
         FormSubmit submit = formSubmitRepository.findById(submitId)
                 .orElseThrow(() -> new FormException(HttpStatus.NOT_FOUND, "제출 내역을 찾을 수 없습니다."));
 
-        if (!submit.getSubmittedByUserId().equals(userId)) {
-            throw new FormException(HttpStatus.FORBIDDEN, "본인이 제출한 양식만 수정할 수 있습니다.");
+        if (!projectMemberRepository.existsByProjectIdAndUserId(submit.getProjectId(), userId)) {
+            throw ProjectException.notMember();
         }
 
         FormField field = formFieldRepository.findById(fieldId)
@@ -39,8 +43,16 @@ public class FormFileService {
             throw new FormException(HttpStatus.BAD_REQUEST, "파일 업로드 항목이 아닙니다.");
         }
 
-        if (submit.getForm().isDeadlinePassed()) {
-            throw FormException.deadlinePassed();
+        String originalFileName = file.getOriginalFilename();
+        if (originalFileName != null) {
+            originalFileName = org.springframework.util.StringUtils.getFilename(
+                    org.springframework.util.StringUtils.cleanPath(originalFileName)
+            );
+        }
+
+        String extension = extractExtension(originalFileName);
+        if (!field.isExtensionAllowed(extension)) {
+            throw FormException.disallowedFileExtension();
         }
 
         formFieldAnswerRepository.findByFormSubmitIdAndFormFieldId(submitId, fieldId)
@@ -58,9 +70,12 @@ public class FormFileService {
                 .formField(field)
                 .filePath(savedUrl)
                 .fileSize(file.getSize())
+                .originalFileName(originalFileName)
                 .build());
 
-        return savedUrl;
+        submit.clearAiSummary();
+
+        return new FileUploadResponse(savedUrl, originalFileName);
     }
 
     @Transactional
@@ -68,8 +83,8 @@ public class FormFileService {
         FormSubmit submit = formSubmitRepository.findById(submitId)
                 .orElseThrow(() -> new FormException(HttpStatus.NOT_FOUND, "제출 내역을 찾을 수 없습니다."));
 
-        if (!submit.getSubmittedByUserId().equals(userId)) {
-            throw new FormException(HttpStatus.FORBIDDEN, "본인이 제출한 양식만 삭제할 수 있습니다.");
+        if (!projectMemberRepository.existsByProjectIdAndUserId(submit.getProjectId(), userId)) {
+            throw ProjectException.notMember();
         }
 
         FormFieldAnswer answer = formFieldAnswerRepository
@@ -80,5 +95,14 @@ public class FormFileService {
             fileStorageService.delete(answer.getFilePath());
         }
         formFieldAnswerRepository.delete(answer);
+
+        submit.clearAiSummary();
+    }
+
+    private String extractExtension(String filename) {
+        if (filename == null || !filename.contains(".")) {
+            throw new FormException(HttpStatus.BAD_REQUEST, "파일 확장자가 없습니다.");
+        }
+        return filename.substring(filename.lastIndexOf(".") + 1);
     }
 }

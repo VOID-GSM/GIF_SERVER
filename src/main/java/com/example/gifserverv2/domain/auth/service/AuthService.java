@@ -4,6 +4,7 @@ import com.example.gifserverv2.domain.auth.dto.request.OAuthSignInRequest;
 import com.example.gifserverv2.domain.auth.dto.response.OAuthSignInResponse;
 import com.example.gifserverv2.domain.auth.dto.response.CurrentUserResponse;
 import com.example.gifserverv2.domain.auth.dto.request.UpdateCurrentUserRequest;
+import com.example.gifserverv2.domain.user.entity.ClientRole;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.Role;
@@ -26,6 +27,7 @@ import team.themoment.datagsm.sdk.oauth.model.TokenResponse;
 import team.themoment.datagsm.sdk.oauth.model.UserInfo;
 
 import java.util.Map;
+import java.util.List;
 
 @Service
 public class AuthService {
@@ -138,7 +140,12 @@ public class AuthService {
     }
 
     public void assertAllowedRedirectUri(String redirectUri) {
-        if (redirectUri == null || redirectUri.isBlank() || !oauthProperties.getDatagsm().getRedirectUris().contains(redirectUri)) {
+        if (redirectUri == null || redirectUri.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "허용되지 않은 redirectUri입니다.");
+        }
+        List<String> allowed = oauthProperties.getDatagsm().getRedirectUris();
+
+        if (!allowed.contains(redirectUri)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "허용되지 않은 redirectUri입니다.");
         }
     }
@@ -154,10 +161,10 @@ public class AuthService {
         Long projectId = null;
         String clientTeam = null;
 
-        java.util.List<ProjectMember> members = projectMemberRepository.findAllByUserId(user.getId());
+        List<ProjectMember> members = projectMemberRepository.findAllByUserId(user.getId());
         if (members != null && !members.isEmpty()) {
             ProjectMember pick = members.stream()
-                    .filter(m -> m.getRole() == ProjectMember.MemberRole.LEADER)
+                    .filter(m -> m.getRole() == ClientRole.LEADER)
                     .findFirst()
                     .orElse(members.get(0));
             if (pick != null && pick.getProject() != null) {
@@ -178,7 +185,9 @@ public class AuthService {
                 user.isGradeHead(),
                 user.getClientRole() != null ? user.getClientRole().name() : null,
                 projectId,
-                clientTeam);
+                clientTeam,
+                null
+        );
     }
 
     @Transactional
@@ -188,7 +197,6 @@ public class AuthService {
         }
 
         UserEntity user = requireUser(caller.userId());
-
         boolean changed = false;
 
         String newName = (request.name() != null && !request.name().isBlank()) ? request.name() : user.getName();
@@ -211,13 +219,16 @@ public class AuthService {
             if (caller.role() == null || caller.role() != Role.ADMIN) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "관리자 정보는 관리자(선생님)만 수정할 수 있습니다.");
             }
+
             AdminRole newAdminRole = request.adminRole() != null ? request.adminRole() : user.getAdminRole();
             String validationMessage = AdminRole.subjectTeacherValidationMessage(newAdminRole);
             if (validationMessage != null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, validationMessage);
             }
+
             String newAdminTeam = request.adminTeam() != null ? request.adminTeam() : user.getAdminTeam();
-            user.updateAdminAdditionalInfo(newAdminRole, newAdminTeam, user.isGradeHead());
+
+            user.updateAdminAdditionalInfo(newAdminRole, newName, newAdminTeam, user.isGradeHead());
             changed = true;
         }
 
@@ -233,7 +244,9 @@ public class AuthService {
             userRepository.save(user);
         }
 
-        return buildCurrentUserResponse(user);
+        String newAccessToken = jwtTokenProvider.createToken(user);
+
+        return buildCurrentUserResponseWithToken(user, newAccessToken);
     }
 
     private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role, String grade) {
@@ -253,7 +266,6 @@ public class AuthService {
     }
 
     @Transactional
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public OAuthSignInResponse signInWithGoogle(String accessToken, Map userInfo) {
         String email = userInfo.get("email") != null ? userInfo.get("email").toString() : null;
         String name = userInfo.get("name") != null ? userInfo.get("name").toString() : null;
@@ -283,4 +295,37 @@ public class AuthService {
                 user.getClientRole() != null ? user.getClientRole().name() : null);
     }
 
+    private CurrentUserResponse buildCurrentUserResponseWithToken(UserEntity user, String accessToken) {
+        Long projectId = null;
+        String clientTeam = null;
+
+        List<ProjectMember> members = projectMemberRepository.findAllByUserId(user.getId());
+        if (members != null && !members.isEmpty()) {
+            ProjectMember pick = members.stream()
+                    .filter(m -> m.getRole() == ClientRole.LEADER)
+                    .findFirst()
+                    .orElse(members.get(0));
+            if (pick != null && pick.getProject() != null) {
+                projectId = pick.getProject().getId();
+                clientTeam = pick.getProject().getTeamName();
+            }
+        }
+
+        return new CurrentUserResponse(
+                user.getId(), user.getEmail(), user.getName(), user.getStudentNumber(), user.getGrade(),
+                user.getEffectiveRole().name(),
+                user.getAdminRole() != null ? user.getAdminRole().name() : null,
+                user.getAdminTeam(), user.isGradeHead(),
+                user.getClientRole() != null ? user.getClientRole().name() : null,
+                projectId,
+                clientTeam,
+                accessToken
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public String renewToken(Long userId) {
+        UserEntity user = requireUser(userId);
+        return jwtTokenProvider.createToken(user);
+    }
 }

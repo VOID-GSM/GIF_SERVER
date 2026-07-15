@@ -10,6 +10,8 @@ public record SubmitDetailFormResponse(
         Long projectId,
         String teamName,
         Long submittedByUserId,
+        String submittedByName,
+        String submittedByStudentNumber,
         LocalDateTime submittedAt,
         boolean deadlineComplied,
         List<AnswerResponse> answers
@@ -21,6 +23,7 @@ public record SubmitDetailFormResponse(
             String textAnswer,
             String filePath,
             Long fileSize,
+            String originalFileName,
             List<CalendarEventResponse> dateAnswer
     ) {}
 
@@ -31,9 +34,8 @@ public record SubmitDetailFormResponse(
             String color
     ) {}
 
-    public static SubmitDetailFormResponse from(FormSubmit submit, String teamName) {
-        boolean deadlineComplied = !submit.getSubmittedAt().toLocalDate()
-                .isAfter(submit.getForm().getDeadline());
+    public static SubmitDetailFormResponse from(FormSubmit submit, String teamName, String submittedByName, String submittedByStudentNumber) {
+        boolean deadlineComplied = !submit.getSubmittedAt().isAfter(submit.getForm().getDeadline());
 
         List<AnswerResponse> answerResponses = submit.getAnswers().stream()
                 .map(a -> {
@@ -53,6 +55,7 @@ public record SubmitDetailFormResponse(
                             a.getTextAnswer(),
                             a.getFilePath(),
                             a.getFileSize(),
+                            a.getOriginalFileName(),
                             events
                     );
                 })
@@ -63,6 +66,8 @@ public record SubmitDetailFormResponse(
                 submit.getProjectId(),
                 teamName,
                 submit.getSubmittedByUserId(),
+                submittedByName,
+                submittedByStudentNumber,
                 submit.getSubmittedAt(),
                 deadlineComplied,
                 answerResponses

@@ -1,6 +1,7 @@
 package com.example.gifserverv2.domain.score.service;
 
 import com.example.gifserverv2.domain.score.dto.request.CreateMajorScoreRequest;
+import com.example.gifserverv2.domain.score.dto.request.PatchMajorScoreRequest;
 import com.example.gifserverv2.domain.score.entity.Score;
 import com.example.gifserverv2.domain.project.entity.Project;
 import lombok.RequiredArgsConstructor;
@@ -8,33 +9,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class MajorScoreService {
 
     private final ScoreSupport support;
 
+    @Transactional
     public void createMajor(CreateMajorScoreRequest request, AuthenticatedUser evaluator) {
-        // permission: only MAJOR_TEACHER can assign major scores
-        if (evaluator == null || evaluator.adminRole() == null || evaluator.adminRole() != AdminRole.MAJOR_TEACHER) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "전공 교과 선생님만 전공 점수를 부여할 수 있습니다.");
-        }
-        if (evaluator.userId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "평가자 ID가 필요합니다.");
-        }
-
-        support.validateCommonRequest(request.getProjectId(), evaluator.userId().toString());
-        support.requireScore(request.getTechnicalCompleteness(), "technicalCompleteness");
-        support.requireScore(request.getSocialValueMajor(), "socialValueMajor");
-        support.requireScore(request.getAiUtilityMajorScore(), "aiUtilityMajorScore");
-        support.requireScore(request.getPresentationMajor(), "presentationMajor");
+        validateEvaluatorAndFields(evaluator, request.getProjectId(),
+                request.getTechnicalCompleteness(), request.getSocialValueMajor(),
+                request.getAiUtilityMajorScore(), request.getPresentationMajor());
 
         Project project = support.getProjectOrThrow(request.getProjectId());
         final String evaluatorKey = evaluator.userId().toString().trim();
+
         support.upsertScore(
                 project,
                 evaluatorKey,
@@ -45,72 +35,50 @@ public class MajorScoreService {
                         .socialValueMajor(request.getSocialValueMajor())
                         .aiUtilizationMajor(request.getAiUtilityMajorScore())
                         .presentationMajor(request.getPresentationMajor())
-                        .reportWriting(0)
-                        .reportContent(0)
-                        .aiUsagePlan(0)
-                        .creativity(0)
-                        .userExperience(0)
-                        .socialValueCommunity(0)
-                        .aiUtilizationCommunity(0)
-                        .presentationCommunity(0)
+                        .reportWriting(0).reportContent(0).aiUsagePlan(0)
+                        .creativity(0).userExperience(0).socialValueCommunity(0)
+                        .aiUtilizationCommunity(0).presentationCommunity(0)
                         .build(),
-                score -> score.updateScore(
-                        request.getTechnicalCompleteness(),
-                        request.getSocialValueMajor(),
-                        request.getAiUtilityMajorScore(),
-                        request.getPresentationMajor(),
-                        score.getReportWriting(),
-                        score.getReportContent(),
-                        score.getAiUsagePlan(),
-                        score.getCreativity(),
-                        score.getUserExperience(),
-                        score.getSocialValueCommunity(),
-                        score.getAiUtilizationCommunity(),
-                        score.getPresentationCommunity()
+                score -> score.updateMajorScore(
+                        request.getTechnicalCompleteness(), request.getSocialValueMajor(),
+                        request.getAiUtilityMajorScore(), request.getPresentationMajor()
                 )
         );
     }
 
-    public void updateMajor(CreateMajorScoreRequest request, AuthenticatedUser evaluator) {
-        if (evaluator == null || evaluator.adminRole() == null || evaluator.adminRole() != AdminRole.MAJOR_TEACHER) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "전공 교과 선생님만 전공 점수를 수정할 수 있습니다.");
-        }
-        if (evaluator.userId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "평가자 ID가 필요합니다.");
-        }
+    @Transactional
+    public void updateMajor(Long projectId, PatchMajorScoreRequest request, AuthenticatedUser evaluator) {
+        validateEvaluatorAndFields(evaluator, projectId,
+                request.getTechnicalCompleteness(), request.getSocialValueMajor(),
+                request.getAiUtilityMajorScore(), request.getPresentationMajor());
 
-        support.validateCommonRequest(request.getProjectId(), evaluator.userId().toString());
-        support.requireScore(request.getTechnicalCompleteness(), "technicalCompleteness");
-        support.requireScore(request.getSocialValueMajor(), "socialValueMajor");
-        support.requireScore(request.getAiUtilityMajorScore(), "aiUtilityMajorScore");
-        support.requireScore(request.getPresentationMajor(), "presentationMajor");
-
-        Project project = support.getProjectOrThrow(request.getProjectId());
+        Project project = support.getProjectOrThrow(projectId);
         Score score = support.getScoreOrThrow(project, evaluator.userId().toString().trim());
 
-        score.updateScore(
-                request.getTechnicalCompleteness(),
-                request.getSocialValueMajor(),
-                request.getAiUtilityMajorScore(),
-                request.getPresentationMajor(),
-                score.getReportWriting(),
-                score.getReportContent(),
-                score.getAiUsagePlan(),
-                score.getCreativity(),
-                score.getUserExperience(),
-                score.getSocialValueCommunity(),
-                score.getAiUtilizationCommunity(),
-                score.getPresentationCommunity()
+        score.updateMajorScore(
+                request.getTechnicalCompleteness(), request.getSocialValueMajor(),
+                request.getAiUtilityMajorScore(), request.getPresentationMajor()
         );
     }
 
+    @Transactional(readOnly = true)
     public Score getMajor(Long projectId, AuthenticatedUser evaluator) {
-        if (evaluator == null || evaluator.userId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "평가자 ID가 필요합니다.");
-        }
+        support.requireEvaluatorId(evaluator);
         support.validateCommonRequest(projectId, evaluator.userId().toString());
         Project project = support.getProjectOrThrow(projectId);
-        return support.getScoreOrThrow(project, evaluator.userId().toString().trim());
+
+        return support.getScoreOrNull(project, evaluator.userId().toString().trim());
+    }
+
+    private void validateEvaluatorAndFields(AuthenticatedUser evaluator, Long projectId,
+                                            Integer tech, Integer social, Integer ai, Integer presentation) {
+        support.validateEvaluator(evaluator,
+                e -> e.adminRole() == AdminRole.MAJOR_TEACHER || e.adminRole() == AdminRole.MASTER,
+                "전공 교과 선생님 또는 마스터 권한만 접근 가능합니다.");
+        support.validateCommonRequest(projectId, evaluator.userId().toString());
+        support.requireScore(tech, "technicalCompleteness");
+        support.requireScore(social, "socialValueMajor");
+        support.requireScore(ai, "aiUtilityMajorScore");
+        support.requireScore(presentation, "presentationMajor");
     }
 }
-

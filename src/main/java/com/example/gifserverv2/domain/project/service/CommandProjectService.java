@@ -9,12 +9,16 @@ import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.user.entity.AdminRole;
+import com.example.gifserverv2.domain.user.entity.ClientRole;
+import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -22,7 +26,6 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class CommandProjectService {
 
     private final ProjectRepository projectRepository;
@@ -31,14 +34,30 @@ public class CommandProjectService {
     private final ProjectLogoStorageService projectLogoStorageService;
     private final UserRepository userRepository;
 
+    @Transactional
     public void updateProject(Long projectId, Long userId, UpdateProjectRequest request, MultipartFile logo) {
         Project project = projectQueryService.getProjectOrThrow(projectId);
         validateLeader(projectId, userId);
 
-        if (request.getName() != null) project.updateName(request.getName());
-        if (request.getTeamName() != null) project.updateTeamName(request.getTeamName());
-        if (request.getDescription() != null) project.updateDescription(request.getDescription());
+        boolean summaryAffected = false;
+
+        if (request.getName() != null) {
+            project.updateName(request.getName());
+            summaryAffected = true;
+        }
+        if (request.getTeamName() != null) {
+            project.updateTeamName(request.getTeamName());
+            summaryAffected = true;
+        }
+        if (request.getDescription() != null) {
+            project.updateDescription(request.getDescription());
+            summaryAffected = true;
+        }
         if (request.getGrade() != null) project.updateGrade(request.getGrade());
+
+        if (summaryAffected) {
+            project.clearAiSummary();
+        }
 
         if (logo != null && !logo.isEmpty()) {
             replaceLogo(project, logo);
@@ -51,17 +70,13 @@ public class CommandProjectService {
 
             if (request.getAddMemberIds() != null) {
                 request.getAddMemberIds().forEach(memberId -> {
-
-                    if (!userRepository.existsById(memberId)) {
-                        throw new ProjectException(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다. userId: " + memberId);
-                    }
                     if (memberMap.containsKey(memberId)) {
                         throw ProjectException.alreadyMember();
                     }
                     ProjectMember newMember = ProjectMember.builder()
                             .project(project)
                             .userId(memberId)
-                            .role(ProjectMember.MemberRole.MEMBER)
+                            .role(ClientRole.MEMBER)
                             .build();
                     projectMemberRepository.save(newMember);
                     memberMap.put(memberId, newMember);
@@ -74,7 +89,7 @@ public class CommandProjectService {
                     if (member == null) {
                         throw ProjectException.notMember();
                     }
-                    if (member.getRole() == ProjectMember.MemberRole.LEADER) {
+                    if (member.getRole() == ClientRole.LEADER) {
                         throw ProjectException.cannotRemoveLeader();
                     }
                     projectMemberRepository.delete(member);
@@ -84,6 +99,7 @@ public class CommandProjectService {
         }
     }
 
+    @Transactional
     public Long createProject(Long userId, CreateProjectRequest request) {
         Project project = Project.builder()
                 .name(request.name())
@@ -102,26 +118,29 @@ public class CommandProjectService {
         ProjectMember leader = ProjectMember.builder()
                 .project(savedProject)
                 .userId(userId)
-                .role(ProjectMember.MemberRole.LEADER)
+                .role(ClientRole.LEADER)
                 .build();
         projectMemberRepository.save(leader);
 
         if (request.memberIds() != null) {
-            for (Long memberId : request.memberIds()) {
-                if (memberId.equals(userId)) continue;
+            List<Long> memberIds = request.memberIds().stream()
+                    .filter(id -> !id.equals(userId))
+                    .toList();
 
+            List<ProjectMember> existingMembers = projectMemberRepository.findAllByUserIdIn(memberIds);
+            if (!existingMembers.isEmpty()) {
+                throw new ProjectException(HttpStatus.CONFLICT, "이미 다른 프로젝트에 소속된 팀원이 포함되어 있습니다.");
+            }
+
+            for (Long memberId : memberIds) {
                 if (!userRepository.existsById(memberId)) {
                     throw new ProjectException(HttpStatus.NOT_FOUND, "존재하지 않는 유저입니다. userId: " + memberId);
-                }
-
-                if (projectMemberRepository.existsByUserId(memberId)) {
-                    throw new ProjectException(HttpStatus.CONFLICT, "이미 다른 프로젝트에 소속된 팀원입니다.");
                 }
 
                 ProjectMember member = ProjectMember.builder()
                         .project(savedProject)
                         .userId(memberId)
-                        .role(ProjectMember.MemberRole.MEMBER)
+                        .role(ClientRole.MEMBER)
                         .build();
                 projectMemberRepository.save(member);
             }
@@ -130,6 +149,7 @@ public class CommandProjectService {
         return savedProject.getId();
     }
 
+    @Transactional
     public void uploadLogo(Long projectId, Long userId, MultipartFile file) {
         Project project = projectQueryService.getProjectOrThrow(projectId);
         validateLeader(projectId, userId);
@@ -152,11 +172,12 @@ public class CommandProjectService {
         ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
                 .orElseThrow(ProjectException::notMember);
 
-        if (member.getRole() != ProjectMember.MemberRole.LEADER) {
+        if (member.getRole() != ClientRole.LEADER) {
             throw ProjectException.notLeader();
         }
     }
 
+    @Transactional
     public void updateDescription(Long projectId, Long userId, UpdateProjectDescriptionRequest request) {
         Project project = projectQueryService.getProjectOrThrow(projectId);
 
@@ -166,25 +187,35 @@ public class CommandProjectService {
 
         if (request != null && request.description() != null) {
             project.updateDescription(request.description());
+            project.clearAiSummary();
         }
     }
 
+    @Transactional
     public void transferLeader(Long projectId, Long userId, TransferLeaderRequest request) {
-        if (userId.equals(request.newLeaderUserId())) {
-            throw new ProjectException(HttpStatus.BAD_REQUEST, "본인에게 팀장을 양도할 수 없습니다.");
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ProjectException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+        if (user.getAdminRole() != AdminRole.MASTER) {
+            throw new ProjectException(HttpStatus.FORBIDDEN, "팀장 양도 권한이 없습니다. (Master 선생님 전용)");
         }
 
-        ProjectMember currentLeader = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
-                .orElseThrow(ProjectException::notMember);
-
-        if (currentLeader.getRole() != ProjectMember.MemberRole.LEADER) {
-            throw ProjectException.notLeader();
-        }
+        ProjectMember currentLeader = projectMemberRepository.findByProjectIdAndRole(projectId, ClientRole.LEADER)
+                .orElseThrow(() -> new ProjectException(HttpStatus.NOT_FOUND, "해당 프로젝트에 팀장이 존재하지 않습니다."));
 
         ProjectMember newLeader = projectMemberRepository.findByProjectIdAndUserId(projectId, request.newLeaderUserId())
-                .orElseThrow(ProjectException::notMember);
+                .orElseThrow(() -> new ProjectException(HttpStatus.NOT_FOUND, "새로운 팀장 대상자가 프로젝트의 멤버가 아닙니다."));
 
-        currentLeader.changeRole(ProjectMember.MemberRole.MEMBER);
-        newLeader.changeRole(ProjectMember.MemberRole.LEADER);
+        if (currentLeader.getUserId().equals(newLeader.getUserId())) {
+            throw new ProjectException(HttpStatus.BAD_REQUEST, "대상자는 이미 해당 프로젝트의 팀장입니다.");
+        }
+
+        boolean isAlreadyLeaderElsewhere = projectMemberRepository.existsByUserIdAndRole(newLeader.getUserId(), ClientRole.LEADER);
+        if (isAlreadyLeaderElsewhere) {
+            throw new ProjectException(HttpStatus.CONFLICT, "대상자는 이미 다른 프로젝트의 팀장으로 지정되어 있습니다.");
+        }
+
+        currentLeader.changeRole(ClientRole.MEMBER);
+        newLeader.changeRole(ClientRole.LEADER);
     }
+
 }

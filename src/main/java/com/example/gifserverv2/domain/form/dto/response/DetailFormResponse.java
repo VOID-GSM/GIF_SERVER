@@ -2,14 +2,14 @@ package com.example.gifserverv2.domain.form.dto.response;
 
 import com.example.gifserverv2.domain.form.entity.Form;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record DetailFormResponse(
         Long id,
         String title,
         String description,
-        LocalDate deadline,
+        LocalDateTime deadline,
         boolean announced,
         Boolean deadlineComplied,
         List<FieldResponse> fields
@@ -19,12 +19,20 @@ public record DetailFormResponse(
             String title,
             String description,
             String type,
-            int orderIndex
+            int orderIndex,
+            List<String> allowedExtensions
     ) {}
 
     public static DetailFormResponse from(Form form, Boolean deadlineComplied) {
         List<FieldResponse> fieldResponses = form.getFields().stream()
-                .map(f -> new FieldResponse(f.getId(), f.getTitle(), f.getDescription(), f.getType().name(), f.getOrderIndex()))
+                .map(f -> new FieldResponse(
+                        f.getId(),
+                        f.getTitle(),
+                        f.getDescription(),
+                        f.getType().name(),
+                        f.getOrderIndex(),
+                        f.getAllowedExtensionList()
+                ))
                 .toList();
 
         return new DetailFormResponse(

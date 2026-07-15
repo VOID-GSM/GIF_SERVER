@@ -1,20 +1,19 @@
 package com.example.gifserverv2.domain.score.controller;
 
-import com.example.gifserverv2.domain.score.dto.request.CreateMajorScoreRequest;
-import com.example.gifserverv2.domain.score.dto.request.CreateReportScoreRequest;
-import com.example.gifserverv2.domain.score.dto.request.CreateSocialScoreRequest;
+import com.example.gifserverv2.domain.score.dto.request.*;
+import com.example.gifserverv2.domain.score.dto.response.GetProjectFieldAverageResponse;
+import com.example.gifserverv2.domain.score.entity.Score;
+import com.example.gifserverv2.domain.score.service.*;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
-import com.example.gifserverv2.domain.score.service.MajorScoreService;
-import com.example.gifserverv2.domain.score.service.ReportScoreService;
-import com.example.gifserverv2.domain.score.service.SocialScoreService;
 import lombok.RequiredArgsConstructor;
-import com.example.gifserverv2.domain.score.dto.response.ScoreRankResponse;
-import com.example.gifserverv2.domain.score.service.ScoreNoticeService;
+import com.example.gifserverv2.domain.score.dto.response.GetScoreRankResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import com.example.gifserverv2.domain.score.dto.response.DetailScoreResponse;
+import com.example.gifserverv2.domain.score.dto.response.GetDetailScoreResponse;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/score")
@@ -25,6 +24,7 @@ public class ScoreController {
     private final ReportScoreService reportScoreService;
     private final SocialScoreService socialScoreService;
     private final ScoreNoticeService scoreNoticeService;
+    private final ScoreQueryService scoreQueryService;
 
     private String evaluatorId(AuthenticatedUser user) {
         return user.userId().toString();
@@ -37,18 +37,19 @@ public class ScoreController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    @PatchMapping("/major")
+    @PatchMapping("/major/{projectId}")
     public ResponseEntity<Void> updateMajor(@AuthenticationPrincipal AuthenticatedUser user,
-                                            @RequestBody CreateMajorScoreRequest request) {
-        majorScoreService.updateMajor(request, user);
+                                            @PathVariable("projectId") Long projectId,
+                                            @RequestBody PatchMajorScoreRequest request) {
+        majorScoreService.updateMajor(projectId, request, user);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/major")
-    public ResponseEntity<DetailScoreResponse> getMajor(@AuthenticationPrincipal AuthenticatedUser user,
-                                                        @RequestParam Long projectId) {
-        var score = majorScoreService.getMajor(projectId, user);
-        return ResponseEntity.ok(new DetailScoreResponse(score));
+    public ResponseEntity<GetDetailScoreResponse> getMajor(@AuthenticationPrincipal AuthenticatedUser user,
+                                                           @RequestParam Long projectId) {
+        Score score = majorScoreService.getMajor(projectId, user);
+        return ResponseEntity.ok(new GetDetailScoreResponse(score));
     }
 
     @PostMapping("/report")
@@ -58,18 +59,19 @@ public class ScoreController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    @PatchMapping("/report")
+    @PatchMapping("/report/{projectId}")
     public ResponseEntity<Void> updateReport(@AuthenticationPrincipal AuthenticatedUser user,
-                                             @RequestBody CreateReportScoreRequest request) {
-        reportScoreService.updateReport(request, user);
+                                             @PathVariable("projectId") Long projectId,
+                                             @RequestBody PatchReportScoreRequest request) {
+        reportScoreService.updateReport(projectId, request, user);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/report")
-    public ResponseEntity<DetailScoreResponse> getReport(@AuthenticationPrincipal AuthenticatedUser user,
-                                                         @RequestParam Long projectId) {
-        var score = reportScoreService.getReport(projectId, user);
-        return ResponseEntity.ok(new DetailScoreResponse(score));
+    public ResponseEntity<GetDetailScoreResponse> getReport(@AuthenticationPrincipal AuthenticatedUser user,
+                                                            @RequestParam Long projectId) {
+        Score score = reportScoreService.getReport(projectId, user);
+        return ResponseEntity.ok(new GetDetailScoreResponse(score));
     }
 
     @PostMapping("/social")
@@ -79,22 +81,42 @@ public class ScoreController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    @PatchMapping("/social")
+    @PatchMapping("/social/{projectId}")
     public ResponseEntity<Void> updateSocial(@AuthenticationPrincipal AuthenticatedUser user,
-                                             @RequestBody CreateSocialScoreRequest request) {
-        socialScoreService.updateSocial(request, user);
+                                             @PathVariable("projectId") Long projectId,
+                                             @RequestBody PatchSocialScoreRequest request) {
+        socialScoreService.updateSocial(projectId, request, user);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/social")
-    public ResponseEntity<DetailScoreResponse> getSocial(@AuthenticationPrincipal AuthenticatedUser user,
-                                                         @RequestParam Long projectId) {
-        var score = socialScoreService.getSocial(projectId, user);
-        return ResponseEntity.ok(new DetailScoreResponse(score));
+    public ResponseEntity<GetDetailScoreResponse> getSocial(@AuthenticationPrincipal AuthenticatedUser user,
+                                                            @RequestParam Long projectId) {
+        Score score = socialScoreService.getSocial(projectId, user);
+        return ResponseEntity.ok(new GetDetailScoreResponse(score));
+    }
+
+    @GetMapping("/projects/averages")
+    public ResponseEntity<List<GetProjectFieldAverageResponse>> getAllProjectFieldAverages(
+            @AuthenticationPrincipal AuthenticatedUser user) {
+
+        return ResponseEntity.ok(scoreQueryService.getAllProjectFieldAverages(user));
+    }
+
+    @GetMapping("/projects/{projectId}/averages")
+    public ResponseEntity<GetProjectFieldAverageResponse> getProjectFieldAverages(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable("projectId") Long projectId) {
+
+        GetProjectFieldAverageResponse response = scoreQueryService.getProjectFieldAverages(projectId, user);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/rank")
-    public ResponseEntity<java.util.List<ScoreRankResponse>> getRank(@RequestParam(required = false) Integer grade) {
-        return ResponseEntity.ok(scoreNoticeService.getRankByGrade(grade));
+    public ResponseEntity<List<GetScoreRankResponse>> getRank(
+            @RequestParam(required = false) Integer grade,
+            @RequestParam(required = false) Integer rank) {
+
+        return ResponseEntity.ok(scoreNoticeService.getRankByGradeAndRank(grade, rank));
     }
 }
