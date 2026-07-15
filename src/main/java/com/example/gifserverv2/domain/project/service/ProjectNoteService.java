@@ -15,7 +15,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class ProjectNoteService {
 
     private final ProjectNoteRepository projectNoteRepository;

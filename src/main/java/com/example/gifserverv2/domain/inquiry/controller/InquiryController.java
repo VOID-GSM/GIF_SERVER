@@ -1,6 +1,7 @@
 package com.example.gifserverv2.domain.inquiry.controller;
 
 import com.example.gifserverv2.domain.inquiry.dto.request.AnswerInquiryRequest;
+import com.example.gifserverv2.domain.inquiry.dto.request.UpdateInquiryRequest;
 import com.example.gifserverv2.domain.inquiry.dto.response.DetailInquiryResponse;
 import com.example.gifserverv2.domain.inquiry.dto.response.ListInquiryResponse;
 import com.example.gifserverv2.domain.inquiry.service.AdminInquiryService;
@@ -76,6 +77,22 @@ public class InquiryController {
             @Valid @RequestBody AnswerInquiryRequest request
     ) {
         adminInquiryService.answerInquiry(user.email(), inquiryId, request.answerContent());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/my/{inquiryId}")
+    public ResponseEntity<Void> updateInquiry(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long inquiryId,
+            @Valid @ModelAttribute UpdateInquiryRequest request
+    ) {
+        clientInquiryService.updateInquiry(
+                user.userId(),
+                inquiryId,
+                request.title(),
+                request.content(),
+                request.file()
+        );
         return ResponseEntity.noContent().build();
     }
 }

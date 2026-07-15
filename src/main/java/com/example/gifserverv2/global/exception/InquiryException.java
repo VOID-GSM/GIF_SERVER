@@ -19,4 +19,7 @@ public class InquiryException extends ResponseStatusException {
     public static InquiryException notMaster() {
         return new InquiryException(HttpStatus.FORBIDDEN, "답변 권한이 없습니다.");
     }
+    public static InquiryException alreadyAnswered() {
+        return new InquiryException(HttpStatus.CONFLICT, "이미 답변이 완료된 문의는 수정할 수 없습니다.");
+    }
 }
