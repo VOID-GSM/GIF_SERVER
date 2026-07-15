@@ -164,8 +164,8 @@ public class ClientFormService {
         FormSubmit submit = formSubmitRepository.findById(request.submitId())
                 .orElseThrow(FormException::notSubmitted);
 
-        if (submit.getForm().isDeadlinePassed()) {
-            throw FormException.deadlinePassed();
+        if (!projectMemberRepository.existsByProjectIdAndUserId(submit.getProjectId(), userId)) {
+            throw ProjectException.notMember();
         }
 
         if (request.answers() == null) {
