@@ -17,25 +17,14 @@ public class PushSubscriptionService {
     public void subscribe(Long userId, CreatePushSubscriptionRequest request, String userAgent) {
         pushSubscriptionRepository.findByEndpoint(request.getEndpoint())
                 .ifPresentOrElse(
-                        existing -> {
-                            pushSubscriptionRepository.save(PushSubscription.builder()
-                                    .id(existing.getId())
-                                    .userId(userId)
-                                    .endpoint(request.getEndpoint())
-                                    .p256dh(request.getP256dh())
-                                    .auth(request.getAuth())
-                                    .userAgent(userAgent)
-                                    .build());
-                        },
-                        () -> {
-                            pushSubscriptionRepository.save(PushSubscription.builder()
-                                    .userId(userId)
-                                    .endpoint(request.getEndpoint())
-                                    .p256dh(request.getP256dh())
-                                    .auth(request.getAuth())
-                                    .userAgent(userAgent)
-                                    .build());
-                        }
+                        existing -> existing.update(userId, request.getP256dh(), request.getAuth(), userAgent),
+                        () -> pushSubscriptionRepository.save(PushSubscription.builder()
+                                .userId(userId)
+                                .endpoint(request.getEndpoint())
+                                .p256dh(request.getP256dh())
+                                .auth(request.getAuth())
+                                .userAgent(userAgent)
+                                .build())
                 );
     }
 
