@@ -1,6 +1,7 @@
 package com.example.gifserverv2.domain.push.controller;
 
 import com.example.gifserverv2.domain.push.dto.request.CreatePushSubscriptionRequest;
+import com.example.gifserverv2.domain.push.dto.request.DeletePushSubscriptionRequest;
 import com.example.gifserverv2.domain.push.service.PushSubscriptionService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import jakarta.validation.Valid;
@@ -41,9 +42,9 @@ public class PushSubscriptionController {
     @DeleteMapping("/unsubscribe")
     public ResponseEntity<Void> unsubscribe(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @RequestParam String endpoint
+            @Valid @RequestBody DeletePushSubscriptionRequest request
     ) {
-        pushSubscriptionService.unsubscribe(user.userId(), endpoint);
+        pushSubscriptionService.unsubscribe(user.userId(), request.getEndpoint());
         return ResponseEntity.noContent().build();
     }
 }
