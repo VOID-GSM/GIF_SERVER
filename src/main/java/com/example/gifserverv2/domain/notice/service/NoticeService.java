@@ -32,8 +32,6 @@ public class NoticeService {
 
     @Transactional
     public Long createNotice(Long userId, CreateNoticeRequest request) {
-        validateLength(request.title(), request.content());
-
         Notice notice = Notice.builder()
                 .title(request.title())
                 .content(request.content())
@@ -74,15 +72,6 @@ public class NoticeService {
         Notice notice = noticeRepository.findById(noticeId)
                 .orElseThrow(NoticeException::notFound);
         noticeRepository.delete(notice);
-    }
-
-    private void validateLength(String title, String content) {
-        if (title != null && title.length() > TITLE_MAX_LENGTH) {
-            throw NoticeException.titleTooLong();
-        }
-        if (content != null && content.length() > CONTENT_MAX_LENGTH) {
-            throw NoticeException.contentTooLong();
-        }
     }
 
     private Map<Long, String> getTeamNameMap(List<Notice> notices) {
