@@ -5,6 +5,7 @@ import com.example.gifserverv2.domain.notice.dto.response.DetailNoticeResponse;
 import com.example.gifserverv2.domain.notice.dto.response.ListNoticeResponse;
 import com.example.gifserverv2.domain.notice.service.NoticeService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,7 +25,7 @@ public class NoticeController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Long> createNotice(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @jakarta.validation.Valid @RequestBody CreateNoticeRequest request
+            @Valid @RequestBody CreateNoticeRequest request
     ) {
         return ResponseEntity.ok(noticeService.createNotice(user.userId(), request));
     }
