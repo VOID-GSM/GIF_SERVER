@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class NoticeService {
 
     private static final int TITLE_MAX_LENGTH = 100;
@@ -44,18 +43,13 @@ public class NoticeService {
                 .build();
 
         Notice saved = noticeRepository.save(notice);
-        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
-                new org.springframework.transaction.support.TransactionSynchronization() {
-                    @Override
-                    public void afterCommit() {
-                        sendDiscordNotification(saved);
-                    }
-                }
-        );
+
+        sendDiscordNotification(saved);
 
         return saved.getId();
     }
 
+    @Transactional(readOnly = true)
     public List<ListNoticeResponse> getAllNotices() {
         List<Notice> notices = noticeRepository.findAllByOrderByCreatedAtDesc();
         Map<Long, String> teamNameMap = getTeamNameMap(notices);
@@ -65,6 +59,7 @@ public class NoticeService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public DetailNoticeResponse getNotice(Long noticeId) {
         Notice notice = noticeRepository.findById(noticeId)
                 .orElseThrow(NoticeException::notFound);
