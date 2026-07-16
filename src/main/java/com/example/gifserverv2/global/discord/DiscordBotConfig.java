@@ -19,7 +19,7 @@ public class DiscordBotConfig {
     @Bean
     public JDA jda() throws InterruptedException {
         if (botToken == null || botToken.isBlank()) {
-            log.warn("디스코드 봇 토큰이 설정되지 않아 봇을 실행하지 않습니다.");
+            log.warn("디스코드 봇 토큰이 설정되지 않아 봇 실행을 실패했습니다.");
             return null;
         }
 

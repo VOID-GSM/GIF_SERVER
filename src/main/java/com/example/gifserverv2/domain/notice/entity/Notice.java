@@ -2,6 +2,7 @@ package com.example.gifserverv2.domain.notice.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -34,14 +35,14 @@ public class Notice {
     @ElementCollection
     @CollectionTable(name = "notice_target_grade", joinColumns = @JoinColumn(name = "notice_id"))
     @Column(name = "grade")
-    @org.hibernate.annotations.BatchSize(size = 100)
+    @BatchSize(size = 100)
     @Builder.Default
     private List<Integer> targetGrades = new ArrayList<>();
 
     @ElementCollection
     @CollectionTable(name = "notice_target_project", joinColumns = @JoinColumn(name = "notice_id"))
     @Column(name = "project_id")
-    @org.hibernate.annotations.BatchSize(size = 100)
+    @BatchSize(size = 100)
     @Builder.Default
     private List<Long> targetProjectIds = new ArrayList<>();
 }
