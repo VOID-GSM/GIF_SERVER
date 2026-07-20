@@ -25,7 +25,10 @@ public enum PushMessageTemplate {
     FORM_ANNOUNCED("📢 새로운 양식이 등록되었습니다.", "'%s' 양식이 등록되었습니다. 기간 내에 작성해 주세요."),
 
     SCORE_DEADLINE_WARNING("⚠️ [점수 마감 임박]", "전체 프로젝트 점수 산정 마감까지 %d시간 남았습니다. 점수를 입력해 주세요."),
-    SCORE_PUBLISHED("📊 [점수 공지]", "전체 프로젝트 점수 및 등수 공지가 완료되었습니다. 지금 확인해 보세요!");
+    SCORE_PUBLISHED("📊 [점수 공지]", "전체 프로젝트 점수 및 등수 공지가 완료되었습니다. 지금 확인해 보세요!"),
+
+    LEADER_TRANSFERRED_CLIENT("👑 팀장 변경 알림", "'%s' 프로젝트의 팀장이 '%s' 님으로 변경되었습니다."),
+    LEADER_TRANSFERRED_ADMIN("👑 [프로젝트 관리] 팀장 변경 알림", "%s 선생님에 의해 '%s' 프로젝트의 팀장이 '%s' 님으로 변경되었습니다.");
 
     private final String title;
     private final String bodyTemplate;
