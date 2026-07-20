@@ -1,6 +1,8 @@
 package com.example.gifserverv2.domain.push.scheduler;
 
+import com.example.gifserverv2.domain.form.entity.CalendarEvent;
 import com.example.gifserverv2.domain.form.entity.Form;
+import com.example.gifserverv2.domain.form.repository.CalendarEventRepository;
 import com.example.gifserverv2.domain.form.repository.FormRepository;
 import com.example.gifserverv2.domain.form.repository.FormSubmitRepository;
 import com.example.gifserverv2.domain.project.entity.Project;
@@ -16,6 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -29,6 +32,7 @@ public class PushScheduler {
     private final ProjectMemberRepository projectMemberRepository;
     private final PushSenderService pushSenderService;
     private final ProjectRepository projectRepository;
+    private final CalendarEventRepository calendarEventRepository;
 
     @Scheduled(cron = "0 0 * * * *")
     @Transactional(readOnly = true)
@@ -75,6 +79,40 @@ public class PushScheduler {
                         pushSenderService.sendNotification(userId, title, body);
                     }
                 }
+            }
+        }
+    }
+
+    @Scheduled(cron = "0 0 9 * * *")
+    @Transactional(readOnly = true)
+    public void sendCurrentPeriodScheduleNotifications() {
+        LocalDate today = LocalDate.now();
+
+        List<CalendarEvent> activeEvents = calendarEventRepository.findAllActiveEventsOnDate(today);
+
+        for (CalendarEvent event : activeEvents) {
+            Long projectId = event.getFormFieldAnswer().getFormSubmit().getProjectId();
+
+            Project project = projectRepository.findById(projectId).orElse(null);
+            if (project == null) continue;
+
+            // 프로젝트 팀원들의 userId 조회
+            List<Long> memberUserIds = projectMemberRepository.findUserIdsByProjectId(projectId);
+
+            String startDateStr = event.getStartDate().toString();
+            String endDateStr = event.getEndDate().toString();
+
+            for (Long userId : memberUserIds) {
+                pushSenderService.sendNotification(
+                        userId,
+                        PushMessageTemplate.SCHEDULE_CURRENT_PERIOD.getTitle(),
+                        PushMessageTemplate.SCHEDULE_CURRENT_PERIOD.formatBody(
+                                project.getName(),
+                                event.getEventName(),
+                                startDateStr,
+                                endDateStr
+                        )
+                );
             }
         }
     }
