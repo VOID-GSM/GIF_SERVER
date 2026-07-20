@@ -13,6 +13,8 @@ import com.example.gifserverv2.domain.form.repository.FormRepository;
 import com.example.gifserverv2.domain.form.repository.FormSubmitRepository;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.push.entity.PushMessageTemplate;
+import com.example.gifserverv2.domain.push.service.PushSenderService;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
@@ -38,6 +40,7 @@ public class AdminFormService {
     private final QueryFormService queryFormService;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final PushSenderService pushSenderService;
 
     @Transactional
     public Long createForm(Long userId, CreateFormRequest request) {
@@ -113,6 +116,19 @@ public class AdminFormService {
     public void announceForm(Long formId) {
         Form form = queryFormService.getFormOrThrow(formId);
         form.announce();
+
+        List<UserEntity> targetUsers = userRepository.findAll().stream()
+                .filter(u -> u.getAdminRole() == null) // 학생 계정들만 추출
+                .filter(u -> form.getTargetGrade() == null || form.getTargetGrade().equals(u.getGrade())) // 학년 조건 필터
+                .toList();
+
+        for (UserEntity user : targetUsers) {
+            pushSenderService.sendNotification(
+                    user.getId(),
+                    PushMessageTemplate.FORM_ANNOUNCED.getTitle(),
+                    PushMessageTemplate.FORM_ANNOUNCED.formatBody(form.getTitle())
+            );
+        }
     }
 
     @Transactional
