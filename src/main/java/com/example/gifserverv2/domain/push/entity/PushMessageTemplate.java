@@ -30,7 +30,7 @@ public enum PushMessageTemplate {
     LEADER_TRANSFERRED_CLIENT("👑 팀장 변경 알림", "'%s' 프로젝트의 팀장이 '%s' 님으로 변경되었습니다."),
     LEADER_TRANSFERRED_ADMIN("👑 [프로젝트 관리] 팀장 변경 알림", "%s 선생님에 의해 '%s' 프로젝트의 팀장이 '%s' 님으로 변경되었습니다."),
 
-    SCHEDULE_CURRENT_PERIOD("📅 [현재 일정 안내]", "지금은 '%s' 프로젝트의 '%s' 기간(%s ~ %s)입니다. 일정에 맞춰 진행해 주세요!");
+    SCHEDULE_CURRENT_PERIOD("📅 [현재 일정 안내]", "'%s' 프로젝트의 '%s' 기간(%s ~ %s)입니다. 일정에 맞춰 진행해 주세요!");
 
     private final String title;
     private final String bodyTemplate;
