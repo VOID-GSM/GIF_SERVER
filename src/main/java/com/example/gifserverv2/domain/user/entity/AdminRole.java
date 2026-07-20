@@ -21,11 +21,14 @@ public enum AdminRole {
             return REQUIRED_SUBJECT_TEACHER_MESSAGE;
         }
 
-        // Allow MASTER role to pass validation for administrative APIs
         if (adminRole == MASTER) {
             return null;
         }
 
         return adminRole.isSubjectTeacher() ? null : INVALID_SUBJECT_TEACHER_MESSAGE;
+    }
+
+    public boolean isAdmin() {
+        return this == MAJOR_TEACHER || this == GENERAL_TEACHER || this == MASTER;
     }
 }
