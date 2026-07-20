@@ -86,7 +86,9 @@ public class FormController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ListFormResponse>> getAnnouncedForms(@RequestParam Long projectId) {
+    public ResponseEntity<List<ListFormResponse>> getAnnouncedForms(
+            @RequestParam(required = false) Long projectId
+    ) {
         return ResponseEntity.ok(clientFormService.getAnnouncedForms(projectId));
     }
 
