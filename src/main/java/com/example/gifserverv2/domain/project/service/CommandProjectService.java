@@ -102,6 +102,12 @@ public class CommandProjectService {
                     }
                     projectMemberRepository.delete(member);
                     memberMap.remove(memberId);
+
+                    pushSenderService.sendNotification(
+                            memberId,
+                            PushMessageTemplate.TEAM_MEMBER_REMOVED.getTitle(),
+                            PushMessageTemplate.TEAM_MEMBER_REMOVED.formatBody(project.getName())
+                    );
                 });
             }
         }
@@ -152,6 +158,18 @@ public class CommandProjectService {
                         .build();
                 projectMemberRepository.save(member);
             }
+        }
+
+        List<UserEntity> teachers = userRepository.findAll().stream()
+                .filter(u -> u.getAdminRole() != null && u.getAdminRole().isAdmin())
+                .toList();
+
+        for (UserEntity teacher : teachers) {
+            pushSenderService.sendNotification(
+                    teacher.getId(),
+                    PushMessageTemplate.PROJECT_CREATED.getTitle(),
+                    PushMessageTemplate.PROJECT_CREATED.formatBody(savedProject.getName())
+            );
         }
 
         return savedProject.getId();
