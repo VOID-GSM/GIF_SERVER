@@ -9,6 +9,8 @@ import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.push.entity.PushMessageTemplate;
+import com.example.gifserverv2.domain.push.service.PushSenderService;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.ClientRole;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
@@ -18,7 +20,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ public class CommandProjectService {
     private final QueryProjectService projectQueryService;
     private final ProjectLogoStorageService projectLogoStorageService;
     private final UserRepository userRepository;
+    private final PushSenderService pushSenderService;
 
     @Transactional
     public void updateProject(Long projectId, Long userId, UpdateProjectRequest request, MultipartFile logo) {
@@ -80,6 +82,12 @@ public class CommandProjectService {
                             .build();
                     projectMemberRepository.save(newMember);
                     memberMap.put(memberId, newMember);
+
+                    pushSenderService.sendNotification(
+                            memberId,
+                            PushMessageTemplate.TEAM_MEMBER_ADDED.getTitle(),
+                            PushMessageTemplate.TEAM_MEMBER_ADDED.formatBody(project.getName())
+                    );
                 });
             }
 
