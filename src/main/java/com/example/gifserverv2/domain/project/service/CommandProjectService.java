@@ -219,11 +219,13 @@ public class CommandProjectService {
 
     @Transactional
     public void transferLeader(Long projectId, Long userId, TransferLeaderRequest request) {
-        UserEntity user = userRepository.findById(userId)
+        UserEntity masterUser = userRepository.findById(userId)
                 .orElseThrow(() -> new ProjectException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
-        if (user.getAdminRole() != AdminRole.MASTER) {
+        if (masterUser.getAdminRole() != AdminRole.MASTER) {
             throw new ProjectException(HttpStatus.FORBIDDEN, "팀장 양도 권한이 없습니다. (Master 선생님 전용)");
         }
+
+        Project project = projectQueryService.getProjectOrThrow(projectId);
 
         ProjectMember currentLeader = projectMemberRepository.findByProjectIdAndRole(projectId, ClientRole.LEADER)
                 .orElseThrow(() -> new ProjectException(HttpStatus.NOT_FOUND, "해당 프로젝트에 팀장이 존재하지 않습니다."));
@@ -242,6 +244,30 @@ public class CommandProjectService {
 
         currentLeader.changeRole(ClientRole.MEMBER);
         newLeader.changeRole(ClientRole.LEADER);
-    }
 
+        String newLeaderName = userRepository.findById(request.newLeaderUserId())
+                .map(UserEntity::getName)
+                .orElse("유저");
+
+        List<Long> memberUserIds = projectMemberRepository.findUserIdsByProjectId(projectId);
+        for (Long memberUserId : memberUserIds) {
+            pushSenderService.sendNotification(
+                    memberUserId,
+                    PushMessageTemplate.LEADER_TRANSFERRED_CLIENT.getTitle(),
+                    PushMessageTemplate.LEADER_TRANSFERRED_CLIENT.formatBody(project.getName(), newLeaderName)
+            );
+        }
+
+        List<UserEntity> teachers = userRepository.findAll().stream()
+                .filter(u -> u.getAdminRole() != null && u.getAdminRole().isAdmin())
+                .toList();
+
+        for (UserEntity teacher : teachers) {
+            pushSenderService.sendNotification(
+                    teacher.getId(),
+                    PushMessageTemplate.LEADER_TRANSFERRED_ADMIN.getTitle(),
+                    PushMessageTemplate.LEADER_TRANSFERRED_ADMIN.formatBody(masterUser.getName(), project.getName(), newLeaderName)
+            );
+        }
+    }
 }
