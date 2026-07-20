@@ -8,6 +8,7 @@ import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
 import com.example.gifserverv2.domain.push.entity.PushMessageTemplate;
 import com.example.gifserverv2.domain.push.service.PushSenderService;
+import com.example.gifserverv2.domain.user.entity.UserEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
