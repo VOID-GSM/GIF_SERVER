@@ -47,6 +47,7 @@ dependencies {
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'nl.martijndwars:web-push:5.1.1'
     implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
+    implementation 'net.dv8tion:JDA:5.0.0-beta.24'
 }
 
 tasks.named('test') {

@@ -53,6 +53,9 @@ app:
   oauth-state:
     store: ${OAUTH_STATE_STORE:memory}
   master-email: ${APP_ADMIN_EMAIL}
+  discord:
+    bot-token: ${DISCORD_BOT_TOKEN:}
+    notice-channel-id: ${DISCORD_NOTICE_CHANNEL_ID:}
 
 file:
   upload-dir: ${FILE_UPLOAD_DIR}
