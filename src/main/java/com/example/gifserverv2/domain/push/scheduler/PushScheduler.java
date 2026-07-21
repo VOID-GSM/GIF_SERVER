@@ -42,7 +42,7 @@ public class PushScheduler {
     public void sendFormDeadlineNotifications() {
         LocalDateTime now = LocalDateTime.now();
 
-        List<Form> activeForms = formRepository.findAllByAnnouncedTrueAndDeadlineAfter(now);
+        List<Form> activeForms = formRepository.findAllByAnnouncedTrueAndDeadlineAfter(now.minusHours(2));
         if (activeForms.isEmpty()) return;
 
         List<Project> allProjects = projectRepository.findAll();
