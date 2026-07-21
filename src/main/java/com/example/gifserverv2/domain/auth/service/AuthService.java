@@ -16,6 +16,7 @@ import com.example.gifserverv2.global.security.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.example.gifserverv2.global.config.OAuthProperties;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,9 +41,8 @@ public class AuthService {
     private final OAuthProperties oauthProperties;
     private final ProjectMemberRepository projectMemberRepository;
 
-    private static final List<String> VOID_EMAILS = List.of(
-            "teamvoid0107@gmail.com"
-    );
+    @Value("${app.void-emails}")
+    private List<String> voidEmails;
 
     public AuthService(DataGsmOAuthClient dataGsmOAuthClient, UserRepository userRepository,
                        JwtTokenProvider jwtTokenProvider, OAuthProperties oauthProperties, ProjectMemberRepository projectMemberRepository) {
@@ -254,7 +254,7 @@ public class AuthService {
     }
 
     private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role, String grade) {
-        boolean isVoidUser = email != null && VOID_EMAILS.contains(email);
+        boolean isVoidUser = email != null && voidEmails.contains(email);
 
         return userRepository.findByEmail(email)
                 .map(existing -> {
