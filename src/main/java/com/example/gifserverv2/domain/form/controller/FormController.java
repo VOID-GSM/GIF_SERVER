@@ -38,10 +38,11 @@ public class FormController {
     @PatchMapping("/update")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> updateForm(
+            @AuthenticationPrincipal AuthenticatedUser user,
             @RequestParam Long formId,
             @RequestBody UpdateFormRequest request
     ) {
-        adminFormService.updateForm(formId, request);
+        adminFormService.updateForm(user.userId(), formId, request);
         return ResponseEntity.noContent().build();
     }
 
@@ -86,7 +87,9 @@ public class FormController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ListFormResponse>> getAnnouncedForms(@RequestParam Long projectId) {
+    public ResponseEntity<List<ListFormResponse>> getAnnouncedForms(
+            @RequestParam(required = false) Long projectId
+    ) {
         return ResponseEntity.ok(clientFormService.getAnnouncedForms(projectId));
     }
 

@@ -16,6 +16,7 @@ import com.example.gifserverv2.global.security.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.example.gifserverv2.global.config.OAuthProperties;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +40,9 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final OAuthProperties oauthProperties;
     private final ProjectMemberRepository projectMemberRepository;
+
+    @Value("${app.void-emails:}")
+    private List<String> voidEmails;
 
     public AuthService(DataGsmOAuthClient dataGsmOAuthClient, UserRepository userRepository,
                        JwtTokenProvider jwtTokenProvider, OAuthProperties oauthProperties, ProjectMemberRepository projectMemberRepository) {
@@ -250,15 +254,26 @@ public class AuthService {
     }
 
     private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role, String grade) {
+        boolean isVoidUser = email != null && voidEmails != null && voidEmails.contains(email);
+
         return userRepository.findByEmail(email)
                 .map(existing -> {
                     existing.updateProfile(name, studentNumber, grade);
                     if (existing.getRole() != role) {
                         existing.setRole(role);
                     }
+                    if (isVoidUser) {
+                        existing.updateAdminAdditionalInfo(AdminRole.VOID, existing.getName(), existing.getAdminTeam(), existing.isGradeHead());
+                    }
                     return existing;
                 })
-                .orElseGet(() -> userRepository.save(new UserEntity(email, name, studentNumber, role, grade)));
+                .orElseGet(() -> {
+                    UserEntity newUser = new UserEntity(email, name, studentNumber, role, grade);
+                    if (isVoidUser) {
+                        newUser.updateAdminAdditionalInfo(AdminRole.VOID, name, null, false);
+                    }
+                    return userRepository.save(newUser);
+                });
     }
 
     private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role) {
