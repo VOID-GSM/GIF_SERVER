@@ -4,6 +4,8 @@ import com.example.gifserverv2.domain.inquiry.dto.response.DetailInquiryResponse
 import com.example.gifserverv2.domain.inquiry.dto.response.ListInquiryResponse;
 import com.example.gifserverv2.domain.inquiry.entity.Inquiry;
 import com.example.gifserverv2.domain.inquiry.repository.InquiryRepository;
+import com.example.gifserverv2.domain.push.entity.PushMessageTemplate;
+import com.example.gifserverv2.domain.push.service.PushSenderService;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.global.exception.InquiryException;
@@ -26,6 +28,7 @@ public class AdminInquiryService {
 
     private final InquiryRepository inquiryRepository;
     private final UserRepository userRepository;
+    private final PushSenderService pushSenderService;
 
     @Value("${app.admin-email}")
     private String masterEmail;
@@ -68,7 +71,14 @@ public class AdminInquiryService {
 
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(InquiryException::notFound);
+
         inquiry.answer(answerContent);
+
+        pushSenderService.sendNotification(
+                inquiry.getCreatedByUserId(),
+                PushMessageTemplate.INQUIRY_ANSWERED.getTitle(),
+                PushMessageTemplate.INQUIRY_ANSWERED.getBodyTemplate()
+        );
     }
 
     private void validateMaster(String email) {

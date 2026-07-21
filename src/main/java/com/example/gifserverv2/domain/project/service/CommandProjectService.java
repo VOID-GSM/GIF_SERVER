@@ -9,6 +9,8 @@ import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.push.entity.PushMessageTemplate;
+import com.example.gifserverv2.domain.push.service.PushSenderService;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.ClientRole;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
@@ -18,7 +20,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ public class CommandProjectService {
     private final QueryProjectService projectQueryService;
     private final ProjectLogoStorageService projectLogoStorageService;
     private final UserRepository userRepository;
+    private final PushSenderService pushSenderService;
 
     @Transactional
     public void updateProject(Long projectId, Long userId, UpdateProjectRequest request, MultipartFile logo) {
@@ -80,6 +82,12 @@ public class CommandProjectService {
                             .build();
                     projectMemberRepository.save(newMember);
                     memberMap.put(memberId, newMember);
+
+                    pushSenderService.sendNotification(
+                            memberId,
+                            PushMessageTemplate.TEAM_MEMBER_ADDED.getTitle(),
+                            PushMessageTemplate.TEAM_MEMBER_ADDED.formatBody(project.getName())
+                    );
                 });
             }
 
@@ -94,6 +102,12 @@ public class CommandProjectService {
                     }
                     projectMemberRepository.delete(member);
                     memberMap.remove(memberId);
+
+                    pushSenderService.sendNotification(
+                            memberId,
+                            PushMessageTemplate.TEAM_MEMBER_REMOVED.getTitle(),
+                            PushMessageTemplate.TEAM_MEMBER_REMOVED.formatBody(project.getName())
+                    );
                 });
             }
         }
@@ -146,6 +160,16 @@ public class CommandProjectService {
             }
         }
 
+        List<UserEntity> teachers = userRepository.findAllByAdminRoleIsNotNull();
+
+        for (UserEntity teacher : teachers) {
+            pushSenderService.sendNotification(
+                    teacher.getId(),
+                    PushMessageTemplate.PROJECT_CREATED.getTitle(),
+                    PushMessageTemplate.PROJECT_CREATED.formatBody(savedProject.getName())
+            );
+        }
+
         return savedProject.getId();
     }
 
@@ -193,11 +217,13 @@ public class CommandProjectService {
 
     @Transactional
     public void transferLeader(Long projectId, Long userId, TransferLeaderRequest request) {
-        UserEntity user = userRepository.findById(userId)
+        UserEntity masterUser = userRepository.findById(userId)
                 .orElseThrow(() -> new ProjectException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
-        if (user.getAdminRole() != AdminRole.MASTER) {
+        if (masterUser.getAdminRole() != AdminRole.MASTER) {
             throw new ProjectException(HttpStatus.FORBIDDEN, "팀장 양도 권한이 없습니다. (Master 선생님 전용)");
         }
+
+        Project project = projectQueryService.getProjectOrThrow(projectId);
 
         ProjectMember currentLeader = projectMemberRepository.findByProjectIdAndRole(projectId, ClientRole.LEADER)
                 .orElseThrow(() -> new ProjectException(HttpStatus.NOT_FOUND, "해당 프로젝트에 팀장이 존재하지 않습니다."));
@@ -216,6 +242,30 @@ public class CommandProjectService {
 
         currentLeader.changeRole(ClientRole.MEMBER);
         newLeader.changeRole(ClientRole.LEADER);
-    }
 
+        String newLeaderName = userRepository.findById(request.newLeaderUserId())
+                .map(UserEntity::getName)
+                .orElse("유저");
+
+        List<Long> memberUserIds = projectMemberRepository.findUserIdsByProjectId(projectId);
+        for (Long memberUserId : memberUserIds) {
+            pushSenderService.sendNotification(
+                    memberUserId,
+                    PushMessageTemplate.LEADER_TRANSFERRED_CLIENT.getTitle(),
+                    PushMessageTemplate.LEADER_TRANSFERRED_CLIENT.formatBody(project.getName(), newLeaderName)
+            );
+        }
+
+        List<UserEntity> teachers = userRepository.findAll().stream()
+                .filter(u -> u.getAdminRole() != null && u.getAdminRole().isAdmin())
+                .toList();
+
+        for (UserEntity teacher : teachers) {
+            pushSenderService.sendNotification(
+                    teacher.getId(),
+                    PushMessageTemplate.LEADER_TRANSFERRED_ADMIN.getTitle(),
+                    PushMessageTemplate.LEADER_TRANSFERRED_ADMIN.formatBody(masterUser.getName(), project.getName(), newLeaderName)
+            );
+        }
+    }
 }

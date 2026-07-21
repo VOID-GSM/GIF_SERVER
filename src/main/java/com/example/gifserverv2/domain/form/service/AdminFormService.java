@@ -13,6 +13,8 @@ import com.example.gifserverv2.domain.form.repository.FormRepository;
 import com.example.gifserverv2.domain.form.repository.FormSubmitRepository;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.push.entity.PushMessageTemplate;
+import com.example.gifserverv2.domain.push.service.PushSenderService;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
@@ -38,6 +40,7 @@ public class AdminFormService {
     private final QueryFormService queryFormService;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final PushSenderService pushSenderService;
 
     @Transactional
     public Long createForm(Long userId, CreateFormRequest request) {
@@ -113,6 +116,15 @@ public class AdminFormService {
     public void announceForm(Long formId) {
         Form form = queryFormService.getFormOrThrow(formId);
         form.announce();
+
+        String title = PushMessageTemplate.FORM_ANNOUNCED.getTitle();
+        String body = PushMessageTemplate.FORM_ANNOUNCED.getBody();
+
+        List<Long> targetUserIds = (form.getTargetGrade() == null)
+                ? userRepository.findAllStudentIds()
+                : userRepository.findStudentIdsByGrade(form.getTargetGrade());
+
+        pushSenderService.sendBulkNotifications(targetUserIds, title, body);
     }
 
     @Transactional
