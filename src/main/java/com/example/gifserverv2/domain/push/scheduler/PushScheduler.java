@@ -6,11 +6,11 @@ import com.example.gifserverv2.domain.form.repository.CalendarEventRepository;
 import com.example.gifserverv2.domain.form.repository.FormRepository;
 import com.example.gifserverv2.domain.form.repository.FormSubmitRepository;
 import com.example.gifserverv2.domain.project.entity.Project;
+import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
 import com.example.gifserverv2.domain.push.entity.PushMessageTemplate;
 import com.example.gifserverv2.domain.push.service.PushSenderService;
-import com.example.gifserverv2.domain.user.entity.UserEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,6 +21,9 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -40,6 +43,23 @@ public class PushScheduler {
         LocalDateTime now = LocalDateTime.now();
 
         List<Form> activeForms = formRepository.findAllByAnnouncedTrueAndDeadlineAfter(now);
+        if (activeForms.isEmpty()) return;
+
+        List<Project> allProjects = projectRepository.findAll();
+        if (allProjects.isEmpty()) return;
+
+        List<Long> formIds = activeForms.stream().map(Form::getId).toList();
+        List<Long> projectIds = allProjects.stream().map(Project::getId).toList();
+
+        Set<String> submittedKeySet = formSubmitRepository.findAllByFormIdIn(formIds).stream()
+                .map(submit -> submit.getForm().getId() + "-" + submit.getProjectId())
+                .collect(Collectors.toSet());
+
+        Map<Long, List<Long>> projectUserIdsMap = projectMemberRepository.findAllByProjectIdIn(projectIds).stream()
+                .collect(Collectors.groupingBy(
+                        member -> member.getProject().getId(),
+                        Collectors.mapping(ProjectMember::getUserId, Collectors.toList())
+                ));
 
         for (Form form : activeForms) {
             long hoursLeft = Math.round(Duration.between(now, form.getDeadline()).toMinutes() / 60.0);
@@ -67,16 +87,16 @@ public class PushScheduler {
             }
 
             List<Project> targetProjects = (form.getTargetGrade() == null)
-                    ? projectRepository.findAll()
-                    : projectRepository.findByGrade(form.getTargetGrade());
+                    ? allProjects
+                    : allProjects.stream().filter(p -> form.getTargetGrade().equals(p.getGrade())).toList();
 
             for (Project project : targetProjects) {
-                boolean isSubmitted = formSubmitRepository.existsByFormIdAndProjectId(form.getId(), project.getId());
+                String key = form.getId() + "-" + project.getId();
 
-                if (!isSubmitted) {
-                    List<Long> targetUserIds = projectMemberRepository.findUserIdsByProjectId(project.getId());
-                    for (Long userId : targetUserIds) {
-                        pushSenderService.sendNotification(userId, title, body);
+                if (!submittedKeySet.contains(key)) {
+                    List<Long> targetUserIds = projectUserIdsMap.getOrDefault(project.getId(), List.of());
+                    if (!targetUserIds.isEmpty()) {
+                        pushSenderService.sendBulkNotifications(targetUserIds, title, body);
                     }
                 }
             }
@@ -89,30 +109,44 @@ public class PushScheduler {
         LocalDate today = LocalDate.now();
 
         List<CalendarEvent> activeEvents = calendarEventRepository.findAllActiveEventsOnDate(today);
+        if (activeEvents.isEmpty()) return;
+
+        List<Long> projectIds = activeEvents.stream()
+                .map(event -> event.getFormFieldAnswer().getFormSubmit().getProjectId())
+                .distinct()
+                .toList();
+
+        Map<Long, Project> projectMap = projectRepository.findAllById(projectIds).stream()
+                .collect(Collectors.toMap(Project::getId, p -> p));
+
+        Map<Long, List<Long>> projectUserIdsMap = projectMemberRepository.findAllByProjectIdIn(projectIds).stream()
+                .collect(Collectors.groupingBy(
+                        member -> member.getProject().getId(),
+                        Collectors.mapping(ProjectMember::getUserId, Collectors.toList())
+                ));
 
         for (CalendarEvent event : activeEvents) {
             Long projectId = event.getFormFieldAnswer().getFormSubmit().getProjectId();
 
-            Project project = projectRepository.findById(projectId).orElse(null);
+            Project project = projectMap.get(projectId);
             if (project == null) continue;
 
-            List<Long> memberUserIds = projectMemberRepository.findUserIdsByProjectId(projectId);
+            List<Long> memberUserIds = projectUserIdsMap.getOrDefault(projectId, List.of());
+            if (memberUserIds.isEmpty()) continue;
 
             String startDateStr = event.getStartDate().toString();
             String endDateStr = event.getEndDate().toString();
 
-            for (Long userId : memberUserIds) {
-                pushSenderService.sendNotification(
-                        userId,
-                        PushMessageTemplate.SCHEDULE_CURRENT_PERIOD.getTitle(),
-                        PushMessageTemplate.SCHEDULE_CURRENT_PERIOD.formatBody(
-                                project.getName(),
-                                event.getEventName(),
-                                startDateStr,
-                                endDateStr
-                        )
-                );
-            }
+            pushSenderService.sendBulkNotifications(
+                    memberUserIds,
+                    PushMessageTemplate.SCHEDULE_CURRENT_PERIOD.getTitle(),
+                    PushMessageTemplate.SCHEDULE_CURRENT_PERIOD.formatBody(
+                            project.getName(),
+                            event.getEventName(),
+                            startDateStr,
+                            endDateStr
+                    )
+            );
         }
     }
 }
