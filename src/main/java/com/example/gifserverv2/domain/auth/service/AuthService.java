@@ -40,6 +40,10 @@ public class AuthService {
     private final OAuthProperties oauthProperties;
     private final ProjectMemberRepository projectMemberRepository;
 
+    private static final List<String> VOID_EMAILS = List.of(
+            "teamvoid0107@gmail.com"
+    );
+
     public AuthService(DataGsmOAuthClient dataGsmOAuthClient, UserRepository userRepository,
                        JwtTokenProvider jwtTokenProvider, OAuthProperties oauthProperties, ProjectMemberRepository projectMemberRepository) {
         this.dataGsmOAuthClient = dataGsmOAuthClient;
@@ -250,15 +254,26 @@ public class AuthService {
     }
 
     private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role, String grade) {
+        boolean isVoidUser = email != null && VOID_EMAILS.contains(email);
+
         return userRepository.findByEmail(email)
                 .map(existing -> {
                     existing.updateProfile(name, studentNumber, grade);
                     if (existing.getRole() != role) {
                         existing.setRole(role);
                     }
+                    if (isVoidUser) {
+                        existing.updateAdminAdditionalInfo(AdminRole.VOID, existing.getName(), existing.getAdminTeam(), existing.isGradeHead());
+                    }
                     return existing;
                 })
-                .orElseGet(() -> userRepository.save(new UserEntity(email, name, studentNumber, role, grade)));
+                .orElseGet(() -> {
+                    UserEntity newUser = new UserEntity(email, name, studentNumber, role, grade);
+                    if (isVoidUser) {
+                        newUser.updateAdminAdditionalInfo(AdminRole.VOID, name, null, false);
+                    }
+                    return userRepository.save(newUser);
+                });
     }
 
     private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role) {
