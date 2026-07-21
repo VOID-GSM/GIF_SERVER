@@ -13,7 +13,6 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.security.GeneralSecurityException;
 import java.util.List;
@@ -110,6 +109,25 @@ public class PushSenderService {
         } catch (Exception e) {
             log.error("푸시 JSON 페이로드 직렬화 실패: {}", e.getMessage());
             return null;
+        }
+    }
+
+    @Async
+    public void sendBulkNotificationsAsync(List<Long> userIds, String title, String body) {
+        if (userIds == null || userIds.isEmpty()) return;
+
+        List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserIdIn(userIds);
+
+        if (subscriptions.isEmpty()) {
+            log.info("대상 VOID 관리자들에 대한 활성화된 푸시 구독 정보가 없습니다.");
+            return;
+        }
+
+        String payload = createPayload(title, body);
+        if (payload == null) return;
+
+        for (PushSubscription subscription : subscriptions) {
+            sendToSubscription(subscription, payload);
         }
     }
 }

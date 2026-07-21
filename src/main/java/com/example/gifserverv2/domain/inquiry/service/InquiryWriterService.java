@@ -39,7 +39,7 @@ public class InquiryWriterService {
         List<Long> voidUserIds = userRepository.findUserIdsByAdminRole(AdminRole.VOID);
 
         if (!voidUserIds.isEmpty()) {
-            pushSenderService.sendBulkNotifications(
+            pushSenderService.sendBulkNotificationsAsync(
                     voidUserIds,
                     PushMessageTemplate.INQUIRY_RECEIVED.getTitle(),
                     PushMessageTemplate.INQUIRY_RECEIVED.getBodyTemplate()
