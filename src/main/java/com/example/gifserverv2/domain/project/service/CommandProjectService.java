@@ -256,9 +256,7 @@ public class CommandProjectService {
             );
         }
 
-        List<UserEntity> teachers = userRepository.findAll().stream()
-                .filter(u -> u.getAdminRole() != null && u.getAdminRole().isAdmin())
-                .toList();
+        List<UserEntity> teachers = userRepository.findAllByAdminRoleIsNotNull();
 
         for (UserEntity teacher : teachers) {
             pushSenderService.sendNotification(
