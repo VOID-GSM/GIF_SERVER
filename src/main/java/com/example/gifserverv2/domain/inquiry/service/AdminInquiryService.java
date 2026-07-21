@@ -31,9 +31,6 @@ public class AdminInquiryService {
     private final UserRepository userRepository;
     private final PushSenderService pushSenderService;
 
-    @Value("${app.admin-email}")
-    private String masterEmail;
-
     @Transactional(readOnly = true)
     public Page<ListInquiryResponse> getAllInquiries(String email, Pageable pageable) {
         validateVoidAdmin(email);
@@ -87,7 +84,7 @@ public class AdminInquiryService {
                 .orElseThrow(InquiryException::notMaster);
 
         if (user.getAdminRole() != AdminRole.VOID) {
-            throw InquiryException.notMaster();
+            throw InquiryException.notVoid();
         }
     }
 }
