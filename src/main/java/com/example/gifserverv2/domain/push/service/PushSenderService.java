@@ -44,7 +44,6 @@ public class PushSenderService {
     }
 
     @Async
-    @Transactional
     public void sendNotification(Long targetUserId, String title, String body) {
         List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserId(targetUserId);
 
