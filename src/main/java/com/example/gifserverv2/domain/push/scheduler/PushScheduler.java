@@ -42,7 +42,7 @@ public class PushScheduler {
         List<Form> activeForms = formRepository.findAllByAnnouncedTrueAndDeadlineAfter(now);
 
         for (Form form : activeForms) {
-            long hoursLeft = Duration.between(now, form.getDeadline()).toHours();
+            long hoursLeft = Math.round(Duration.between(now, form.getDeadline()).toMinutes() / 60.0);
 
             String title;
             String body;
@@ -96,7 +96,6 @@ public class PushScheduler {
             Project project = projectRepository.findById(projectId).orElse(null);
             if (project == null) continue;
 
-            // 프로젝트 팀원들의 userId 조회
             List<Long> memberUserIds = projectMemberRepository.findUserIdsByProjectId(projectId);
 
             String startDateStr = event.getStartDate().toString();
