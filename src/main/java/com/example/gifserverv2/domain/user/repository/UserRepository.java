@@ -1,5 +1,6 @@
 package com.example.gifserverv2.domain.user.repository;
 
+import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -27,4 +28,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     @Query("SELECT u.id FROM UserEntity u WHERE u.adminRole IS NOT NULL")
     List<Long> findAllAdminUserIds();
+
+    @Query("SELECT u.id FROM UserEntity u WHERE u.adminRole = :adminRole")
+    List<Long> findUserIdsByAdminRole(@Param("adminRole") AdminRole adminRole);
 }
