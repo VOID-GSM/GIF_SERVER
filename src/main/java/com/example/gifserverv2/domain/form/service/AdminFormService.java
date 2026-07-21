@@ -44,6 +44,14 @@ public class AdminFormService {
 
     @Transactional
     public Long createForm(Long userId, CreateFormRequest request) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        AdminRole adminRole = user.getAdminRole();
+        if (adminRole != AdminRole.MASTER && adminRole != AdminRole.VOID) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "양식 생성 권한이 없습니다.");
+        }
+
         Form form = Form.builder()
                 .title(request.title())
                 .deadline(request.deadline())
@@ -69,7 +77,14 @@ public class AdminFormService {
     }
 
     @Transactional
-    public void updateForm(Long formId, UpdateFormRequest request) {
+    public void updateForm(Long userId, Long formId, UpdateFormRequest request) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        AdminRole adminRole = user.getAdminRole();
+        if (adminRole != AdminRole.MASTER && adminRole != AdminRole.VOID) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "양식 수정 권한이 없습니다.");
+        }
         Form form = queryFormService.getFormOrThrow(formId);
 
         List<FormField> newFields = new ArrayList<>();
@@ -132,7 +147,8 @@ public class AdminFormService {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
 
-        if (user.getAdminRole() != AdminRole.MASTER) {
+        AdminRole adminRole = user.getAdminRole();
+        if (adminRole != AdminRole.MASTER && adminRole != AdminRole.VOID) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "양식 삭제 권한이 없습니다.");
         }
 
