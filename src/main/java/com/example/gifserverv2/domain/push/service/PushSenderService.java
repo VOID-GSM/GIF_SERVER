@@ -60,7 +60,6 @@ public class PushSenderService {
         }
     }
 
-    @Transactional
     public void sendBulkNotifications(List<Long> userIds, String title, String body) {
         if (userIds == null || userIds.isEmpty()) return;
 
