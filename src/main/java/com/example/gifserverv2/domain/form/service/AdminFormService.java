@@ -13,6 +13,8 @@ import com.example.gifserverv2.domain.form.repository.FormRepository;
 import com.example.gifserverv2.domain.form.repository.FormSubmitRepository;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.push.entity.PushMessageTemplate;
+import com.example.gifserverv2.domain.push.service.PushSenderService;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
@@ -38,9 +40,15 @@ public class AdminFormService {
     private final QueryFormService queryFormService;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final PushSenderService pushSenderService;
 
     @Transactional
     public Long createForm(Long userId, CreateFormRequest request) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        validateFormAdmin(user, "양식 생성 권한이 없습니다.");
+
         Form form = Form.builder()
                 .title(request.title())
                 .deadline(request.deadline())
@@ -66,7 +74,12 @@ public class AdminFormService {
     }
 
     @Transactional
-    public void updateForm(Long formId, UpdateFormRequest request) {
+    public void updateForm(Long userId, Long formId, UpdateFormRequest request) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        validateFormAdmin(user, "양식 수정 권한이 없습니다.");
+
         Form form = queryFormService.getFormOrThrow(formId);
 
         List<FormField> newFields = new ArrayList<>();
@@ -113,6 +126,15 @@ public class AdminFormService {
     public void announceForm(Long formId) {
         Form form = queryFormService.getFormOrThrow(formId);
         form.announce();
+
+        String title = PushMessageTemplate.FORM_ANNOUNCED.getTitle();
+        String body = PushMessageTemplate.FORM_ANNOUNCED.getBody();
+
+        List<Long> targetUserIds = (form.getTargetGrade() == null)
+                ? userRepository.findAllStudentIds()
+                : userRepository.findStudentIdsByGrade(form.getTargetGrade());
+
+        pushSenderService.sendBulkNotifications(targetUserIds, title, body);
     }
 
     @Transactional
@@ -120,9 +142,7 @@ public class AdminFormService {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
 
-        if (user.getAdminRole() != AdminRole.MASTER) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "양식 삭제 권한이 없습니다.");
-        }
+        validateFormAdmin(user, "양식 삭제 권한이 없습니다.");
 
         Form form = queryFormService.getFormOrThrow(formId);
         formRepository.delete(form);
@@ -180,5 +200,12 @@ public class AdminFormService {
         Form form = formRepository.findByIdAndAnnouncedFalse(formId)
                 .orElseThrow(FormException::notFound);
         return DetailFormResponse.from(form, null);
+    }
+
+    private void validateFormAdmin(UserEntity user, String errorMessage) {
+        AdminRole adminRole = user.getAdminRole();
+        if (adminRole != AdminRole.MASTER && adminRole != AdminRole.VOID) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, errorMessage);
+        }
     }
 }

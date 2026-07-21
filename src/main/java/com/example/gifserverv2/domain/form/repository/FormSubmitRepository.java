@@ -21,4 +21,5 @@ public interface FormSubmitRepository extends JpaRepository<FormSubmit, Long> {
     @Query("select s from FormSubmit s join fetch s.answers a join fetch a.formField where s.id = :submitId")
     Optional<FormSubmit> findByIdWithAnswersAndFields(@Param("submitId") Long submitId);
 
+    List<FormSubmit> findAllByFormIdIn(List<Long> formIds);
 }

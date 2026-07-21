@@ -20,6 +20,8 @@ import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.push.entity.PushMessageTemplate;
+import com.example.gifserverv2.domain.push.service.PushSenderService;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +44,7 @@ public class ClientFormService {
     private final QueryFormService queryFormService;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final PushSenderService pushSenderService;
 
     public List<ListFormResponse> getAnnouncedForms(Long projectId) {
         List<Form> forms = formRepository.findAllByAnnouncedTrueOrderByDeadlineAsc();
@@ -139,6 +142,16 @@ public class ClientFormService {
 
             formFieldAnswerRepository.save(answer);
         });
+
+        List<Long> adminUserIds = userRepository.findAllByAdminRoleIsNotNull().stream()
+                .map(UserEntity::getId)
+                .toList();
+
+        pushSenderService.sendBulkNotifications(
+                adminUserIds,
+                PushMessageTemplate.PROJECT_CREATED.getTitle(),
+                PushMessageTemplate.PROJECT_CREATED.getBody()
+        );
 
         return submit.getId();
     }

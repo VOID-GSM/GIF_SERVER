@@ -2,6 +2,8 @@ package com.example.gifserverv2.domain.score.service;
 
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.push.entity.PushMessageTemplate;
+import com.example.gifserverv2.domain.push.event.ScorePublishedEvent;
 import com.example.gifserverv2.domain.score.dto.response.GetScoreNoticeResponse;
 import com.example.gifserverv2.domain.score.dto.response.GetScoreSummaryResponse;
 import com.example.gifserverv2.domain.score.dto.response.GetScoreRankResponse;
@@ -10,10 +12,10 @@ import com.example.gifserverv2.domain.score.entity.Score;
 import com.example.gifserverv2.domain.score.repository.ScoreNoticeRepository;
 import com.example.gifserverv2.domain.score.repository.ScoreRepository;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
-import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
-import com.example.gifserverv2.domain.user.entity.Role;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -29,21 +31,16 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ScoreNoticeService {
 
     private final ProjectRepository projectRepository;
     private final ScoreRepository scoreRepository;
     private final ScoreNoticeRepository scoreNoticeRepository;
-    private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher eventPublisher;
+    private final UserRepository userRepository;
 
-    public ScoreNoticeService(ProjectRepository projectRepository, ScoreRepository scoreRepository, ScoreNoticeRepository scoreNoticeRepository, UserRepository userRepository,ObjectMapper objectMapper) {
-        this.projectRepository = projectRepository;
-        this.scoreRepository = scoreRepository;
-        this.scoreNoticeRepository = scoreNoticeRepository;
-        this.userRepository = userRepository;
-        this.objectMapper = objectMapper;
-    }
 
     @Transactional
     public void publish(AuthenticatedUser caller) {
@@ -73,6 +70,14 @@ public class ScoreNoticeService {
             String snapshot = objectMapper.writeValueAsString(summaries);
             ScoreNotice notice = new ScoreNotice(true, Instant.now(), snapshot, caller.userId());
             scoreNoticeRepository.save(notice);
+
+            List<Long> allUserIds = userRepository.findAllUserIds();
+
+            eventPublisher.publishEvent(new ScorePublishedEvent(
+                    allUserIds,
+                    PushMessageTemplate.SCORE_PUBLISHED.getTitle(),
+                    PushMessageTemplate.SCORE_PUBLISHED.getBody()
+            ));
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "공지 저장 중 오류가 발생했습니다.", e);
         }

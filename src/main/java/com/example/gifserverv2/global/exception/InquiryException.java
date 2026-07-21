@@ -16,10 +16,16 @@ public class InquiryException extends ResponseStatusException {
     public static InquiryException forbidden() {
         return new InquiryException(HttpStatus.FORBIDDEN, "본인이 등록한 문의만 조회할 수 있습니다.");
     }
+
     public static InquiryException notMaster() {
         return new InquiryException(HttpStatus.FORBIDDEN, "답변 권한이 없습니다.");
     }
+
     public static InquiryException alreadyAnswered() {
         return new InquiryException(HttpStatus.CONFLICT, "이미 답변이 완료된 문의는 수정할 수 없습니다.");
+    }
+
+    public static InquiryException notVoid() {
+        return new InquiryException(HttpStatus.FORBIDDEN, "문의 사항은 VOID 관리자만 접근할 수 있습니다.");
     }
 }

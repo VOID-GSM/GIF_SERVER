@@ -4,6 +4,9 @@ import com.example.gifserverv2.domain.inquiry.dto.response.DetailInquiryResponse
 import com.example.gifserverv2.domain.inquiry.dto.response.ListInquiryResponse;
 import com.example.gifserverv2.domain.inquiry.entity.Inquiry;
 import com.example.gifserverv2.domain.inquiry.repository.InquiryRepository;
+import com.example.gifserverv2.domain.push.entity.PushMessageTemplate;
+import com.example.gifserverv2.domain.push.service.PushSenderService;
+import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.global.exception.InquiryException;
@@ -26,13 +29,11 @@ public class AdminInquiryService {
 
     private final InquiryRepository inquiryRepository;
     private final UserRepository userRepository;
-
-    @Value("${app.admin-email}")
-    private String masterEmail;
+    private final PushSenderService pushSenderService;
 
     @Transactional(readOnly = true)
     public Page<ListInquiryResponse> getAllInquiries(String email, Pageable pageable) {
-        validateMaster(email);
+        validateVoidAdmin(email);
 
         Pageable sorted = pageable.getSort().isSorted()
                 ? pageable
@@ -51,7 +52,7 @@ public class AdminInquiryService {
 
     @Transactional(readOnly = true)
     public DetailInquiryResponse getInquiryDetail(String email, Long inquiryId) {
-        validateMaster(email);
+        validateVoidAdmin(email);
 
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(InquiryException::notFound);
@@ -64,16 +65,26 @@ public class AdminInquiryService {
 
     @Transactional
     public void answerInquiry(String email, Long inquiryId, String answerContent) {
-        validateMaster(email);
+        validateVoidAdmin(email);
 
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(InquiryException::notFound);
+
         inquiry.answer(answerContent);
+
+        pushSenderService.sendNotification(
+                inquiry.getCreatedByUserId(),
+                PushMessageTemplate.INQUIRY_ANSWERED.getTitle(),
+                PushMessageTemplate.INQUIRY_ANSWERED.getBodyTemplate()
+        );
     }
 
-    private void validateMaster(String email) {
-        if (!masterEmail.equalsIgnoreCase(email)) {
-            throw InquiryException.notMaster();
+    private void validateVoidAdmin(String email) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(InquiryException::notMaster);
+
+        if (user.getAdminRole() != AdminRole.VOID) {
+            throw InquiryException.notVoid();
         }
     }
 }

@@ -3,7 +3,8 @@ package com.example.gifserverv2.domain.user.entity;
 public enum AdminRole {
     MAJOR_TEACHER,
     GENERAL_TEACHER,
-    MASTER;
+    MASTER,
+    VOID;
 
     private static final String REQUIRED_SUBJECT_TEACHER_MESSAGE = "선생님 교과 역할을 선택해야 합니다.";
     private static final String INVALID_SUBJECT_TEACHER_MESSAGE = "선생님은 전공 교과 또는 일반 교과 중 하나를 선택해야 합니다.";
@@ -21,11 +22,14 @@ public enum AdminRole {
             return REQUIRED_SUBJECT_TEACHER_MESSAGE;
         }
 
-        // Allow MASTER role to pass validation for administrative APIs
-        if (adminRole == MASTER) {
+        if (adminRole == MASTER || adminRole == VOID) {
             return null;
         }
 
         return adminRole.isSubjectTeacher() ? null : INVALID_SUBJECT_TEACHER_MESSAGE;
+    }
+
+    public boolean isAdmin() {
+        return this == MAJOR_TEACHER || this == GENERAL_TEACHER || this == MASTER || this == VOID;
     }
 }

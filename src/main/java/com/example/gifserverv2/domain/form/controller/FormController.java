@@ -38,10 +38,11 @@ public class FormController {
     @PatchMapping("/update")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> updateForm(
+            @AuthenticationPrincipal AuthenticatedUser user,
             @RequestParam Long formId,
             @RequestBody UpdateFormRequest request
     ) {
-        adminFormService.updateForm(formId, request);
+        adminFormService.updateForm(user.userId(), formId, request);
         return ResponseEntity.noContent().build();
     }
 
