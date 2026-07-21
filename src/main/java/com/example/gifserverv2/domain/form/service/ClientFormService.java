@@ -143,17 +143,15 @@ public class ClientFormService {
             formFieldAnswerRepository.save(answer);
         });
 
-        List<UserEntity> adminUsers = userRepository.findAll().stream()
-                .filter(u -> u.getAdminRole() != null && u.getAdminRole().isAdmin())
+        List<Long> adminUserIds = userRepository.findAllByAdminRoleIsNotNull().stream()
+                .map(UserEntity::getId)
                 .toList();
 
-        for (UserEntity admin : adminUsers) {
-            pushSenderService.sendNotification(
-                    admin.getId(),
-                    PushMessageTemplate.FORM_SUBMITTED.getTitle(),
-                    PushMessageTemplate.FORM_SUBMITTED.formatBody(form.getTitle())
-            );
-        }
+        pushSenderService.sendBulkNotifications(
+                adminUserIds,
+                PushMessageTemplate.PROJECT_CREATED.getTitle(),
+                PushMessageTemplate.PROJECT_CREATED.getBody()
+        );
 
         return submit.getId();
     }
