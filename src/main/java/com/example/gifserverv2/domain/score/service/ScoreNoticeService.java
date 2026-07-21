@@ -3,7 +3,7 @@ package com.example.gifserverv2.domain.score.service;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
 import com.example.gifserverv2.domain.push.entity.PushMessageTemplate;
-import com.example.gifserverv2.domain.push.service.PushSenderService;
+import com.example.gifserverv2.domain.push.event.ScorePublishedEvent;
 import com.example.gifserverv2.domain.score.dto.response.GetScoreNoticeResponse;
 import com.example.gifserverv2.domain.score.dto.response.GetScoreSummaryResponse;
 import com.example.gifserverv2.domain.score.dto.response.GetScoreRankResponse;
@@ -12,10 +12,10 @@ import com.example.gifserverv2.domain.score.entity.Score;
 import com.example.gifserverv2.domain.score.repository.ScoreNoticeRepository;
 import com.example.gifserverv2.domain.score.repository.ScoreRepository;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
-import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -37,9 +37,10 @@ public class ScoreNoticeService {
     private final ProjectRepository projectRepository;
     private final ScoreRepository scoreRepository;
     private final ScoreNoticeRepository scoreNoticeRepository;
-    private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
-    private final PushSenderService pushSenderService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final UserRepository userRepository;
+
 
     @Transactional
     public void publish(AuthenticatedUser caller) {
@@ -70,15 +71,13 @@ public class ScoreNoticeService {
             ScoreNotice notice = new ScoreNotice(true, Instant.now(), snapshot, caller.userId());
             scoreNoticeRepository.save(notice);
 
-            List<UserEntity> allUsers = userRepository.findAll();
+            List<Long> allUserIds = userRepository.findAllUserIds();
 
-            for (UserEntity user : allUsers) {
-                pushSenderService.sendNotification(
-                        user.getId(),
-                        PushMessageTemplate.SCORE_PUBLISHED.getTitle(),
-                        PushMessageTemplate.SCORE_PUBLISHED.getBody()
-                );
-            }
+            eventPublisher.publishEvent(new ScorePublishedEvent(
+                    allUserIds,
+                    PushMessageTemplate.SCORE_PUBLISHED.getTitle(),
+                    PushMessageTemplate.SCORE_PUBLISHED.getBody()
+            ));
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "공지 저장 중 오류가 발생했습니다.", e);
         }

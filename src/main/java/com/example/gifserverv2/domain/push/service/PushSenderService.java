@@ -13,6 +13,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.security.GeneralSecurityException;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +44,7 @@ public class PushSenderService {
     }
 
     @Async
+    @Transactional
     public void sendNotification(Long targetUserId, String title, String body) {
         List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserId(targetUserId);
 
@@ -50,37 +53,65 @@ public class PushSenderService {
             return;
         }
 
-        Map<String, String> payloadMap = Map.of(
-                "title", title,
-                "body", body
-        );
+        String payload = createPayload(title, body);
+        if (payload == null) return;
 
+        for (PushSubscription sub : subscriptions) {
+            sendToSubscription(sub, payload);
+        }
+    }
+
+    @Transactional
+    public void sendBulkNotifications(List<Long> userIds, String title, String body) {
+        if (userIds == null || userIds.isEmpty()) return;
+
+        List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserIdIn(userIds);
+
+        if (subscriptions.isEmpty()) {
+            log.info("대상 유저들에 대한 활성화된 푸시 구독 정보가 없습니다.");
+            return;
+        }
+
+        String payload = createPayload(title, body);
+        if (payload == null) return;
+
+        for (PushSubscription subscription : subscriptions) {
+            sendToSubscription(subscription, payload);
+        }
+    }
+
+    private void sendToSubscription(PushSubscription sub, String payload) {
         try {
-            String payload = objectMapper.writeValueAsString(payloadMap);
+            Notification notification = new Notification(
+                    sub.getEndpoint(),
+                    sub.getP256dh(),
+                    sub.getAuth(),
+                    payload
+            );
 
-            for (PushSubscription sub : subscriptions) {
-                try {
-                    Notification notification = new Notification(
-                            sub.getEndpoint(),
-                            sub.getP256dh(),
-                            sub.getAuth(),
-                            payload
-                    );
+            HttpResponse response = pushService.send(notification);
+            int statusCode = response.getStatusLine().getStatusCode();
 
-                    HttpResponse response = pushService.send(notification);
-                    int statusCode = response.getStatusLine().getStatusCode();
-
-                    if (statusCode == 410 || statusCode == 404) {
-                        log.warn("만료된 푸시 엔드포인트 발견되어 삭제 처리합니다: {}", sub.getEndpoint());
-                        pushSubscriptionRepository.delete(sub);
-                    }
-
-                } catch (Exception e) {
-                    log.error("특정 기기 푸시 발송 실패 (Endpoint: {}): {}", sub.getEndpoint(), e.getMessage());
-                }
+            if (statusCode == 410 || statusCode == 404) {
+                log.warn("만료된 푸시 엔드포인트 발견되어 삭제 처리합니다: {}", sub.getEndpoint());
+                pushSubscriptionRepository.delete(sub);
             }
+
+        } catch (Exception e) {
+            log.error("특정 기기 푸시 발송 실패 (Endpoint: {}): {}", sub.getEndpoint(), e.getMessage());
+        }
+    }
+
+    private String createPayload(String title, String body) {
+        try {
+            Map<String, String> payloadMap = Map.of(
+                    "title", title,
+                    "body", body
+            );
+            return objectMapper.writeValueAsString(payloadMap);
         } catch (Exception e) {
             log.error("푸시 JSON 페이로드 직렬화 실패: {}", e.getMessage());
+            return null;
         }
     }
 }
