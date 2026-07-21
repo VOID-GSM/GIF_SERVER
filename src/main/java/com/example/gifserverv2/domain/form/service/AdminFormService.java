@@ -117,18 +117,14 @@ public class AdminFormService {
         Form form = queryFormService.getFormOrThrow(formId);
         form.announce();
 
-        List<UserEntity> targetUsers = userRepository.findAll().stream()
-                .filter(u -> u.getAdminRole() == null) // 학생 계정들만 추출
-                .filter(u -> form.getTargetGrade() == null || form.getTargetGrade().equals(u.getGrade())) // 학년 조건 필터
-                .toList();
+        String title = PushMessageTemplate.FORM_ANNOUNCED.getTitle();
+        String body = PushMessageTemplate.FORM_ANNOUNCED.getBody();
 
-        for (UserEntity user : targetUsers) {
-            pushSenderService.sendNotification(
-                    user.getId(),
-                    PushMessageTemplate.FORM_ANNOUNCED.getTitle(),
-                    PushMessageTemplate.FORM_ANNOUNCED.formatBody(form.getTitle())
-            );
-        }
+        List<Long> targetUserIds = (form.getTargetGrade() == null)
+                ? userRepository.findAllStudentIds()
+                : userRepository.findStudentIdsByGrade(form.getTargetGrade());
+
+        pushSenderService.sendBulkNotifications(targetUserIds, title, body);
     }
 
     @Transactional
