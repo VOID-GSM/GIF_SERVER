@@ -41,7 +41,7 @@ public class AuthService {
     private final OAuthProperties oauthProperties;
     private final ProjectMemberRepository projectMemberRepository;
 
-    @Value("${app.void-emails}")
+    @Value("${app.void-emails:}")
     private List<String> voidEmails;
 
     public AuthService(DataGsmOAuthClient dataGsmOAuthClient, UserRepository userRepository,
