@@ -9,8 +9,8 @@ import nl.martijndwars.webpush.Notification;
 import nl.martijndwars.webpush.PushService;
 import org.apache.http.HttpResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.annotation.PostConstruct;
 import java.security.GeneralSecurityException;
@@ -41,7 +41,7 @@ public class PushSenderService {
         this.pushService = new PushService(publicKey, privateKey, subject);
     }
 
-    @Transactional
+    @Async
     public void sendNotification(Long targetUserId, String title, String body) {
         List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserId(targetUserId);
 
