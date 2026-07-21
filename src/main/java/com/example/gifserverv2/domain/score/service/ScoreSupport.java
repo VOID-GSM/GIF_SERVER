@@ -56,14 +56,12 @@ public class ScoreSupport {
     }
 
     public void validateEvaluator(AuthenticatedUser evaluator, Predicate<AuthenticatedUser> condition, String errorMessage) {
-        if (evaluator == null) {
+        if (evaluator == null || evaluator.userId() == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "평가자 정보가 유효하지 않습니다.");
         }
-
-        if (evaluator.adminRole() != null && evaluator.adminRole() == AdminRole.VOID) {
+        if (evaluator.adminRole() == AdminRole.VOID) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "VOID 권한은 점수를 부여할 권한이 없습니다.");
         }
-
         if (!condition.test(evaluator)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, errorMessage);
         }
