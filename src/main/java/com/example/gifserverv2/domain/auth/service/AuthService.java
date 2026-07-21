@@ -254,7 +254,7 @@ public class AuthService {
     }
 
     private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role, String grade) {
-        boolean isVoidUser = email != null && voidEmails.contains(email);
+        boolean isVoidUser = email != null && voidEmails != null && voidEmails.contains(email);
 
         return userRepository.findByEmail(email)
                 .map(existing -> {
