@@ -26,9 +26,6 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     List<UserEntity> findAllByAdminRoleIsNotNull();
 
-    @Query("SELECT u.id FROM UserEntity u WHERE u.adminRole IS NOT NULL")
-    List<Long> findAllAdminUserIds();
-
     @Query("SELECT u.id FROM UserEntity u WHERE u.adminRole = :adminRole")
     List<Long> findUserIdsByAdminRole(@Param("adminRole") AdminRole adminRole);
 }
