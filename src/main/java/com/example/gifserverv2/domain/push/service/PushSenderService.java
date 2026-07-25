@@ -1,8 +1,11 @@
 package com.example.gifserverv2.domain.push.service;
 
+import com.example.gifserverv2.domain.push.entity.NotificationHistory;
 import com.example.gifserverv2.domain.push.entity.PushSubscription;
+import com.example.gifserverv2.domain.push.repository.NotificationRepository;
 import com.example.gifserverv2.domain.push.repository.PushSubscriptionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.martijndwars.webpush.Notification;
@@ -11,8 +14,7 @@ import org.apache.http.HttpResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-
-import jakarta.annotation.PostConstruct;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.GeneralSecurityException;
 import java.util.List;
@@ -24,6 +26,7 @@ import java.util.Map;
 public class PushSenderService {
 
     private final PushSubscriptionRepository pushSubscriptionRepository;
+    private final NotificationRepository notificationRepository;
     private final ObjectMapper objectMapper;
 
     @Value("${vapid.public-key}")
@@ -43,7 +46,14 @@ public class PushSenderService {
     }
 
     @Async
+    @Transactional
     public void sendNotification(Long targetUserId, String title, String body) {
+        notificationRepository.save(NotificationHistory.builder()
+                .userId(targetUserId)
+                .title(title)
+                .body(body)
+                .build());
+
         List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserId(targetUserId);
 
         if (subscriptions.isEmpty()) {
@@ -59,8 +69,47 @@ public class PushSenderService {
         }
     }
 
+    @Transactional
     public void sendBulkNotifications(List<Long> userIds, String title, String body) {
         if (userIds == null || userIds.isEmpty()) return;
+
+        List<NotificationHistory> notifications = userIds.stream()
+                .map(userId -> NotificationHistory.builder()
+                        .userId(userId)
+                        .title(title)
+                        .body(body)
+                        .build())
+                .toList();
+        notificationRepository.saveAll(notifications);
+
+        List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserIdIn(userIds);
+
+        if (subscriptions.isEmpty()) {
+            log.info("대상 유저들에 대한 활성화된 푸시 구독 정보가 없습니다.");
+            return;
+        }
+
+        String payload = createPayload(title, body);
+        if (payload == null) return;
+
+        for (PushSubscription subscription : subscriptions) {
+            sendToSubscription(subscription, payload);
+        }
+    }
+
+    @Async
+    @Transactional
+    public void sendBulkNotificationsAsync(List<Long> userIds, String title, String body) {
+        if (userIds == null || userIds.isEmpty()) return;
+
+        List<NotificationHistory> notifications = userIds.stream()
+                .map(userId -> NotificationHistory.builder()
+                        .userId(userId)
+                        .title(title)
+                        .body(body)
+                        .build())
+                .toList();
+        notificationRepository.saveAll(notifications);
 
         List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserIdIn(userIds);
 
@@ -79,7 +128,7 @@ public class PushSenderService {
 
     private void sendToSubscription(PushSubscription sub, String payload) {
         try {
-            Notification notification = new Notification(
+            Notification notification = new nl.martijndwars.webpush.Notification(
                     sub.getEndpoint(),
                     sub.getP256dh(),
                     sub.getAuth(),
@@ -109,25 +158,6 @@ public class PushSenderService {
         } catch (Exception e) {
             log.error("푸시 JSON 페이로드 직렬화 실패: {}", e.getMessage());
             return null;
-        }
-    }
-
-    @Async
-    public void sendBulkNotificationsAsync(List<Long> userIds, String title, String body) {
-        if (userIds == null || userIds.isEmpty()) return;
-
-        List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserIdIn(userIds);
-
-        if (subscriptions.isEmpty()) {
-            log.info("대상 VOID 관리자들에 대한 활성화된 푸시 구독 정보가 없습니다.");
-            return;
-        }
-
-        String payload = createPayload(title, body);
-        if (payload == null) return;
-
-        for (PushSubscription subscription : subscriptions) {
-            sendToSubscription(subscription, payload);
         }
     }
 }
