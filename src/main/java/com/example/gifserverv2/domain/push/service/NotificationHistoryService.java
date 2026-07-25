@@ -2,7 +2,7 @@ package com.example.gifserverv2.domain.push.service;
 
 import com.example.gifserverv2.domain.push.dto.response.GetNotificationResponse;
 import com.example.gifserverv2.domain.push.dto.response.GetNotificationUnreadCountResponse;
-import com.example.gifserverv2.domain.push.entity.Notification;
+import com.example.gifserverv2.domain.push.entity.NotificationHistory;
 import com.example.gifserverv2.domain.push.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -29,7 +29,7 @@ public class NotificationHistoryService {
 
     @Transactional
     public void patchNotificationRead(Long userId, Long notificationId) {
-        Notification notification = notificationRepository.findById(notificationId)
+        NotificationHistory notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 알림입니다."));
 
         if (!notification.getUserId().equals(userId)) {

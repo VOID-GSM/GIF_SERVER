@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "notifications")
-public class Notification {
+public class NotificationHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,7 +39,7 @@ public class Notification {
     }
 
     @Builder
-    public Notification(Long userId, String title, String body) {
+    public NotificationHistory(Long userId, String title, String body) {
         this.userId = userId;
         this.title = title;
         this.body = body;
