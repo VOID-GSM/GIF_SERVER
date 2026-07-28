@@ -46,16 +46,10 @@ public class PushSenderService {
     }
 
     @Async
-    @Transactional
     public void sendNotification(Long targetUserId, String title, String body) {
-        notificationRepository.save(NotificationHistory.builder()
-                .userId(targetUserId)
-                .title(title)
-                .body(body)
-                .build());
+        saveNotificationHistory(targetUserId, title, body);
 
         List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserId(targetUserId);
-
         if (subscriptions.isEmpty()) {
             log.info("유저 {}에 대한 활성화된 푸시 구독 정보가 없습니다.", targetUserId);
             return;
@@ -69,21 +63,12 @@ public class PushSenderService {
         }
     }
 
-    @Transactional
     public void sendBulkNotifications(List<Long> userIds, String title, String body) {
         if (userIds == null || userIds.isEmpty()) return;
 
-        List<NotificationHistory> notifications = userIds.stream()
-                .map(userId -> NotificationHistory.builder()
-                        .userId(userId)
-                        .title(title)
-                        .body(body)
-                        .build())
-                .toList();
-        notificationRepository.saveAll(notifications);
+        saveBulkNotificationHistory(userIds, title, body);
 
         List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserIdIn(userIds);
-
         if (subscriptions.isEmpty()) {
             log.info("대상 유저들에 대한 활성화된 푸시 구독 정보가 없습니다.");
             return;
@@ -98,10 +83,21 @@ public class PushSenderService {
     }
 
     @Async
-    @Transactional
     public void sendBulkNotificationsAsync(List<Long> userIds, String title, String body) {
-        if (userIds == null || userIds.isEmpty()) return;
+        sendBulkNotifications(userIds, title, body);
+    }
 
+    @Transactional
+    public void saveNotificationHistory(Long targetUserId, String title, String body) {
+        notificationRepository.save(NotificationHistory.builder()
+                .userId(targetUserId)
+                .title(title)
+                .body(body)
+                .build());
+    }
+
+    @Transactional
+    public void saveBulkNotificationHistory(List<Long> userIds, String title, String body) {
         List<NotificationHistory> notifications = userIds.stream()
                 .map(userId -> NotificationHistory.builder()
                         .userId(userId)
@@ -110,20 +106,6 @@ public class PushSenderService {
                         .build())
                 .toList();
         notificationRepository.saveAll(notifications);
-
-        List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserIdIn(userIds);
-
-        if (subscriptions.isEmpty()) {
-            log.info("대상 유저들에 대한 활성화된 푸시 구독 정보가 없습니다.");
-            return;
-        }
-
-        String payload = createPayload(title, body);
-        if (payload == null) return;
-
-        for (PushSubscription subscription : subscriptions) {
-            sendToSubscription(subscription, payload);
-        }
     }
 
     private void sendToSubscription(PushSubscription sub, String payload) {
@@ -140,12 +122,17 @@ public class PushSenderService {
 
             if (statusCode == 410 || statusCode == 404) {
                 log.warn("만료된 푸시 엔드포인트 발견되어 삭제 처리합니다: {}", sub.getEndpoint());
-                pushSubscriptionRepository.delete(sub);
+                deleteSubscription(sub);
             }
 
         } catch (Exception e) {
             log.error("특정 기기 푸시 발송 실패 (Endpoint: {}): {}", sub.getEndpoint(), e.getMessage());
         }
+    }
+
+    @Transactional
+    public void deleteSubscription(PushSubscription sub) {
+        pushSubscriptionRepository.delete(sub);
     }
 
     private String createPayload(String title, String body) {
