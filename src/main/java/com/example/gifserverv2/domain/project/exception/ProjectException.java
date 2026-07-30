@@ -28,4 +28,12 @@ public class ProjectException extends ResponseStatusException {
     public static ProjectException alreadyMember() {
         return new ProjectException(HttpStatus.CONFLICT, "이미 팀원으로 등록된 유저입니다.");
     }
+
+    public static ProjectException linkNotFound() {
+        return new ProjectException(HttpStatus.NOT_FOUND, "링크를 찾을 수 없습니다.");
+    }
+
+    public static ProjectException invalidUrl() {
+        return new ProjectException(HttpStatus.BAD_REQUEST, "올바른 URL 형식이 아닙니다. (http:// 또는 https://로 시작해야 합니다)");
+    }
 }

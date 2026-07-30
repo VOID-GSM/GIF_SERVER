@@ -4,6 +4,7 @@ import com.example.gifserverv2.domain.ai.service.AiSummaryService;
 import com.example.gifserverv2.domain.project.dto.request.*;
 import com.example.gifserverv2.domain.project.dto.response.*;
 import com.example.gifserverv2.domain.project.service.CommandProjectService;
+import com.example.gifserverv2.domain.project.service.ProjectLinkService;
 import com.example.gifserverv2.domain.project.service.ProjectNoteService;
 import com.example.gifserverv2.domain.project.service.QueryProjectService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
@@ -29,6 +30,7 @@ public class ProjectController {
     private final CommandProjectService projectCommandService;
     private final AiSummaryService aiSummaryService;
     private final ProjectNoteService projectNoteService;
+    private final ProjectLinkService projectLinkService;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Long> createProject(
@@ -134,5 +136,40 @@ public class ProjectController {
             @PathVariable Long projectId
     ) {
         return ResponseEntity.ok(projectNoteService.getMyNote(projectId, user.userId()));
+    }
+
+    @GetMapping("/{projectId}/links")
+    public ResponseEntity<List<ProjectLinkResponse>> getLinks(@PathVariable Long projectId) {
+        return ResponseEntity.ok(projectLinkService.getLinks(projectId));
+    }
+
+    @PostMapping("/{projectId}/links")
+    public ResponseEntity<Long> createLink(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long projectId,
+            @Valid @RequestBody CreateProjectLinkRequest request
+    ) {
+        return ResponseEntity.ok(projectLinkService.createLink(projectId, user.userId(), request));
+    }
+
+    @PatchMapping("/{projectId}/links/{linkId}")
+    public ResponseEntity<Void> updateLink(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long projectId,
+            @PathVariable Long linkId,
+            @Valid @RequestBody UpdateProjectLinkRequest request
+    ) {
+        projectLinkService.updateLink(projectId, linkId, user.userId(), request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{projectId}/links/{linkId}")
+    public ResponseEntity<Void> deleteLink(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long projectId,
+            @PathVariable Long linkId
+    ) {
+        projectLinkService.deleteLink(projectId, linkId, user.userId());
+        return ResponseEntity.noContent().build();
     }
 }
