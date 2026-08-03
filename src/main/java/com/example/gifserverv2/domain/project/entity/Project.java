@@ -52,9 +52,6 @@ public class Project {
     public void updateDescription(String description) { this.description = description; }
     public void updateLogo(String logo) { this.logo = logo; }
     public void updateGrade(Integer grade) { this.grade = grade; }
-    public void assignAdvisorTeacher(Long teacherId) { this.advisorTeacherId = teacherId; }
-    public Long getAdvisorTeacherId() { return this.advisorTeacherId; }
-
     public void updateAiSummary(String aiSummary) {
         this.aiSummary = aiSummary;
         this.aiSummarizedAt = LocalDateTime.now();

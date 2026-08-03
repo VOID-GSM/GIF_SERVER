@@ -45,4 +45,9 @@ public class Notice {
     @BatchSize(size = 100)
     @Builder.Default
     private List<Long> targetProjectIds = new ArrayList<>();
+
+    @PrePersist
+    public void prePersist() {
+        this.createdAt = LocalDateTime.now();
+    }
 }
