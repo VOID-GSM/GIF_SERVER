@@ -4,6 +4,7 @@ import com.example.gifserverv2.domain.score.dto.request.CreateReportScoreRequest
 import com.example.gifserverv2.domain.score.dto.request.PatchReportScoreRequest;
 import com.example.gifserverv2.domain.score.entity.Score;
 import com.example.gifserverv2.domain.project.entity.Project;
+import com.example.gifserverv2.domain.score.entity.ScoreCategory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,9 +15,12 @@ import com.example.gifserverv2.global.security.AuthenticatedUser;
 public class ReportScoreService {
 
     private final ScoreSupport support;
+    private final EvaluationPeriodService periodService;
 
     @Transactional
     public void createReport(CreateReportScoreRequest request, AuthenticatedUser evaluator) {
+        periodService.validateEvaluationPeriod(ScoreCategory.REPORT);
+
         validateEvaluatorAndFields(evaluator, request.getProjectId(),
                 request.getReportWriting(), request.getReportContent(),
                 request.getAiUsagePlan(), request.getCreativity());
@@ -46,6 +50,8 @@ public class ReportScoreService {
 
     @Transactional
     public void updateReport(Long projectId, PatchReportScoreRequest request, AuthenticatedUser evaluator) {
+        periodService.validateEvaluationPeriod(ScoreCategory.REPORT);
+
         validateEvaluatorAndFields(evaluator, projectId,
                 request.getReportWriting(), request.getReportContent(),
                 request.getAiUsagePlan(), request.getCreativity());
