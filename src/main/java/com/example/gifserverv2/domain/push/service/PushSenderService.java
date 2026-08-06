@@ -1,8 +1,11 @@
 package com.example.gifserverv2.domain.push.service;
 
+import com.example.gifserverv2.domain.push.entity.NotificationHistory;
 import com.example.gifserverv2.domain.push.entity.PushSubscription;
+import com.example.gifserverv2.domain.push.repository.NotificationRepository;
 import com.example.gifserverv2.domain.push.repository.PushSubscriptionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.martijndwars.webpush.Notification;
@@ -11,8 +14,7 @@ import org.apache.http.HttpResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-
-import jakarta.annotation.PostConstruct;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.GeneralSecurityException;
 import java.util.List;
@@ -24,6 +26,7 @@ import java.util.Map;
 public class PushSenderService {
 
     private final PushSubscriptionRepository pushSubscriptionRepository;
+    private final NotificationRepository notificationRepository;
     private final ObjectMapper objectMapper;
 
     @Value("${vapid.public-key}")
@@ -44,8 +47,9 @@ public class PushSenderService {
 
     @Async
     public void sendNotification(Long targetUserId, String title, String body) {
-        List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserId(targetUserId);
+        saveNotificationHistory(targetUserId, title, body);
 
+        List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserId(targetUserId);
         if (subscriptions.isEmpty()) {
             log.info("유저 {}에 대한 활성화된 푸시 구독 정보가 없습니다.", targetUserId);
             return;
@@ -62,8 +66,9 @@ public class PushSenderService {
     public void sendBulkNotifications(List<Long> userIds, String title, String body) {
         if (userIds == null || userIds.isEmpty()) return;
 
-        List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserIdIn(userIds);
+        saveBulkNotificationHistory(userIds, title, body);
 
+        List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserIdIn(userIds);
         if (subscriptions.isEmpty()) {
             log.info("대상 유저들에 대한 활성화된 푸시 구독 정보가 없습니다.");
             return;
@@ -77,9 +82,35 @@ public class PushSenderService {
         }
     }
 
+    @Async
+    public void sendBulkNotificationsAsync(List<Long> userIds, String title, String body) {
+        sendBulkNotifications(userIds, title, body);
+    }
+
+    @Transactional
+    public void saveNotificationHistory(Long targetUserId, String title, String body) {
+        notificationRepository.save(NotificationHistory.builder()
+                .userId(targetUserId)
+                .title(title)
+                .body(body)
+                .build());
+    }
+
+    @Transactional
+    public void saveBulkNotificationHistory(List<Long> userIds, String title, String body) {
+        List<NotificationHistory> notifications = userIds.stream()
+                .map(userId -> NotificationHistory.builder()
+                        .userId(userId)
+                        .title(title)
+                        .body(body)
+                        .build())
+                .toList();
+        notificationRepository.saveAll(notifications);
+    }
+
     private void sendToSubscription(PushSubscription sub, String payload) {
         try {
-            Notification notification = new Notification(
+            Notification notification = new nl.martijndwars.webpush.Notification(
                     sub.getEndpoint(),
                     sub.getP256dh(),
                     sub.getAuth(),
@@ -91,12 +122,17 @@ public class PushSenderService {
 
             if (statusCode == 410 || statusCode == 404) {
                 log.warn("만료된 푸시 엔드포인트 발견되어 삭제 처리합니다: {}", sub.getEndpoint());
-                pushSubscriptionRepository.delete(sub);
+                deleteSubscription(sub);
             }
 
         } catch (Exception e) {
             log.error("특정 기기 푸시 발송 실패 (Endpoint: {}): {}", sub.getEndpoint(), e.getMessage());
         }
+    }
+
+    @Transactional
+    public void deleteSubscription(PushSubscription sub) {
+        pushSubscriptionRepository.delete(sub);
     }
 
     private String createPayload(String title, String body) {
@@ -109,25 +145,6 @@ public class PushSenderService {
         } catch (Exception e) {
             log.error("푸시 JSON 페이로드 직렬화 실패: {}", e.getMessage());
             return null;
-        }
-    }
-
-    @Async
-    public void sendBulkNotificationsAsync(List<Long> userIds, String title, String body) {
-        if (userIds == null || userIds.isEmpty()) return;
-
-        List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserIdIn(userIds);
-
-        if (subscriptions.isEmpty()) {
-            log.info("대상 VOID 관리자들에 대한 활성화된 푸시 구독 정보가 없습니다.");
-            return;
-        }
-
-        String payload = createPayload(title, body);
-        if (payload == null) return;
-
-        for (PushSubscription subscription : subscriptions) {
-            sendToSubscription(subscription, payload);
         }
     }
 }
