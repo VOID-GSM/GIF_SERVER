@@ -5,6 +5,7 @@ import com.example.gifserverv2.domain.score.dto.response.GetProjectFieldAverageR
 import com.example.gifserverv2.domain.score.entity.Score;
 import com.example.gifserverv2.domain.score.service.*;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import com.example.gifserverv2.domain.score.dto.response.GetScoreRankResponse;
 import org.springframework.http.HttpStatus;
@@ -126,7 +127,7 @@ public class ScoreController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> updatePeriod(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
-            @RequestBody UpdateEvaluationPeriodRequest request) {
+            @Valid @RequestBody UpdateEvaluationPeriodRequest request) { // 💡 @Valid 추가
 
         evaluationPeriodService.updatePeriod(
                 currentUser,
