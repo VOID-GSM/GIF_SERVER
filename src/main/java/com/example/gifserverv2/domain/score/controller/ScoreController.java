@@ -127,13 +127,12 @@ public class ScoreController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> updatePeriod(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
-            @Valid @RequestBody UpdateEvaluationPeriodRequest request) { // 💡 @Valid 추가
+            @Valid @RequestBody UpdateEvaluationPeriodRequest request) {
 
-        evaluationPeriodService.updatePeriod(
+        evaluationPeriodService.updateStartDate(
                 currentUser,
                 request.getCategory(),
-                request.getStartDate(),
-                request.getEndDate()
+                request.getStartDate()
         );
         return ResponseEntity.ok().build();
     }
