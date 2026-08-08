@@ -16,7 +16,4 @@ public class UpdateEvaluationPeriodRequest {
 
     @NotNull(message = "평가 시작일은 필수 항목입니다.")
     private LocalDateTime startDate;
-
-    @NotNull(message = "평가 마감일은 필수 항목입니다.")
-    private LocalDateTime endDate;
 }
