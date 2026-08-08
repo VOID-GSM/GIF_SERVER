@@ -29,37 +29,35 @@ public class EvaluationPeriodService {
     }
 
     @Transactional
-    public void updatePeriod(AuthenticatedUser user, ScoreCategory category, LocalDateTime startDate, LocalDateTime endDate) {
+    public void updateStartDate(AuthenticatedUser user, ScoreCategory category, LocalDateTime startDate) {
         if (user.adminRole() != AdminRole.MASTER) {
             throw new IllegalArgumentException("평가 기간 설정 권한은 Master 교사에게만 있습니다.");
         }
 
-        validatePeriodRange(startDate, endDate);
+        int currentYear = LocalDateTime.now().getYear();
+        LocalDateTime fixedEndDate = LocalDateTime.of(currentYear, 12, 29, 23, 59, 59);
+
+        validateStartDate(startDate, fixedEndDate);
 
         EvaluationPeriod period = periodRepository.findById(category)
-                .orElse(new EvaluationPeriod(category, startDate, endDate));
+                .orElse(new EvaluationPeriod(category, startDate, fixedEndDate));
 
-        period.updatePeriod(startDate, endDate);
+        period.updatePeriod(startDate, fixedEndDate);
         periodRepository.save(period);
     }
 
-    private void validatePeriodRange(LocalDateTime startDate, LocalDateTime endDate) {
-        if (startDate == null || endDate == null) {
-            throw new IllegalArgumentException("평가 시작일과 마감일은 필수 항목입니다.");
+    private void validateStartDate(LocalDateTime startDate, LocalDateTime endDate) {
+        if (startDate == null) {
+            throw new IllegalArgumentException("평가 시작일은 필수 항목입니다.");
         }
         if (startDate.isAfter(endDate) || startDate.isEqual(endDate)) {
-            throw new IllegalArgumentException("평가 시작일은 마감일보다 이전이어야 합니다.");
+            throw new IllegalArgumentException("평가 시작일은 마감일(12월 29일)보다 이전이어야 합니다.");
         }
     }
 
     private EvaluationPeriod getDefaultPeriod(ScoreCategory category) {
         int currentYear = LocalDateTime.now().getYear();
         LocalDateTime defaultEndDate = LocalDateTime.of(currentYear, 12, 29, 23, 59, 59);
-
-        if (category == ScoreCategory.REPORT) {
-            LocalDateTime defaultStartDate = LocalDateTime.of(currentYear, 12, 28, 0, 0, 0);
-            return new EvaluationPeriod(category, defaultStartDate, defaultEndDate);
-        }
 
         LocalDateTime defaultStartDate = LocalDateTime.of(currentYear, 12, 28, 0, 0, 0);
         return new EvaluationPeriod(category, defaultStartDate, defaultEndDate);
