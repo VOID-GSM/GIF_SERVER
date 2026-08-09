@@ -35,7 +35,7 @@ public class EvaluationPeriodService {
         }
 
         int currentYear = LocalDateTime.now().getYear();
-        LocalDateTime fixedEndDate = LocalDateTime.of(currentYear, 12, 29, 23, 59, 59);
+        LocalDateTime fixedEndDate = getFixedEndDate(currentYear);
 
         validateStartDate(startDate, fixedEndDate);
 
@@ -57,9 +57,13 @@ public class EvaluationPeriodService {
 
     private EvaluationPeriod getDefaultPeriod(ScoreCategory category) {
         int currentYear = LocalDateTime.now().getYear();
-        LocalDateTime defaultEndDate = LocalDateTime.of(currentYear, 12, 29, 23, 59, 59);
-
+        LocalDateTime defaultEndDate = getFixedEndDate(currentYear);
         LocalDateTime defaultStartDate = LocalDateTime.of(currentYear, 12, 28, 0, 0, 0);
+
         return new EvaluationPeriod(category, defaultStartDate, defaultEndDate);
+    }
+
+    private LocalDateTime getFixedEndDate(int year) {
+        return LocalDateTime.of(year, 12, 29, 23, 59, 59);
     }
 }
