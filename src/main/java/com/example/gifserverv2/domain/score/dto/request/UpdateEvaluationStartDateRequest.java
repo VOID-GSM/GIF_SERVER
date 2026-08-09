@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @NoArgsConstructor
-public class UpdateEvaluationPeriodRequest {
+public class UpdateEvaluationStartDateRequest {
 
     @NotNull(message = "평가 카테고리는 필수 항목입니다.")
     private ScoreCategory category;

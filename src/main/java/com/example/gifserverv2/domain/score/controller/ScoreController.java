@@ -127,7 +127,7 @@ public class ScoreController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> updatePeriod(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
-            @Valid @RequestBody UpdateEvaluationPeriodRequest request) {
+            @Valid @RequestBody UpdateEvaluationStartDateRequest request) {
 
         evaluationPeriodService.updateStartDate(
                 currentUser,
