@@ -64,4 +64,18 @@ public class FormSubmit {
         this.submittedByUserId = userId;
         this.submittedAt = LocalDateTime.now();
     }
+
+    @Column
+    private Boolean deadlineCompliedOverride;
+
+    public void overrideDeadlineComplied(Boolean deadlineComplied) {
+        this.deadlineCompliedOverride = deadlineComplied;
+    }
+
+    public boolean isDeadlineComplied() {
+        if (this.deadlineCompliedOverride != null) {
+            return this.deadlineCompliedOverride;
+        }
+        return !this.submittedAt.isAfter(this.form.getDeadline());
+    }
 }

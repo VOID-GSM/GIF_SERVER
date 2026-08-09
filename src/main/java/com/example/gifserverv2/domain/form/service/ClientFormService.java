@@ -64,10 +64,7 @@ public class ClientFormService {
                 .map(form -> {
                     FormSubmit submit = submitMap.get(form.getId());
                     boolean submitted = submit != null;
-                    Boolean deadlineComplied = null;
-                    if (submit != null) {
-                        deadlineComplied = !submit.getSubmittedAt().isAfter(form.getDeadline());
-                    }
+                    Boolean deadlineComplied = submit != null ? submit.isDeadlineComplied() : null;
                     return ListFormResponse.from(form, submitted, deadlineComplied);
                 })
                 .toList();
@@ -81,7 +78,7 @@ public class ClientFormService {
         if (projectId != null) {
             deadlineComplied = formSubmitRepository
                     .findByFormIdAndProjectId(formId, projectId)
-                    .map(submit -> !submit.getSubmittedAt().isAfter(form.getDeadline()))
+                    .map(FormSubmit::isDeadlineComplied)
                     .orElse(null);
         }
 

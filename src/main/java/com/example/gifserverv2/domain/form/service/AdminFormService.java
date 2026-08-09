@@ -208,4 +208,12 @@ public class AdminFormService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, errorMessage);
         }
     }
+
+    @Transactional
+    public void updateSubmitDeadlineCompliance(Long submitId, Boolean deadlineComplied) {
+        FormSubmit submit = formSubmitRepository.findById(submitId)
+                .orElseThrow(FormException::notSubmitted);
+
+        submit.overrideDeadlineComplied(deadlineComplied);
+    }
 }

@@ -35,7 +35,7 @@ public record SubmitDetailFormResponse(
     ) {}
 
     public static SubmitDetailFormResponse from(FormSubmit submit, String teamName, String submittedByName, String submittedByStudentNumber) {
-        boolean deadlineComplied = !submit.getSubmittedAt().isAfter(submit.getForm().getDeadline());
+        boolean deadlineComplied = submit.isDeadlineComplied();
 
         List<AnswerResponse> answerResponses = submit.getAnswers().stream()
                 .map(a -> {

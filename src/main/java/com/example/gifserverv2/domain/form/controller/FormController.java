@@ -165,5 +165,15 @@ public class FormController {
     ) {
         return ResponseEntity.ok(aiSummaryService.summarizeFormSubmit(submitId));
     }
+
+    @PatchMapping("/admin/submit/{submitId}/deadline-compliance")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> updateSubmitDeadlineCompliance(
+            @PathVariable Long submitId,
+            @RequestBody DeadlineComplianceRequest request
+    ) {
+        adminFormService.updateSubmitDeadlineCompliance(submitId, request.deadlineComplied());
+        return ResponseEntity.noContent().build();
+    }
 }
 
