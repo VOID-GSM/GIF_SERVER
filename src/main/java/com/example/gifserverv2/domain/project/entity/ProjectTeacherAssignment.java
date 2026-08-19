@@ -1,6 +1,6 @@
-package com.example.gifserverv2.domain.user.entity;
+package com.example.gifserverv2.domain.project.entity;
 
-import com.example.gifserverv2.domain.project.entity.Project;
+import com.example.gifserverv2.domain.user.entity.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 

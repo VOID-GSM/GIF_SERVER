@@ -1,6 +1,6 @@
 package com.example.gifserverv2.domain.project.repository;
 
-import com.example.gifserverv2.domain.user.entity.ProjectTeacherAssignment;
+import com.example.gifserverv2.domain.project.entity.ProjectTeacherAssignment;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
