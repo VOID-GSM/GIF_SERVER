@@ -146,4 +146,8 @@ public class UserEntity {
             this.role = Role.USER;
         }
     }
+
+    public void updateAdminTeam(String adminTeam) {
+        this.adminTeam = adminTeam;
+    }
 }
