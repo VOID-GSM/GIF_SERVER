@@ -20,5 +20,6 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     @Query("SELECT s FROM Score s JOIN FETCH s.project")
     List<Score> findAllWithProject();
 
-    boolean existsByEvaluatorId(String evaluatorId);
+    @Query("SELECT s.project.id FROM Score s WHERE s.evaluatorId = :evaluatorId")
+    List<Long> findEvaluatedProjectIdsByEvaluatorId(@Param("evaluatorId") String evaluatorId);
 }
