@@ -10,4 +10,6 @@ public interface ProjectTeacherAssignmentRepository extends JpaRepository<Projec
     Optional<ProjectTeacherAssignment> findByProjectIdAndTeacherId(Long projectId, Long teacherId);
 
     boolean existsByProjectIdAndTeacherIdAndStatus(Long projectId, Long teacherId, ProjectTeacherAssignment.AssignmentStatus status);
+
+    Optional<ProjectTeacherAssignment> findTopByTeacherIdOrderByIdDesc(Long teacherId);
 }
