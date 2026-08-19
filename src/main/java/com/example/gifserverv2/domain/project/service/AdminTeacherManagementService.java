@@ -2,6 +2,7 @@ package com.example.gifserverv2.domain.project.service;
 
 import com.example.gifserverv2.domain.project.dto.request.AssignProjectTeacherRequest;
 import com.example.gifserverv2.domain.project.dto.response.TeacherListResponse;
+import com.example.gifserverv2.domain.project.dto.response.TeacherListResponse.AssignmentInfo;
 import com.example.gifserverv2.domain.project.dto.response.TeacherListResponse.UnsubmittedProjectInfo;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.entity.ProjectTeacherAssignment;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -54,6 +56,13 @@ public class AdminTeacherManagementService {
                     ))
                     .toList();
 
+            Optional<ProjectTeacherAssignment> latestAssignment =
+                    assignmentRepository.findTopByTeacherIdOrderByIdDesc(teacher.getId());
+
+            AssignmentInfo assignmentInfo = latestAssignment
+                    .map(a -> new AssignmentInfo(a.getStatus(), a.getRejectReason()))
+                    .orElse(new AssignmentInfo(null, null)); // 배정 요청을 받은 적이 없는 경우
+
             return new TeacherListResponse(
                     teacher.getId(),
                     teacher.getEmail(),
@@ -61,6 +70,7 @@ public class AdminTeacherManagementService {
                     teacher.getAdminRole(),
                     teacher.getAdminTeam(),
                     teacher.isGradeHead(),
+                    assignmentInfo,
                     unsubmittedProjects.isEmpty(),
                     unsubmittedProjects
             );
@@ -79,6 +89,19 @@ public class AdminTeacherManagementService {
 
         if (teacher.getAdminRole() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "지정 대상이 선생님 권한을 가지고 있지 않습니다.");
+        }
+
+        if (user.userId().equals(teacher.getId())) {
+            ProjectTeacherAssignment assignment = ProjectTeacherAssignment.builder()
+                    .project(project)
+                    .teacher(teacher)
+                    .status(AssignmentStatus.ACCEPTED)
+                    .build();
+
+            assignmentRepository.save(assignment);
+            project.assignAdvisorTeacher(teacher.getId());
+            teacher.updateAdminTeam(project.getTeamName());
+            return;
         }
 
         boolean alreadyPending = assignmentRepository.existsByProjectIdAndTeacherIdAndStatus(
