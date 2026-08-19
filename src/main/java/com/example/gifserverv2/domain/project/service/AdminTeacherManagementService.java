@@ -2,6 +2,7 @@ package com.example.gifserverv2.domain.project.service;
 
 import com.example.gifserverv2.domain.project.dto.request.AssignProjectTeacherRequest;
 import com.example.gifserverv2.domain.project.dto.response.TeacherListResponse;
+import com.example.gifserverv2.domain.project.dto.response.TeacherListResponse.UnsubmittedProjectInfo;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.entity.ProjectTeacherAssignment;
 import com.example.gifserverv2.domain.project.entity.ProjectTeacherAssignment.AssignmentStatus;
@@ -19,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,26 +29,40 @@ public class AdminTeacherManagementService {
 
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
-    private final ProjectTeacherAssignmentRepository assignmentRepository;
     private final ScoreRepository scoreRepository;
+    private final ProjectTeacherAssignmentRepository assignmentRepository;
 
     @Transactional(readOnly = true)
     public List<TeacherListResponse> getAllTeachers(AuthenticatedUser user) {
         validateMasterRole(user);
 
         List<UserEntity> teachers = userRepository.findAllByAdminRoleIsNotNull();
+        List<Project> allProjects = projectRepository.findAll();
 
         return teachers.stream().map(teacher -> {
-            boolean isScoreSubmitted = scoreRepository.existsByEvaluatorId(String.valueOf(teacher.getId()));
+            String evaluatorKey = teacher.getId().toString();
 
-            boolean isLoggedIn = true;
+            Set<Long> evaluatedProjectIds = scoreRepository.findEvaluatedProjectIdsByEvaluatorId(evaluatorKey)
+                    .stream().collect(Collectors.toSet());
+
+            List<UnsubmittedProjectInfo> unsubmittedProjects = allProjects.stream()
+                    .filter(project -> !evaluatedProjectIds.contains(project.getId()))
+                    .map(project -> new UnsubmittedProjectInfo(
+                            project.getId(),
+                            project.getName(),
+                            project.getTeamName()
+                    ))
+                    .toList();
 
             return new TeacherListResponse(
                     teacher.getId(),
+                    teacher.getEmail(),
                     teacher.getName(),
                     teacher.getAdminRole(),
-                    isLoggedIn,
-                    isScoreSubmitted
+                    teacher.getAdminTeam(),
+                    teacher.isGradeHead(),
+                    unsubmittedProjects.isEmpty(),
+                    unsubmittedProjects
             );
         }).toList();
     }
@@ -82,7 +99,7 @@ public class AdminTeacherManagementService {
 
     private void validateMasterRole(AuthenticatedUser user) {
         if (user.adminRole() != AdminRole.MASTER) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Master 교사만 접근 가능한 기능입니다.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Master 교사만 접근할 수 있습니다.");
         }
     }
 }
