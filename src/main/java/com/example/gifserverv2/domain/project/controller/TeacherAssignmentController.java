@@ -24,7 +24,7 @@ public class TeacherAssignmentController {
             @PathVariable Long assignmentId,
             @Valid @RequestBody RespondAssignmentRequest request) {
 
-        teacherAssignmentService.respondToAssignment(currentUser, assignmentId, request);
+        teacherAssignmentService.respondToAssignment(assignmentId, request, currentUser);
         return ResponseEntity.ok().build();
     }
 }
