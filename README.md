@@ -47,5 +47,6 @@ cd GIF-server-v2
 ```
 
 기본 포트는 `8080`이며, 서버 실행 후 아래 경로에서 API 문서를 확인할 수 있습니다.
+
 http://localhost:8080/swagger-ui.html
 
