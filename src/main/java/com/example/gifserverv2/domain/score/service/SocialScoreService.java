@@ -4,6 +4,7 @@ import com.example.gifserverv2.domain.score.dto.request.CreateSocialScoreRequest
 import com.example.gifserverv2.domain.score.dto.request.PatchSocialScoreRequest;
 import com.example.gifserverv2.domain.score.entity.Score;
 import com.example.gifserverv2.domain.project.entity.Project;
+import com.example.gifserverv2.domain.score.entity.ScoreCategory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,9 +16,12 @@ import com.example.gifserverv2.domain.user.entity.AdminRole;
 public class SocialScoreService {
 
     private final ScoreSupport support;
+    private final EvaluationPeriodService periodService;
 
     @Transactional
     public void createSocial(CreateSocialScoreRequest request, AuthenticatedUser evaluator) {
+        periodService.validateEvaluationPeriod(ScoreCategory.SOCIAL);
+
         validateEvaluatorAndFields(evaluator, request.getProjectId(),
                 request.getUserExperience(), request.getSocialValueCommunity(),
                 request.getAiUtilizationCommunity(), request.getPresentationCommunity());
@@ -47,6 +51,8 @@ public class SocialScoreService {
 
     @Transactional
     public void updateSocial(Long projectId, PatchSocialScoreRequest request, AuthenticatedUser evaluator) {
+        periodService.validateEvaluationPeriod(ScoreCategory.SOCIAL);
+
         validateEvaluatorAndFields(evaluator, projectId,
                 request.getUserExperience(), request.getSocialValueCommunity(),
                 request.getAiUtilizationCommunity(), request.getPresentationCommunity());

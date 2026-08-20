@@ -5,10 +5,12 @@ import com.example.gifserverv2.domain.score.dto.response.GetProjectFieldAverageR
 import com.example.gifserverv2.domain.score.entity.Score;
 import com.example.gifserverv2.domain.score.service.*;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import com.example.gifserverv2.domain.score.dto.response.GetScoreRankResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import com.example.gifserverv2.domain.score.dto.response.GetDetailScoreResponse;
@@ -25,6 +27,7 @@ public class ScoreController {
     private final SocialScoreService socialScoreService;
     private final ScoreNoticeService scoreNoticeService;
     private final ScoreQueryService scoreQueryService;
+    private final EvaluationPeriodService evaluationPeriodService;
 
     private String evaluatorId(AuthenticatedUser user) {
         return user.userId().toString();
@@ -118,5 +121,19 @@ public class ScoreController {
             @RequestParam(required = false) Integer rank) {
 
         return ResponseEntity.ok(scoreNoticeService.getRankByGradeAndRank(grade, rank));
+    }
+
+    @PostMapping("/period")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> updatePeriod(
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @Valid @RequestBody UpdateEvaluationStartDateRequest request) {
+
+        evaluationPeriodService.updateStartDate(
+                currentUser,
+                request.getCategory(),
+                request.getStartDate()
+        );
+        return ResponseEntity.ok().build();
     }
 }

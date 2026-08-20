@@ -4,6 +4,7 @@ import com.example.gifserverv2.domain.score.dto.request.CreateMajorScoreRequest;
 import com.example.gifserverv2.domain.score.dto.request.PatchMajorScoreRequest;
 import com.example.gifserverv2.domain.score.entity.Score;
 import com.example.gifserverv2.domain.project.entity.Project;
+import com.example.gifserverv2.domain.score.entity.ScoreCategory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,9 +16,12 @@ import com.example.gifserverv2.domain.user.entity.AdminRole;
 public class MajorScoreService {
 
     private final ScoreSupport support;
+    private final EvaluationPeriodService periodService;
 
     @Transactional
     public void createMajor(CreateMajorScoreRequest request, AuthenticatedUser evaluator) {
+        periodService.validateEvaluationPeriod(ScoreCategory.MAJOR);
+
         validateEvaluatorAndFields(evaluator, request.getProjectId(),
                 request.getTechnicalCompleteness(), request.getSocialValueMajor(),
                 request.getAiUtilityMajorScore(), request.getPresentationMajor());
@@ -48,6 +52,8 @@ public class MajorScoreService {
 
     @Transactional
     public void updateMajor(Long projectId, PatchMajorScoreRequest request, AuthenticatedUser evaluator) {
+        periodService.validateEvaluationPeriod(ScoreCategory.MAJOR);
+
         validateEvaluatorAndFields(evaluator, projectId,
                 request.getTechnicalCompleteness(), request.getSocialValueMajor(),
                 request.getAiUtilityMajorScore(), request.getPresentationMajor());
