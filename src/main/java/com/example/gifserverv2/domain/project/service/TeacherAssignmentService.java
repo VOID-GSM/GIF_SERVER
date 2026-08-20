@@ -1,6 +1,7 @@
 package com.example.gifserverv2.domain.project.service;
 
 import com.example.gifserverv2.domain.project.dto.request.RespondAssignmentRequest;
+import com.example.gifserverv2.domain.project.dto.response.MyTeacherAssignmentResponse;
 import com.example.gifserverv2.domain.project.entity.ProjectTeacherAssignment;
 import com.example.gifserverv2.domain.project.entity.ProjectTeacherAssignment.AssignmentStatus;
 import com.example.gifserverv2.domain.project.repository.ProjectTeacherAssignmentRepository;
@@ -12,11 +13,30 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class TeacherAssignmentService {
 
     private final ProjectTeacherAssignmentRepository assignmentRepository;
+
+    @Transactional(readOnly = true)
+    public List<MyTeacherAssignmentResponse> getMyAssignments(AuthenticatedUser currentUser) {
+        List<ProjectTeacherAssignment> assignments =
+                assignmentRepository.findAllByTeacherIdOrderByIdDesc(currentUser.userId());
+
+        return assignments.stream()
+                .map(a -> new MyTeacherAssignmentResponse(
+                        a.getId(),
+                        a.getProject().getId(),
+                        a.getProject().getName(),
+                        a.getProject().getTeamName(),
+                        a.getStatus(),
+                        a.getRejectReason()
+                ))
+                .toList();
+    }
 
     @Transactional
     public void respondToAssignment(Long assignmentId, RespondAssignmentRequest request, AuthenticatedUser currentUser) {
