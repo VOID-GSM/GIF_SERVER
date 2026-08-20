@@ -132,20 +132,9 @@ public class AdminFormService {
 
         List<Long> targetUserIds = (form.getTargetGrade() == null)
                 ? userRepository.findAllStudentIds()
-                : userRepository.findStudentIdsByGrade(form.getTargetGrade());
+                : userRepository.findStudentIdsByGrade(String.valueOf(form.getTargetGrade()));
 
         pushSenderService.sendBulkNotifications(targetUserIds, title, body);
-    }
-
-    @Transactional
-    public void deleteForm(Long userId, Long formId) {
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
-
-        validateFormAdmin(user, "양식 삭제 권한이 없습니다.");
-
-        Form form = queryFormService.getFormOrThrow(formId);
-        formRepository.delete(form);
     }
 
     @Transactional(readOnly = true)
