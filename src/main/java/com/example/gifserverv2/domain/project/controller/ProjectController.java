@@ -40,6 +40,7 @@ public class ProjectController {
         return ResponseEntity.ok(projectCommandService.createProject(user.userId(), request));
     }
     @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<ListProjectResponse>> getAllProjects() {
         return ResponseEntity.ok(projectQueryService.getAllProjects());
     }
