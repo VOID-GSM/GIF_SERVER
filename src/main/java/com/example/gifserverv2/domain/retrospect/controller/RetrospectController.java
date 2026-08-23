@@ -5,6 +5,7 @@ import com.example.gifserverv2.domain.retrospect.dto.response.DetailRetrospectRe
 import com.example.gifserverv2.domain.retrospect.dto.response.ListRetrospectResponse;
 import com.example.gifserverv2.domain.retrospect.service.RetrospectService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,7 +24,7 @@ public class RetrospectController {
     public ResponseEntity<Long> writeOrUpdate(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId,
-            @RequestBody WriteRetrospectRequest request
+            @Valid @RequestBody WriteRetrospectRequest request
     ) {
         return ResponseEntity.ok(retrospectService.writeOrUpdate(projectId, user.userId(), request));
     }

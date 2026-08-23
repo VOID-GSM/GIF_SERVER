@@ -12,8 +12,4 @@ public class RetrospectException extends ResponseStatusException {
     public static RetrospectException notFound() {
         return new RetrospectException(HttpStatus.NOT_FOUND, "회고록을 찾을 수 없습니다.");
     }
-
-    public static RetrospectException titleTooLong() {
-        return new RetrospectException(HttpStatus.BAD_REQUEST, "제목은 100자를 초과할 수 없습니다.");
-    }
 }

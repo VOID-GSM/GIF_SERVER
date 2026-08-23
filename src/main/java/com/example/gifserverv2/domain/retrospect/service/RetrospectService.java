@@ -23,8 +23,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RetrospectService {
 
-    private static final int TITLE_MAX_LENGTH = 100;
-
     private final RetrospectRepository retrospectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final UserRepository userRepository;
@@ -32,7 +30,6 @@ public class RetrospectService {
     @Transactional
     public Long writeOrUpdate(Long projectId, Long userId, WriteRetrospectRequest request) {
         validateMember(projectId, userId);
-        validateTitle(request.title());
 
         Retrospect retrospect = retrospectRepository.findByProjectIdAndUserId(projectId, userId)
                 .orElse(null);
@@ -102,12 +99,6 @@ public class RetrospectService {
     private void validateMember(Long projectId, Long userId) {
         if (!projectMemberRepository.existsByProjectIdAndUserId(projectId, userId)) {
             throw ProjectException.notMember();
-        }
-    }
-
-    private void validateTitle(String title) {
-        if (title != null && title.length() > TITLE_MAX_LENGTH) {
-            throw RetrospectException.titleTooLong();
         }
     }
 
