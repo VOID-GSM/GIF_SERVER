@@ -7,6 +7,7 @@ import com.example.gifserverv2.domain.form.dto.response.ListFormResponse;
 import com.example.gifserverv2.domain.form.dto.response.SubmitDetailFormResponse;
 import com.example.gifserverv2.domain.form.entity.Form;
 import com.example.gifserverv2.domain.form.entity.FormField;
+import com.example.gifserverv2.domain.form.entity.FormFieldAnswer;
 import com.example.gifserverv2.domain.form.entity.FormSubmit;
 import com.example.gifserverv2.domain.form.exception.FormException;
 import com.example.gifserverv2.domain.form.repository.FormRepository;
@@ -19,6 +20,7 @@ import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.global.file.AllowedFileExtensions;
+import com.example.gifserverv2.global.file.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -41,6 +43,7 @@ public class AdminFormService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final PushSenderService pushSenderService;
+    private final FileStorageService fileStorageService;
 
     @Transactional
     public Long createForm(Long userId, CreateFormRequest request) {
@@ -135,6 +138,28 @@ public class AdminFormService {
                 : userRepository.findStudentIdsByGrade(String.valueOf(form.getTargetGrade()));
 
         pushSenderService.sendBulkNotifications(targetUserIds, title, body);
+    }
+
+    @Transactional
+    public void deleteForm(Long userId, Long formId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+
+        validateFormAdmin(user, "양식 삭제 권한이 없습니다.");
+
+        Form form = queryFormService.getFormOrThrow(formId);
+
+        List<FormSubmit> submits = formSubmitRepository.findAllByFormId(formId);
+        for (FormSubmit submit : submits) {
+            for (FormFieldAnswer answer : submit.getAnswers()) {
+                if (answer.getFilePath() != null) {
+                    fileStorageService.delete(answer.getFilePath());
+                }
+            }
+        }
+        formSubmitRepository.deleteAll(submits);
+
+        formRepository.delete(form);
     }
 
     @Transactional(readOnly = true)
