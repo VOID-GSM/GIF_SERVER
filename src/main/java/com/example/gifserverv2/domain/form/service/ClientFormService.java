@@ -112,8 +112,8 @@ public class ClientFormService {
 
             if (field.getType() == FormField.FieldType.TEXT
                     && answerReq.textAnswer() != null
-                    && answerReq.textAnswer().length() > 1000) {
-                throw new FormException(HttpStatus.BAD_REQUEST, "답변은 1000자를 초과할 수 없습니다.");
+                    && answerReq.textAnswer().length() > 10000) {
+                throw new FormException(HttpStatus.BAD_REQUEST, "답변은 10000자를 초과할 수 없습니다.");
             }
 
             FormFieldAnswer answer = FormFieldAnswer.builder()
@@ -205,7 +205,7 @@ public class ClientFormService {
 
             if (field.getType() == FormField.FieldType.TEXT
                     && answerReq.textAnswer() != null
-                    && answerReq.textAnswer().length() > 1000) {
+                    && answerReq.textAnswer().length() > 10000) {
                 throw FormException.textAnswerTooLong();
             }
 
