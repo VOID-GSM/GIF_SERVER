@@ -20,7 +20,8 @@ public record DetailFormResponse(
             String description,
             String type,
             int orderIndex,
-            List<String> allowedExtensions
+            List<String> allowedExtensions,
+            boolean required
     ) {}
 
     public static DetailFormResponse from(Form form, Boolean deadlineComplied) {
@@ -31,7 +32,8 @@ public record DetailFormResponse(
                         f.getDescription(),
                         f.getType().name(),
                         f.getOrderIndex(),
-                        f.getAllowedExtensionList()
+                        f.getAllowedExtensionList(),
+                        f.isRequired()
                 ))
                 .toList();
 

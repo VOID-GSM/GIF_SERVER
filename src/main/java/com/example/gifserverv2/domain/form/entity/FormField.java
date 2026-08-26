@@ -39,6 +39,9 @@ public class FormField {
     @Column(length = 200)
     private String allowedExtensions;
 
+    @Column(nullable = false)
+    private boolean required;
+
     public enum FieldType {
         TEXT,
         FILE,

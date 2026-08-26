@@ -68,6 +68,7 @@ public class AdminFormService {
                             .type(fieldReq.type())
                             .orderIndex(fieldReq.orderIndex())
                             .allowedExtensions(normalizeExtensions(fieldReq.type(), fieldReq.allowedExtensions()))
+                            .required(fieldReq.required())
                             .build())
                     .toList();
             form.getFields().addAll(formFields);
@@ -95,6 +96,7 @@ public class AdminFormService {
                             .type(fieldReq.type())
                             .orderIndex(fieldReq.orderIndex())
                             .allowedExtensions(normalizeExtensions(fieldReq.type(), fieldReq.allowedExtensions()))
+                            .required(fieldReq.required())
                             .build())
                     .toList();
         }
