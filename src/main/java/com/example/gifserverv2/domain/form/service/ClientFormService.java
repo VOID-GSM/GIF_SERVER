@@ -216,6 +216,22 @@ public class ClientFormService {
         submit.clearAiSummary();
     }
 
+    public SubmitDetailFormResponse getMySubmit(Long formId, Long projectId) {
+        FormSubmit submit = formSubmitRepository
+                .findByFormIdAndProjectId(formId, projectId)
+                .orElseThrow(FormException::notSubmitted);
+
+        String teamName = projectRepository.findById(projectId)
+                .map(Project::getTeamName)
+                .orElse(null);
+        UserEntity user = userRepository.findById(submit.getSubmittedByUserId())
+                .orElse(null);
+        String submittedByName = user != null ? user.getName() : null;
+        String submittedByStudentNumber = user != null ? user.getStudentNumber() : null;
+
+        return SubmitDetailFormResponse.from(submit, teamName, submittedByName, submittedByStudentNumber);
+    }
+
     private void validateAnswerNotEmpty(FormField field, String textAnswer, String filePath, List<?> dateAnswer) {
         switch (field.getType()) {
             case TEXT -> {
