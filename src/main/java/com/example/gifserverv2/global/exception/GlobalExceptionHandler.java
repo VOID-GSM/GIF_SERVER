@@ -23,9 +23,6 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, e.getMessage(), request);
     }
 
-    // AuthorizationDeniedException(Spring Security 6)은 AccessDeniedException의 하위 타입으로,
-    // 아래 catch-all Exception 핸들러보다 먼저 매칭되어야 정당한 403 응답이 500으로
-    // 둔갑하지 않는다.
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException e, HttpServletRequest request) {
         return buildResponse(HttpStatus.FORBIDDEN, "접근 권한이 없습니다.", request);

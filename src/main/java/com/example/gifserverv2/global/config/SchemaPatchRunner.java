@@ -12,18 +12,6 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
-/**
- * Cloudtype 등 배포 환경에서 hibernate ddl-auto 설정만으로는 엔티티에 새로
- * 추가된 컬럼이 기존 DB에 반영되지 않는 경우가 있다 (예: DB_DDL이
- * update가 아니거나, 앞선 ALTER 실패로 스키마 동기화가 누락되는 경우).
- * 그 결과 컬럼이 없는 채로 서버가 기동되어, 해당 컬럼을 조회하는 요청에서만
- * "Unknown column" 500 에러가 발생한다 (예: form.created_by_user_id 누락으로
- * 인한 양식 목록/상세 조회(GET /api/form, GET /api/form/{id}) 실패를
- * 실제 배포 서버에서 재현/확인함).
- * <p>
- * 기동 시점에 필수 컬럼 존재 여부를 직접 확인하고, 없으면 추가해 위 문제를
- * ddl-auto 설정과 무관하게 방지한다.
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
