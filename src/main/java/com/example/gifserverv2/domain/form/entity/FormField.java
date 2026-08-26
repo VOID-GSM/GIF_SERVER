@@ -39,6 +39,10 @@ public class FormField {
     @Column(length = 200)
     private String allowedExtensions;
 
+    @Column(nullable = false)
+    @org.hibernate.annotations.ColumnDefault("false")
+    private boolean required;
+
     public enum FieldType {
         TEXT,
         FILE,

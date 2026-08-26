@@ -19,7 +19,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     List<Long> findAllUserIds();
 
     @Query("SELECT u.id FROM UserEntity u WHERE u.grade = :grade AND u.adminRole IS NULL")
-    List<Long> findStudentIdsByGrade(@Param("grade") Integer grade);
+    List<Long> findStudentIdsByGrade(@Param("grade") String grade);
 
     @Query("SELECT u.id FROM UserEntity u WHERE u.adminRole IS NULL")
     List<Long> findAllStudentIds();
@@ -28,4 +28,4 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     @Query("SELECT u.id FROM UserEntity u WHERE u.adminRole = :adminRole")
     List<Long> findUserIdsByAdminRole(@Param("adminRole") AdminRole adminRole);
-}
+} 
