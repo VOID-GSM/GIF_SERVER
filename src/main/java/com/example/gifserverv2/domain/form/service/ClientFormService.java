@@ -233,6 +233,10 @@ public class ClientFormService {
     }
 
     private void validateAnswerNotEmpty(FormField field, String textAnswer, String filePath, List<?> dateAnswer) {
+        if (!field.isRequired()) {
+            return;
+        }
+
         switch (field.getType()) {
             case TEXT -> {
                 if (textAnswer == null || textAnswer.isBlank()) {
