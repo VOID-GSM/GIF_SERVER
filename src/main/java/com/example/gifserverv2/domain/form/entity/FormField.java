@@ -40,6 +40,7 @@ public class FormField {
     private String allowedExtensions;
 
     @Column(nullable = false)
+    @org.hibernate.annotations.ColumnDefault("false")
     private boolean required;
 
     public enum FieldType {
