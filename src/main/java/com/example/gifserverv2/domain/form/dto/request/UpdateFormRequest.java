@@ -13,6 +13,7 @@ public record UpdateFormRequest(
         List<FieldRequest> fields
 ) {
     public record FieldRequest(
+            Long id,
             String title,
             String description,
             FormField.FieldType type,

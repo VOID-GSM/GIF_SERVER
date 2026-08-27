@@ -86,22 +86,35 @@ public class AdminFormService {
 
         Form form = queryFormService.getFormOrThrow(formId);
 
-        List<FormField> newFields = new ArrayList<>();
+        List<FormField> reconciledFields = new ArrayList<>();
         if (request.fields() != null) {
-            newFields = request.fields().stream()
-                    .map(fieldReq -> FormField.builder()
+            Map<Long, FormField> existingFieldsById = form.getFields().stream()
+                    .filter(field -> field.getId() != null)
+                    .collect(Collectors.toMap(FormField::getId, field -> field));
+
+            for (UpdateFormRequest.FieldRequest fieldReq : request.fields()) {
+                String allowedExtensions = normalizeExtensions(fieldReq.type(), fieldReq.allowedExtensions());
+                FormField existingField = fieldReq.id() != null ? existingFieldsById.get(fieldReq.id()) : null;
+
+                if (existingField != null) {
+                    existingField.update(fieldReq.title(), fieldReq.description(), fieldReq.type(),
+                            fieldReq.orderIndex(), allowedExtensions, fieldReq.required());
+                    reconciledFields.add(existingField);
+                } else {
+                    reconciledFields.add(FormField.builder()
                             .form(form)
                             .title(fieldReq.title())
                             .description(fieldReq.description())
                             .type(fieldReq.type())
                             .orderIndex(fieldReq.orderIndex())
-                            .allowedExtensions(normalizeExtensions(fieldReq.type(), fieldReq.allowedExtensions()))
+                            .allowedExtensions(allowedExtensions)
                             .required(fieldReq.required())
-                            .build())
-                    .toList();
+                            .build());
+                }
+            }
         }
 
-        form.update(request.title(), request.description(), request.deadline(), request.targetGrade(), newFields);
+        form.update(request.title(), request.description(), request.deadline(), request.targetGrade(), reconciledFields);
     }
 
     private String normalizeExtensions(FormField.FieldType type, List<String> extensions) {
