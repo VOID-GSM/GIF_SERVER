@@ -68,6 +68,7 @@ public class AdminFormService {
                             .type(fieldReq.type())
                             .orderIndex(fieldReq.orderIndex())
                             .allowedExtensions(normalizeExtensions(fieldReq.type(), fieldReq.allowedExtensions()))
+                            .required(fieldReq.required())
                             .build())
                     .toList();
             form.getFields().addAll(formFields);
@@ -85,21 +86,35 @@ public class AdminFormService {
 
         Form form = queryFormService.getFormOrThrow(formId);
 
-        List<FormField> newFields = new ArrayList<>();
+        List<FormField> reconciledFields = new ArrayList<>();
         if (request.fields() != null) {
-            newFields = request.fields().stream()
-                    .map(fieldReq -> FormField.builder()
+            Map<Long, FormField> existingFieldsById = form.getFields().stream()
+                    .filter(field -> field.getId() != null)
+                    .collect(Collectors.toMap(FormField::getId, field -> field));
+
+            for (UpdateFormRequest.FieldRequest fieldReq : request.fields()) {
+                String allowedExtensions = normalizeExtensions(fieldReq.type(), fieldReq.allowedExtensions());
+                FormField existingField = fieldReq.id() != null ? existingFieldsById.get(fieldReq.id()) : null;
+
+                if (existingField != null) {
+                    existingField.update(fieldReq.title(), fieldReq.description(), fieldReq.type(),
+                            fieldReq.orderIndex(), allowedExtensions, fieldReq.required());
+                    reconciledFields.add(existingField);
+                } else {
+                    reconciledFields.add(FormField.builder()
                             .form(form)
                             .title(fieldReq.title())
                             .description(fieldReq.description())
                             .type(fieldReq.type())
                             .orderIndex(fieldReq.orderIndex())
-                            .allowedExtensions(normalizeExtensions(fieldReq.type(), fieldReq.allowedExtensions()))
-                            .build())
-                    .toList();
+                            .allowedExtensions(allowedExtensions)
+                            .required(fieldReq.required())
+                            .build());
+                }
+            }
         }
 
-        form.update(request.title(), request.description(), request.deadline(), request.targetGrade(), newFields);
+        form.update(request.title(), request.description(), request.deadline(), request.targetGrade(), reconciledFields);
     }
 
     private String normalizeExtensions(FormField.FieldType type, List<String> extensions) {
@@ -149,7 +164,7 @@ public class AdminFormService {
 
         Form form = queryFormService.getFormOrThrow(formId);
 
-        List<FormSubmit> submits = formSubmitRepository.findAllByFormId(formId);
+        List<FormSubmit> submits = formSubmitRepository.findAllByFormIdWithAnswersAndFields(formId);
         for (FormSubmit submit : submits) {
             for (FormFieldAnswer answer : submit.getAnswers()) {
                 if (answer.getFilePath() != null) {
@@ -176,7 +191,7 @@ public class AdminFormService {
     @Transactional(readOnly = true)
     public List<SubmitDetailFormResponse> getSubmitListByForm(Long formId) {
         Form form = queryFormService.getFormOrThrow(formId);
-        List<FormSubmit> submits = formSubmitRepository.findAllByFormId(form.getId());
+        List<FormSubmit> submits = formSubmitRepository.findAllByFormIdWithAnswersAndFields(form.getId());
 
         Set<Long> projectIds = submits.stream()
                 .map(FormSubmit::getProjectId)

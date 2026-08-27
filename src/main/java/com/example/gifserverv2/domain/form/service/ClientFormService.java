@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -106,9 +107,20 @@ public class ClientFormService {
                 .build();
         formSubmitRepository.save(submit);
 
-        request.answers().forEach(answerReq -> {
-            FormField field = formFieldRepository.findById(answerReq.fieldId())
-                    .orElseThrow(FormException::fieldNotFound);
+        List<Long> fieldIds = request.answers().stream()
+                .map(SubmitFormRequest.AnswerRequest::fieldId)
+                .toList();
+        Map<Long, FormField> fieldsById = formFieldRepository.findAllById(fieldIds).stream()
+                .collect(Collectors.toMap(FormField::getId, f -> f));
+        if (fieldsById.size() != new HashSet<>(fieldIds).size()) {
+            throw FormException.fieldNotFound();
+        }
+
+        List<FormFieldAnswer> newAnswers = new ArrayList<>();
+        for (SubmitFormRequest.AnswerRequest answerReq : request.answers()) {
+            FormField field = fieldsById.get(answerReq.fieldId());
+
+            validateAnswerNotEmpty(field, answerReq.textAnswer(), answerReq.filePath(), answerReq.dateAnswer());
 
             if (field.getType() == FormField.FieldType.TEXT
                     && answerReq.textAnswer() != null
@@ -137,36 +149,11 @@ public class ClientFormService {
                 });
             }
 
-            formFieldAnswerRepository.save(answer);
-        });
-
-        List<Long> adminUserIds = userRepository.findAllByAdminRoleIsNotNull().stream()
-                .map(UserEntity::getId)
-                .toList();
-
-        pushSenderService.sendBulkNotifications(
-                adminUserIds,
-                PushMessageTemplate.PROJECT_CREATED.getTitle(),
-                PushMessageTemplate.PROJECT_CREATED.getBody()
-        );
+            newAnswers.add(answer);
+        }
+        formFieldAnswerRepository.saveAll(newAnswers);
 
         return submit.getId();
-    }
-
-    public SubmitDetailFormResponse getMySubmit(Long formId, Long projectId) {
-        FormSubmit submit = formSubmitRepository
-                .findByFormIdAndProjectId(formId, projectId)
-                .orElseThrow(FormException::notSubmitted);
-
-        String teamName = projectRepository.findById(projectId)
-                .map(Project::getTeamName)
-                .orElse(null);
-        UserEntity user = userRepository.findById(submit.getSubmittedByUserId())
-                .orElse(null);
-        String submittedByName = user != null ? user.getName() : null;
-        String submittedByStudentNumber = user != null ? user.getStudentNumber() : null;
-
-        return SubmitDetailFormResponse.from(submit, teamName, submittedByName, submittedByStudentNumber);
     }
 
     @Transactional
@@ -203,6 +190,8 @@ public class ClientFormService {
 
             UpdateSubmitAnswerRequest answerReq = answerMap.get(field.getId());
 
+            validateAnswerNotEmpty(field, answerReq.textAnswer(), answerReq.filePath(), answerReq.dateAnswer());
+
             if (field.getType() == FormField.FieldType.TEXT
                     && answerReq.textAnswer() != null
                     && answerReq.textAnswer().length() > 10000) {
@@ -236,5 +225,45 @@ public class ClientFormService {
 
         submit.updateSubmitter(userId);
         submit.clearAiSummary();
+    }
+
+    public SubmitDetailFormResponse getMySubmit(Long formId, Long projectId) {
+        FormSubmit submit = formSubmitRepository
+                .findByFormIdAndProjectIdWithAnswersAndFields(formId, projectId)
+                .orElseThrow(FormException::notSubmitted);
+
+        String teamName = projectRepository.findById(projectId)
+                .map(Project::getTeamName)
+                .orElse(null);
+        UserEntity user = userRepository.findById(submit.getSubmittedByUserId())
+                .orElse(null);
+        String submittedByName = user != null ? user.getName() : null;
+        String submittedByStudentNumber = user != null ? user.getStudentNumber() : null;
+
+        return SubmitDetailFormResponse.from(submit, teamName, submittedByName, submittedByStudentNumber);
+    }
+
+    private void validateAnswerNotEmpty(FormField field, String textAnswer, String filePath, List<?> dateAnswer) {
+        if (!field.isRequired()) {
+            return;
+        }
+
+        switch (field.getType()) {
+            case TEXT -> {
+                if (textAnswer == null || textAnswer.isBlank()) {
+                    throw FormException.requiredAnswerMissing(field.getTitle());
+                }
+            }
+            case FILE -> {
+                if (filePath == null || filePath.isBlank()) {
+                    throw FormException.requiredAnswerMissing(field.getTitle());
+                }
+            }
+            case CALENDAR -> {
+                if (dateAnswer == null || dateAnswer.isEmpty()) {
+                    throw FormException.requiredAnswerMissing(field.getTitle());
+                }
+            }
+        }
     }
 }

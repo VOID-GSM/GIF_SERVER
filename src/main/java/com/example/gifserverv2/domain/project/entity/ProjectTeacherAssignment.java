@@ -28,7 +28,7 @@ public class ProjectTeacherAssignment {
     @Column(nullable = false)
     private AssignmentStatus status;
 
-    @Column(length = 500)
+    @Column(length = 200)
     private String rejectReason;
 
     public enum AssignmentStatus {
@@ -41,6 +41,9 @@ public class ProjectTeacherAssignment {
     }
 
     public void reject(String reason) {
+        if (reason != null && reason.length() > 200) {
+            throw new IllegalArgumentException("거절 사유는 200자를 초과할 수 없습니다.");
+        }
         this.status = AssignmentStatus.REJECTED;
         this.rejectReason = reason;
     }

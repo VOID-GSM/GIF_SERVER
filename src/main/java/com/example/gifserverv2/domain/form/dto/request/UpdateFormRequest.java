@@ -13,10 +13,12 @@ public record UpdateFormRequest(
         List<FieldRequest> fields
 ) {
     public record FieldRequest(
+            Long id,
             String title,
             String description,
             FormField.FieldType type,
             int orderIndex,
-            List<String> allowedExtensions
+            List<String> allowedExtensions,
+            boolean required
     ) { }
 }

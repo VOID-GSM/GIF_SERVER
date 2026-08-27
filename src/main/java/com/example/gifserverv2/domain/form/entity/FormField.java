@@ -39,6 +39,10 @@ public class FormField {
     @Column(length = 200)
     private String allowedExtensions;
 
+    @Column(nullable = false)
+    @org.hibernate.annotations.ColumnDefault("false")
+    private boolean required;
+
     public enum FieldType {
         TEXT,
         FILE,
@@ -54,6 +58,16 @@ public class FormField {
                 .map(String::toLowerCase)
                 .filter(s -> !s.isBlank())
                 .toList();
+    }
+
+    public void update(String title, String description, FieldType type, int orderIndex,
+                        String allowedExtensions, boolean required) {
+        this.title = title;
+        this.description = description;
+        this.type = type;
+        this.orderIndex = orderIndex;
+        this.allowedExtensions = allowedExtensions;
+        this.required = required;
     }
 
     public boolean isExtensionAllowed(String extension) {

@@ -35,7 +35,7 @@ public class AdminTeacherManagementService {
     private final ProjectTeacherAssignmentRepository assignmentRepository;
 
     @Transactional(readOnly = true)
-    public List<TeacherListResponse> getAllTeachers(AuthenticatedUser user) {
+    public List<TeacherListResponse> getAllTeachers(AuthenticatedUser user, Long projectId) {
         validateMasterRole(user);
 
         List<UserEntity> teachers = userRepository.findAllByAdminRoleIsNotNull();
@@ -56,12 +56,13 @@ public class AdminTeacherManagementService {
                     ))
                     .toList();
 
-            Optional<ProjectTeacherAssignment> latestAssignment =
-                    assignmentRepository.findTopByTeacherIdOrderByIdDesc(teacher.getId());
+            Optional<ProjectTeacherAssignment> assignmentOpt = (projectId != null)
+                    ? assignmentRepository.findTopByProjectIdAndTeacherIdOrderByIdDesc(projectId, teacher.getId())
+                    : assignmentRepository.findTopByTeacherIdOrderByIdDesc(teacher.getId());
 
-            AssignmentInfo assignmentInfo = latestAssignment
-                    .map(a -> new AssignmentInfo(a.getStatus(), a.getRejectReason()))
-                    .orElse(new AssignmentInfo(null, null)); // 배정 요청을 받은 적이 없는 경우
+            AssignmentInfo assignmentInfo = assignmentOpt
+                    .map(a -> new AssignmentInfo(a.getProject().getId(), a.getStatus(), a.getRejectReason()))
+                    .orElse(null);
 
             return new TeacherListResponse(
                     teacher.getId(),
