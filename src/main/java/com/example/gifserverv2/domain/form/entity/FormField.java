@@ -60,6 +60,16 @@ public class FormField {
                 .toList();
     }
 
+    public void update(String title, String description, FieldType type, int orderIndex,
+                        String allowedExtensions, boolean required) {
+        this.title = title;
+        this.description = description;
+        this.type = type;
+        this.orderIndex = orderIndex;
+        this.allowedExtensions = allowedExtensions;
+        this.required = required;
+    }
+
     public boolean isExtensionAllowed(String extension) {
         if (extension == null || extension.isBlank()) {
             return false;
