@@ -15,10 +15,6 @@ public class FormFileService {
     private final FileStorageService fileStorageService;
     private final FormFileWriterService formFileWriter;
 
-    /**
-     * DB 조회/검증과 저장은 FormFileWriterService의 짧은 트랜잭션으로 처리하고,
-     * 디스크 파일 저장/삭제(블로킹 I/O)는 트랜잭션 밖에서 수행해 DB 커넥션을 점유하지 않는다.
-     */
     public FileUploadResponse uploadFile(Long userId, Long submitId, Long fieldId, MultipartFile file) {
         String originalFileName = file.getOriginalFilename();
         if (originalFileName != null) {

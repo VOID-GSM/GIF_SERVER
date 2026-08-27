@@ -12,12 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-/**
- * AiSummaryService의 DB 조회/저장만 담당하는 트랜잭션 경계.
- * OpenAI 호출(수 초 소요, 블로킹)이 DB 트랜잭션 안에서 일어나
- * 커넥션 풀을 오래 점유하는 걸 막기 위해 AiSummaryService에서 분리했다.
- * (ClientInquiryService / InquiryWriterService와 동일한 분리 패턴)
- */
 @Service
 @RequiredArgsConstructor
 public class AiSummaryPersistenceService {

@@ -29,11 +29,6 @@ public class CommandProjectService {
     private final PushSenderService pushSenderService;
     private final ProjectWriterService projectWriter;
 
-    /**
-     * DB 조회/저장은 ProjectWriterService의 짧은 트랜잭션으로 처리하고,
-     * 로고 파일 저장(디스크 I/O)과 푸시 알림 발송은 트랜잭션 밖에서 수행해
-     * DB 커넥션을 점유하지 않는다.
-     */
     public void updateProject(Long projectId, Long userId, UpdateProjectRequest request, MultipartFile logo) {
         ProjectWriterService.ProjectMutationResult coreResult =
                 projectWriter.updateCoreFields(projectId, userId, request);

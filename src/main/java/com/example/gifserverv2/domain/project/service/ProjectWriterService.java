@@ -23,12 +23,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * CommandProjectService의 DB 조회/저장만 담당하는 트랜잭션 경계.
- * 프로젝트 로고 파일 저장/삭제(디스크 I/O)와 푸시 알림 발송이
- * DB 트랜잭션 안에서 일어나 커넥션을 오래 점유하는 걸 막기 위해 분리했다.
- * (ClientInquiryService / InquiryWriterService와 동일한 분리 패턴)
- */
 @Service
 @RequiredArgsConstructor
 public class ProjectWriterService {
