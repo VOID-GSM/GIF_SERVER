@@ -23,6 +23,7 @@ public class SchemaPatchRunner implements ApplicationRunner {
             new ColumnSpec("form", "created_by_user_id", "BIGINT NULL"),
             new ColumnSpec("form_field", "required", "TINYINT(1) NOT NULL DEFAULT 0"),
             new ColumnSpec("form_field", "allowed_extensions", "VARCHAR(200) NULL"),
+            new ColumnSpec("form_submit", "deadline_complied_override", "TINYINT(1) NULL"),
     };
 
     @Override
