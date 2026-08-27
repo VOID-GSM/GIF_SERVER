@@ -23,9 +23,10 @@ public class AdminProjectTeacherController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<TeacherListResponse>> getAllTeachers(
-            @AuthenticationPrincipal AuthenticatedUser currentUser) {
+            @AuthenticationPrincipal AuthenticatedUser currentUser,
+            @RequestParam(name = "projectId", required = false) Long projectId) {
 
-        List<TeacherListResponse> response = adminTeacherManagementService.getAllTeachers(currentUser);
+        List<TeacherListResponse> response = adminTeacherManagementService.getAllTeachers(currentUser, projectId);
         return ResponseEntity.ok(response);
     }
 
