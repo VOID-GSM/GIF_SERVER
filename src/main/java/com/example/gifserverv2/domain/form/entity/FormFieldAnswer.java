@@ -38,6 +38,7 @@ public class FormFieldAnswer {
     private String originalFileName;
 
     @OneToMany(mappedBy = "formFieldAnswer", cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.hibernate.annotations.BatchSize(size = 50)
     @Builder.Default
     private List<CalendarEvent> calendarEvents = new ArrayList<>();
 }

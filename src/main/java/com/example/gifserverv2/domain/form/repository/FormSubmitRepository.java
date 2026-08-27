@@ -22,4 +22,12 @@ public interface FormSubmitRepository extends JpaRepository<FormSubmit, Long> {
     Optional<FormSubmit> findByIdWithAnswersAndFields(@Param("submitId") Long submitId);
 
     List<FormSubmit> findAllByFormIdIn(List<Long> formIds);
+
+    @Query("select distinct s from FormSubmit s join fetch s.answers a join fetch a.formField where s.form.id = :formId")
+    List<FormSubmit> findAllByFormIdWithAnswersAndFields(@Param("formId") Long formId);
+
+    @Query("select s from FormSubmit s join fetch s.answers a join fetch a.formField " +
+            "where s.form.id = :formId and s.projectId = :projectId")
+    Optional<FormSubmit> findByFormIdAndProjectIdWithAnswersAndFields(
+            @Param("formId") Long formId, @Param("projectId") Long projectId);
 }
