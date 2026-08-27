@@ -1,91 +1,40 @@
 package com.example.gifserverv2.domain.ai.service;
 
-import com.example.gifserverv2.domain.form.entity.FormFieldAnswer;
-import com.example.gifserverv2.domain.form.entity.FormSubmit;
-import com.example.gifserverv2.domain.form.repository.FormSubmitRepository;
-import com.example.gifserverv2.domain.project.entity.Project;
-import com.example.gifserverv2.domain.project.exception.ProjectException;
-import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.ai.service.AiSummaryPersistenceService.SummaryContext;
 import com.example.gifserverv2.global.ai.OpenAiService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
 public class AiSummaryService {
 
-    private final ProjectRepository projectRepository;
-    private final FormSubmitRepository formSubmitRepository;
+    private final AiSummaryPersistenceService persistenceService;
     private final OpenAiService openAiService;
 
-    @Transactional
+    /**
+     * DB 조회/저장은 AiSummaryPersistenceService의 짧은 트랜잭션으로 처리하고,
+     * OpenAI 호출(블로킹 I/O)은 트랜잭션 밖에서 수행해 DB 커넥션을 점유하지 않는다.
+     */
     public String summarizeProject(Long projectId) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(ProjectException::notFound);
-
-        if (project.getAiSummary() != null) {
-            return project.getAiSummary();
+        SummaryContext context = persistenceService.loadProjectContext(projectId);
+        if (context.cachedSummary() != null) {
+            return context.cachedSummary();
         }
 
-        StringBuilder prompt = new StringBuilder();
-        prompt.append("다음 프로젝트 정보를 한줄로 요약해주세요:\n\n");
-        prompt.append("프로젝트명: ").append(project.getName()).append("\n");
-        prompt.append("팀명: ").append(project.getTeamName()).append("\n");
-        if (project.getDescription() != null) {
-            prompt.append("설명: ").append(project.getDescription()).append("\n");
-        }
-
-        String summary = openAiService.summarize(prompt.toString());
-        project.updateAiSummary(summary);
-        projectRepository.save(project);
+        String summary = openAiService.summarize(context.prompt());
+        persistenceService.saveProjectSummary(projectId, summary);
         return summary;
     }
 
-    @Transactional
     public String summarizeFormSubmit(Long submitId) {
-        FormSubmit submit = formSubmitRepository.findByIdWithAnswersAndFields(submitId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "제출 내역을 찾을 수 없습니다."));
-
-        if (submit.getAiSummary() != null) {
-            return submit.getAiSummary();
+        SummaryContext context = persistenceService.loadFormSubmitContext(submitId);
+        if (context.cachedSummary() != null) {
+            return context.cachedSummary();
         }
 
-        StringBuilder prompt = new StringBuilder();
-        prompt.append("다음 양식 제출 내용을 한줄로 요약해주세요:\n\n");
-        prompt.append("양식명: ").append(submit.getForm().getTitle()).append("\n");
-        prompt.append("제출 답변:\n");
-
-        for (FormFieldAnswer answer : submit.getAnswers()) {
-            String fieldTitle = answer.getFormField().getTitle();
-            switch (answer.getFormField().getType()) {
-                case TEXT -> {
-                    if (answer.getTextAnswer() != null) {
-                        prompt.append("- ").append(fieldTitle).append(": ").append(answer.getTextAnswer()).append("\n");
-                    }
-                }
-                case CALENDAR -> {
-                    if (answer.getCalendarEvents() != null && !answer.getCalendarEvents().isEmpty()) {
-                        for (var event : answer.getCalendarEvents()) {
-                            prompt.append("- ").append(fieldTitle).append(": ")
-                                    .append(event.getEventName())
-                                    .append(" (").append(event.getStartDate()).append(" ~ ").append(event.getEndDate()).append(")\n");
-                        }
-                    }
-                }
-                case FILE -> {
-                    if (answer.getFilePath() != null) {
-                        prompt.append("- ").append(fieldTitle).append(": 파일 첨부됨\n");
-                    }
-                }
-            }
-        }
-
-        String summary = openAiService.summarize(prompt.toString());
-        submit.updateAiSummary(summary);
-        formSubmitRepository.save(submit);
+        String summary = openAiService.summarize(context.prompt());
+        persistenceService.saveFormSubmitSummary(submitId, summary);
         return summary;
     }
 }

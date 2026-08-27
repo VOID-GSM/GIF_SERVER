@@ -164,7 +164,7 @@ public class AdminFormService {
 
         Form form = queryFormService.getFormOrThrow(formId);
 
-        List<FormSubmit> submits = formSubmitRepository.findAllByFormId(formId);
+        List<FormSubmit> submits = formSubmitRepository.findAllByFormIdWithAnswersAndFields(formId);
         for (FormSubmit submit : submits) {
             for (FormFieldAnswer answer : submit.getAnswers()) {
                 if (answer.getFilePath() != null) {
@@ -191,7 +191,7 @@ public class AdminFormService {
     @Transactional(readOnly = true)
     public List<SubmitDetailFormResponse> getSubmitListByForm(Long formId) {
         Form form = queryFormService.getFormOrThrow(formId);
-        List<FormSubmit> submits = formSubmitRepository.findAllByFormId(form.getId());
+        List<FormSubmit> submits = formSubmitRepository.findAllByFormIdWithAnswersAndFields(form.getId());
 
         Set<Long> projectIds = submits.stream()
                 .map(FormSubmit::getProjectId)
