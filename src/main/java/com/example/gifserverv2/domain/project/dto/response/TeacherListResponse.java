@@ -17,6 +17,7 @@ public record TeacherListResponse(
         List<UnsubmittedProjectInfo> unsubmittedProjects
 ) {
     public record AssignmentInfo(
+            Long projectId,
             AssignmentStatus status,
             String rejectReason
     ) {}

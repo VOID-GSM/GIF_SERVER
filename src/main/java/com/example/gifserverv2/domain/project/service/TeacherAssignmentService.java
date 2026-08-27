@@ -59,6 +59,11 @@ public class TeacherAssignmentService {
             if (request.rejectReason() == null || request.rejectReason().isBlank()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "거절 사유를 작성해야 합니다.");
             }
+
+            if (request.rejectReason().length() > 200) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "거절 사유는 200자를 초과할 수 없습니다.");
+            }
+
             assignment.reject(request.rejectReason());
         } else {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바르지 않은 응답 상태입니다.");
