@@ -27,10 +27,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-/**
- * 양식 생성/수정 시 마감일(deadline)이 과거 시각이면 거부되는지 검증.
- * 실제 DB/Redis 없이 Mockito로만 도는 순수 단위 테스트.
- */
 @ExtendWith(MockitoExtension.class)
 class AdminFormServiceDeadlineTest {
 
@@ -102,7 +98,6 @@ class AdminFormServiceDeadlineTest {
                 .isInstanceOf(FormException.class)
                 .hasMessageContaining("마감일");
 
-        // 마감일 검증에서 바로 막혀야 하므로 폼 조회까지 가면 안 됨
         verify(queryFormService, never()).getFormOrThrow(any());
     }
 }

@@ -25,11 +25,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * PATCH /api/form/update 요청 본문이 없거나(deadline 등) 형식이 잘못됐을 때
- * 500이 아니라 400으로 응답하는지 확인 (GlobalExceptionHandler 회귀 테스트).
- * 실제 DB/Redis/보안 필터체인 없이 컨트롤러+예외핸들러만 띄우는 standalone MockMvc.
- */
 class FormUpdateRequestBodyTest {
 
     private MockMvc mockMvc;
@@ -56,7 +51,6 @@ class FormUpdateRequestBodyTest {
         SecurityContextHolder.clearContext();
     }
 
-    /** TokenAuthenticationFilter가 실제로 채워주는 인증 컨텍스트를 흉내 낸다. */
     private void loginAsAdmin() {
         AuthenticatedUser principal = new AuthenticatedUser(1L, "admin@test.com", "관리자", null, Role.ADMIN, null, null, false, null);
         SecurityContextHolder.getContext().setAuthentication(
