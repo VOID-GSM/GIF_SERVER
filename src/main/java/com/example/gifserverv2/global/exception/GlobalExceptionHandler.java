@@ -9,6 +9,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -28,6 +29,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleMessageNotReadable(HttpMessageNotReadableException e, HttpServletRequest request) {
         log.warn("Malformed request body on {} {}: {}", request.getMethod(), request.getRequestURI(), e.getMessage());
         return buildResponse(HttpStatus.BAD_REQUEST, "요청 본문 형식이 올바르지 않습니다. (예: 날짜 형식은 yyyy-MM-ddTHH:mm:ss)", request);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatus(ResponseStatusException e, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.valueOf(e.getStatusCode().value());
+        return buildResponse(status, e.getReason(), request);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
