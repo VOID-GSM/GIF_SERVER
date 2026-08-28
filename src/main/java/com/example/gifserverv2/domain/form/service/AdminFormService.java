@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,7 @@ public class AdminFormService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
 
         validateFormAdmin(user, "양식 생성 권한이 없습니다.");
+        validateDeadlineNotPast(request.deadline());
 
         Form form = Form.builder()
                 .title(request.title())
@@ -83,6 +85,7 @@ public class AdminFormService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
 
         validateFormAdmin(user, "양식 수정 권한이 없습니다.");
+        validateDeadlineNotPast(request.deadline());
 
         Form form = queryFormService.getFormOrThrow(formId);
 
@@ -229,6 +232,12 @@ public class AdminFormService {
         Form form = formRepository.findByIdAndAnnouncedFalse(formId)
                 .orElseThrow(FormException::notFound);
         return DetailFormResponse.from(form, null);
+    }
+
+    private void validateDeadlineNotPast(LocalDateTime deadline) {
+        if (deadline != null && deadline.isBefore(LocalDateTime.now())) {
+            throw FormException.deadlineInPast();
+        }
     }
 
     private void validateFormAdmin(UserEntity user, String errorMessage) {

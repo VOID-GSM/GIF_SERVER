@@ -21,6 +21,10 @@ public class FormException extends ResponseStatusException {
         return new FormException(HttpStatus.BAD_REQUEST, "마감일이 지난 양식은 수정할 수 없습니다.");
     }
 
+    public static FormException deadlineInPast() {
+        return new FormException(HttpStatus.BAD_REQUEST, "마감일은 현재 시각 이후로 설정해야 합니다.");
+    }
+
     public static FormException alreadyAnnounced() {
         return new FormException(HttpStatus.BAD_REQUEST, "이미 공지된 양식은 수정할 수 없습니다.");
     }
