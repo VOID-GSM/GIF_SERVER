@@ -100,6 +100,9 @@ public class AdminFormService {
                 FormField existingField = fieldReq.id() != null ? existingFieldsById.get(fieldReq.id()) : null;
 
                 if (existingField != null) {
+                    if (existingField.isRequired() && !fieldReq.required()) {
+                        throw FormException.cannotChangeRequiredToOptional(existingField.getTitle());
+                    }
                     existingField.update(fieldReq.title(), fieldReq.description(), fieldReq.type(),
                             fieldReq.orderIndex(), allowedExtensions, fieldReq.required());
                     reconciledFields.add(existingField);
@@ -134,10 +137,11 @@ public class AdminFormService {
                 .distinct()
                 .toList();
 
-        for (String ext : normalized) {
-            if (!AllowedFileExtensions.ALL.contains(ext)) {
-                throw FormException.invalidAllowedExtension();
-            }
+        List<String> unsupported = normalized.stream()
+                .filter(ext -> !AllowedFileExtensions.isSupported(ext))
+                .toList();
+        if (!unsupported.isEmpty()) {
+            throw FormException.invalidAllowedExtension(unsupported);
         }
 
         return String.join(",", normalized);
