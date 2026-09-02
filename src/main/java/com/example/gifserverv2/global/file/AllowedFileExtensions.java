@@ -11,6 +11,12 @@ public final class AllowedFileExtensions {
             "mp3", "wav"
     );
 
+    public static final String LINK = "url";
+
+    public static boolean isSupported(String extension) {
+        return ALL.contains(extension) || LINK.equals(extension);
+    }
+
     private AllowedFileExtensions() {
     }
 }

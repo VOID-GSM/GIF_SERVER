@@ -3,6 +3,8 @@ package com.example.gifserverv2.domain.form.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+
 public class FormException extends ResponseStatusException {
 
     public FormException(HttpStatus status, String message) {
@@ -19,6 +21,10 @@ public class FormException extends ResponseStatusException {
 
     public static FormException deadlinePassed() {
         return new FormException(HttpStatus.BAD_REQUEST, "마감일이 지난 양식은 수정할 수 없습니다.");
+    }
+
+    public static FormException deadlineInPast() {
+        return new FormException(HttpStatus.BAD_REQUEST, "마감일은 현재 시각 이후로 설정해야 합니다.");
     }
 
     public static FormException alreadyAnnounced() {
@@ -72,11 +78,16 @@ public class FormException extends ResponseStatusException {
         return new FormException(HttpStatus.BAD_REQUEST, "허용되지 않는 파일 형식입니다.");
     }
 
-    public static FormException invalidAllowedExtension() {
-        return new FormException(HttpStatus.BAD_REQUEST, "지원하지 않는 확장자가 포함되어 있습니다.");
+    public static FormException invalidAllowedExtension(List<String> unsupportedExtensions) {
+        return new FormException(HttpStatus.BAD_REQUEST,
+                "지원하지 않는 확장자가 포함되어 있습니다: " + String.join(", ", unsupportedExtensions));
     }
 
     public static FormException requiredAnswerMissing(String fieldTitle) {
         return new FormException(HttpStatus.BAD_REQUEST, "'" + fieldTitle + "' 항목은 필수 입력입니다.");
+    }
+
+    public static FormException cannotChangeRequiredToOptional(String fieldTitle) {
+        return new FormException(HttpStatus.BAD_REQUEST, "'" + fieldTitle + "' 항목은 필수 항목에서 선택 항목으로 변경할 수 없습니다.");
     }
 }
