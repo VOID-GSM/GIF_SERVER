@@ -44,4 +44,13 @@ public class NotificationController {
         notificationHistoryService.patchNotificationRead(user.userId(), id);
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/read-all")
+    public ResponseEntity<Void> patchAllNotificationsRead(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestParam(name = "days", required = false, defaultValue = "7") Integer days
+    ) {
+        notificationHistoryService.patchAllNotificationsRead(user.userId(), days);
+        return ResponseEntity.noContent().build();
+    }
 }

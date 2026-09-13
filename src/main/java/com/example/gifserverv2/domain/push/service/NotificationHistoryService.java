@@ -47,4 +47,12 @@ public class NotificationHistoryService {
 
         notification.markAsRead();
     }
+
+    @Transactional
+    public void patchAllNotificationsRead(Long userId, Integer days) {
+        int targetDays = (days == null || days <= 0) ? 7 : days;
+        LocalDateTime startDateTime = LocalDateTime.now().minusDays(targetDays);
+
+        notificationRepository.markAllAsReadByUserIdAndCreatedAtGreaterThanEqual(userId, startDateTime);
+    }
 }
