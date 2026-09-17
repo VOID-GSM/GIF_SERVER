@@ -10,6 +10,8 @@ import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -17,13 +19,20 @@ public class NotificationHistoryService {
 
     private final NotificationRepository notificationRepository;
 
-    public Slice<GetNotificationResponse> getNotifications(Long userId, Pageable pageable) {
-        return notificationRepository.findAllByUserIdOrderByCreatedAtDesc(userId, pageable)
+    public Slice<GetNotificationResponse> getNotifications(Long userId, Integer days, Pageable pageable) {
+        int targetDays = (days == null || days <= 0) ? 7 : days;
+        LocalDateTime startDateTime = LocalDateTime.now().minusDays(targetDays);
+
+        return notificationRepository
+                .findAllByUserIdAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(userId, startDateTime, pageable)
                 .map(GetNotificationResponse::from);
     }
 
-    public GetNotificationUnreadCountResponse getNotificationUnreadCount(Long userId) {
-        long count = notificationRepository.countByUserIdAndIsReadFalse(userId);
+    public GetNotificationUnreadCountResponse getNotificationUnreadCount(Long userId, Integer days) {
+        int targetDays = (days == null || days <= 0) ? 7 : days;
+        LocalDateTime startDateTime = LocalDateTime.now().minusDays(targetDays);
+
+        long count = notificationRepository.countByUserIdAndIsReadFalseAndCreatedAtGreaterThanEqual(userId, startDateTime);
         return GetNotificationUnreadCountResponse.from(count);
     }
 
@@ -37,5 +46,13 @@ public class NotificationHistoryService {
         }
 
         notification.markAsRead();
+    }
+
+    @Transactional
+    public void patchAllNotificationsRead(Long userId, Integer days) {
+        int targetDays = (days == null || days <= 0) ? 7 : days;
+        LocalDateTime startDateTime = LocalDateTime.now().minusDays(targetDays);
+
+        notificationRepository.markAllAsReadByUserIdAndCreatedAtGreaterThanEqual(userId, startDateTime);
     }
 }

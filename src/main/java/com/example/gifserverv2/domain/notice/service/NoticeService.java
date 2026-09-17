@@ -10,9 +10,12 @@ import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
 import com.example.gifserverv2.global.discord.DiscordBotService;
 import lombok.RequiredArgsConstructor;
+import net.dv8tion.jda.api.EmbedBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.awt.Color;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +28,7 @@ public class NoticeService {
 
     private static final int TITLE_MAX_LENGTH = 100;
     private static final int CONTENT_MAX_LENGTH = 2000;
+    private static final Color NOTICE_EMBED_COLOR = new Color(0xF3EC67);
 
     private final NoticeRepository noticeRepository;
     private final ProjectRepository projectRepository;
@@ -98,21 +102,23 @@ public class NoticeService {
         Map<Long, String> teamNameMap = getTeamNameMap(List.of(notice));
         List<String> teamNames = resolveTeamNames(notice, teamNameMap);
 
-        StringBuilder tagLine = new StringBuilder();
-        for (Integer grade : notice.getTargetGrades()) {
-            tagLine.append("`").append(grade).append("학년` ");
+        EmbedBuilder embedBuilder = new EmbedBuilder()
+                .setColor(NOTICE_EMBED_COLOR)
+                .setTitle("📢 " + notice.getTitle())
+                .setDescription(notice.getContent())
+                .setFooter("GIF 공지")
+                .setTimestamp(notice.getCreatedAt().atZone(ZoneId.systemDefault()));
+
+        if (!notice.getTargetGrades().isEmpty()) {
+            String grades = notice.getTargetGrades().stream()
+                    .map(grade -> grade + "학년")
+                    .collect(Collectors.joining(" · "));
+            embedBuilder.addField("대상 학년", grades, true);
         }
-        for (String teamName : teamNames) {
-            tagLine.append("`").append(teamName).append("` ");
+        if (!teamNames.isEmpty()) {
+            embedBuilder.addField("대상 팀", String.join(" · ", teamNames), true);
         }
 
-        StringBuilder message = new StringBuilder();
-        message.append("📢 **").append(notice.getTitle()).append("**\n");
-        if (!tagLine.isEmpty()) {
-            message.append(tagLine).append("\n\n");
-        }
-        message.append(notice.getContent());
-
-        discordBotService.sendNoticeMessage(message.toString());
+        discordBotService.sendNoticeEmbed(embedBuilder.build());
     }
 }

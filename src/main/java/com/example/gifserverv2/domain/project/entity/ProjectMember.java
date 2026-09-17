@@ -27,7 +27,14 @@ public class ProjectMember {
     @Column(nullable = false)
     private ClientRole role;
 
+    @Column(length = 30)
+    private String part;
+
     public void changeRole(ClientRole role){
         this.role = role;
+    }
+
+    public void changePart(String part) {
+        this.part = part;
     }
 }

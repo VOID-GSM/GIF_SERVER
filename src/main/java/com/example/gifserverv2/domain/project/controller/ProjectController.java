@@ -11,10 +11,10 @@ import com.example.gifserverv2.global.security.AuthenticatedUser;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
-import org.springframework.security.access.prepost.PreAuthorize;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -103,10 +103,10 @@ public class ProjectController {
         return ResponseEntity.ok(projectQueryService.searchUsers(keyword));
     }
 
-    @GetMapping("/{projectId}/summary")
-    public ResponseEntity<String> summarizeProject(@PathVariable Long projectId) {
-        return ResponseEntity.ok(aiSummaryService.summarizeProject(projectId));
-    }
+//    @GetMapping("/{projectId}/summary")
+//    public ResponseEntity<String> summarizeProject(@PathVariable Long projectId) {
+//        return ResponseEntity.ok(aiSummaryService.summarizeProject(projectId));
+//    }
 
     @PatchMapping("/{projectId}/transfer-leader")
     @PreAuthorize("hasRole('ADMIN')")

@@ -7,6 +7,7 @@ public record GetNotificationResponse(
         Long id,
         String title,
         String body,
+        String targetUrl,
         boolean isRead,
         LocalDateTime createdAt
 ) {
@@ -15,6 +16,7 @@ public record GetNotificationResponse(
                 notification.getId(),
                 notification.getTitle(),
                 notification.getBody(),
+                notification.getTargetUrl(),
                 notification.isRead(),
                 notification.getCreatedAt()
         );

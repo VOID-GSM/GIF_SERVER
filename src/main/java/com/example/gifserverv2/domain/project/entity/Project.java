@@ -34,6 +34,12 @@ public class Project {
     @Column
     private Integer grade;
 
+    @Column(name = "class_no")
+    private Integer classNo;
+
+    @Column(name = "team_no")
+    private Integer teamNo;
+
     @Column(name = "advisor_teacher_id")
     private Long advisorTeacherId;
 
@@ -52,6 +58,8 @@ public class Project {
     public void updateDescription(String description) { this.description = description; }
     public void updateLogo(String logo) { this.logo = logo; }
     public void updateGrade(Integer grade) { this.grade = grade; }
+    public void updateClassNo(Integer classNo) { this.classNo = classNo; }
+    public void updateTeamNo(Integer teamNo) { this.teamNo = teamNo; }
     public void assignAdvisorTeacher(Long teacherId) { this.advisorTeacherId = teacherId; }
     public Long getAdvisorTeacherId() { return this.advisorTeacherId; }
     public void updateAiSummary(String aiSummary) {

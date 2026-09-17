@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.GeneralSecurityException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -46,8 +47,8 @@ public class PushSenderService {
     }
 
     @Async
-    public void sendNotification(Long targetUserId, String title, String body) {
-        saveNotificationHistory(targetUserId, title, body);
+    public void sendNotification(Long targetUserId, String title, String body, String targetUrl) {
+        saveNotificationHistory(targetUserId, title, body, targetUrl);
 
         List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserId(targetUserId);
         if (subscriptions.isEmpty()) {
@@ -55,7 +56,7 @@ public class PushSenderService {
             return;
         }
 
-        String payload = createPayload(title, body);
+        String payload = createPayload(title, body, targetUrl);
         if (payload == null) return;
 
         for (PushSubscription sub : subscriptions) {
@@ -63,10 +64,15 @@ public class PushSenderService {
         }
     }
 
-    public void sendBulkNotifications(List<Long> userIds, String title, String body) {
+    @Async
+    public void sendNotification(Long targetUserId, String title, String body) {
+        sendNotification(targetUserId, title, body, null);
+    }
+
+    public void sendBulkNotifications(List<Long> userIds, String title, String body, String targetUrl) {
         if (userIds == null || userIds.isEmpty()) return;
 
-        saveBulkNotificationHistory(userIds, title, body);
+        saveBulkNotificationHistory(userIds, title, body, targetUrl);
 
         List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserIdIn(userIds);
         if (subscriptions.isEmpty()) {
@@ -74,7 +80,7 @@ public class PushSenderService {
             return;
         }
 
-        String payload = createPayload(title, body);
+        String payload = createPayload(title, body, targetUrl);
         if (payload == null) return;
 
         for (PushSubscription subscription : subscriptions) {
@@ -83,26 +89,37 @@ public class PushSenderService {
     }
 
     @Async
+    public void sendBulkNotificationsAsync(List<Long> userIds, String title, String body, String targetUrl) {
+        sendBulkNotifications(userIds, title, body, targetUrl);
+    }
+
+    public void sendBulkNotifications(List<Long> userIds, String title, String body) {
+        sendBulkNotifications(userIds, title, body, null);
+    }
+
+    @Async
     public void sendBulkNotificationsAsync(List<Long> userIds, String title, String body) {
-        sendBulkNotifications(userIds, title, body);
+        sendBulkNotifications(userIds, title, body, null);
     }
 
     @Transactional
-    public void saveNotificationHistory(Long targetUserId, String title, String body) {
+    public void saveNotificationHistory(Long targetUserId, String title, String body, String targetUrl) {
         notificationRepository.save(NotificationHistory.builder()
                 .userId(targetUserId)
                 .title(title)
                 .body(body)
+                .targetUrl(targetUrl)
                 .build());
     }
 
     @Transactional
-    public void saveBulkNotificationHistory(List<Long> userIds, String title, String body) {
+    public void saveBulkNotificationHistory(List<Long> userIds, String title, String body, String targetUrl) {
         List<NotificationHistory> notifications = userIds.stream()
                 .map(userId -> NotificationHistory.builder()
                         .userId(userId)
                         .title(title)
                         .body(body)
+                        .targetUrl(targetUrl)
                         .build())
                 .toList();
         notificationRepository.saveAll(notifications);
@@ -135,12 +152,15 @@ public class PushSenderService {
         pushSubscriptionRepository.delete(sub);
     }
 
-    private String createPayload(String title, String body) {
+    private String createPayload(String title, String body, String targetUrl) {
         try {
-            Map<String, String> payloadMap = Map.of(
-                    "title", title,
-                    "body", body
-            );
+            Map<String, String> payloadMap = new HashMap<>();
+            payloadMap.put("title", title);
+            payloadMap.put("body", body);
+            if (targetUrl != null) {
+                payloadMap.put("targetUrl", targetUrl);
+                payloadMap.put("url", targetUrl);
+            }
             return objectMapper.writeValueAsString(payloadMap);
         } catch (Exception e) {
             log.error("푸시 JSON 페이로드 직렬화 실패: {}", e.getMessage());

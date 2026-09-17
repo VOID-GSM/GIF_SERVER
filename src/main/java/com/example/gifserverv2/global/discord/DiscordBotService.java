@@ -2,6 +2,7 @@ package com.example.gifserverv2.global.discord;
 
 import lombok.extern.slf4j.Slf4j;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -19,7 +20,7 @@ public class DiscordBotService {
     @Value("${app.discord.notice-channel-id:}")
     private String noticeChannelIds;
 
-    public void sendNoticeMessage(String content) {
+    public void sendNoticeEmbed(MessageEmbed embed) {
         if (jda == null) {
             log.warn("디스코드 봇이 초기화되지 않아 메시지를 보내지 않습니다.");
             return;
@@ -41,7 +42,7 @@ public class DiscordBotService {
                     log.error("채널을 찾을 수 없습니다. channelId={}", channelId);
                     continue;
                 }
-                channel.sendMessage(content).queue();
+                channel.sendMessageEmbeds(embed).queue();
             } catch (Exception e) {
                 log.error("디스코드 메시지 전송 실패. channelId={}", channelId, e);
             }

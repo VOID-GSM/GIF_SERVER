@@ -30,6 +30,9 @@ public class NotificationHistory {
     @Column(nullable = false, length = 1000)
     private String body;
 
+    @Column
+    private String targetUrl;
+
     @Column(nullable = false)
     private boolean isRead;
 
@@ -38,10 +41,11 @@ public class NotificationHistory {
     private LocalDateTime createdAt;
 
     @Builder
-    public NotificationHistory(Long userId, String title, String body) {
+    public NotificationHistory(Long userId, String title, String body, String targetUrl) {
         this.userId = userId;
         this.title = title;
         this.body = body;
+        this.targetUrl = targetUrl;
         this.isRead = false;
     }
 

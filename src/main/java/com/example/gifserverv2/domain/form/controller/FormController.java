@@ -158,13 +158,13 @@ public class FormController {
         return ResponseEntity.ok(adminFormService.getDraftForm(formId));
     }
 
-    @GetMapping("/submit/{submitId}/summary")
-    public ResponseEntity<String> summarizeFormSubmit(
-            @AuthenticationPrincipal AuthenticatedUser user,
-            @PathVariable Long submitId
-    ) {
-        return ResponseEntity.ok(aiSummaryService.summarizeFormSubmit(submitId));
-    }
+//    @GetMapping("/submit/{submitId}/summary")
+//    public ResponseEntity<String> summarizeFormSubmit(
+//            @AuthenticationPrincipal AuthenticatedUser user,
+//            @PathVariable Long submitId
+//    ) {
+//        return ResponseEntity.ok(aiSummaryService.summarizeFormSubmit(submitId));
+//    }
 
     @PatchMapping("/admin/submit/{submitId}/deadline-compliance")
     @PreAuthorize("hasRole('ADMIN')")
