@@ -21,6 +21,9 @@ public class CalendarEvent {
     @JoinColumn(name = "form_field_answer_id", nullable = false)
     private FormFieldAnswer formFieldAnswer;
 
+    @Column(name = "project_id")
+    private Long projectId;
+
     @Column(nullable = false)
     private String eventName;
 
@@ -32,4 +35,11 @@ public class CalendarEvent {
 
     @Column(length = 7)
     private String color;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.formFieldAnswer != null) {
+            this.projectId = this.formFieldAnswer.getProjectId();
+        }
+    }
 }

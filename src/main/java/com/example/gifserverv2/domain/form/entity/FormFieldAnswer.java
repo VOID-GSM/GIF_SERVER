@@ -25,6 +25,9 @@ public class FormFieldAnswer {
     @JoinColumn(name = "form_field_id", nullable = false)
     private FormField formField;
 
+    @Column(name = "project_id")
+    private Long projectId;
+
     @Column(columnDefinition = "TEXT")
     private String textAnswer;
 
@@ -41,4 +44,11 @@ public class FormFieldAnswer {
     @org.hibernate.annotations.BatchSize(size = 50)
     @Builder.Default
     private List<CalendarEvent> calendarEvents = new ArrayList<>();
+
+    @PrePersist
+    public void prePersist() {
+        if (this.formSubmit != null) {
+            this.projectId = this.formSubmit.getProjectId();
+        }
+    }
 }

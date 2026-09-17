@@ -24,6 +24,16 @@ public class SchemaPatchRunner implements ApplicationRunner {
             new ColumnSpec("form_field", "required", "TINYINT(1) NOT NULL DEFAULT 0"),
             new ColumnSpec("form_field", "allowed_extensions", "VARCHAR(200) NULL"),
             new ColumnSpec("form_submit", "deadline_complied_override", "TINYINT(1) NULL"),
+            new ColumnSpec("form_field_answer", "project_id", "BIGINT NULL",
+                    "UPDATE form_field_answer ffa " +
+                            "JOIN form_submit fs ON ffa.form_submit_id = fs.id " +
+                            "SET ffa.project_id = fs.project_id " +
+                            "WHERE ffa.project_id IS NULL"),
+            new ColumnSpec("calendar_event", "project_id", "BIGINT NULL",
+                    "UPDATE calendar_event ce " +
+                            "JOIN form_field_answer ffa ON ce.form_field_answer_id = ffa.id " +
+                            "SET ce.project_id = ffa.project_id " +
+                            "WHERE ce.project_id IS NULL"),
     };
 
     @Override
@@ -47,6 +57,13 @@ public class SchemaPatchRunner implements ApplicationRunner {
                 statement.executeUpdate(sql);
             }
             log.warn("[SchemaPatch] {} 테이블에 누락된 컬럼 {}을(를) 추가했습니다.", spec.table(), spec.column());
+
+            if (spec.backfillSql() != null) {
+                try (Statement statement = connection.createStatement()) {
+                    int updated = statement.executeUpdate(spec.backfillSql());
+                    log.warn("[SchemaPatch] {}.{} 컬럼 백필 완료 ({}건).", spec.table(), spec.column(), updated);
+                }
+            }
         } catch (Exception e) {
             log.error("[SchemaPatch] {}.{} 컬럼 확인/추가 중 오류가 발생했습니다.", spec.table(), spec.column(), e);
         }
@@ -59,6 +76,9 @@ public class SchemaPatchRunner implements ApplicationRunner {
         }
     }
 
-    private record ColumnSpec(String table, String column, String definition) {
+    private record ColumnSpec(String table, String column, String definition, String backfillSql) {
+        ColumnSpec(String table, String column, String definition) {
+            this(table, column, definition, null);
+        }
     }
 }
