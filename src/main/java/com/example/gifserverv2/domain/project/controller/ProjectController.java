@@ -101,6 +101,11 @@ public class ProjectController {
         return ResponseEntity.ok(projectQueryService.searchUsers(keyword));
     }
 
+    //    @GetMapping("/{projectId}/summary")
+//    public ResponseEntity<String> summarizeProject(@PathVariable Long projectId) {
+//        return ResponseEntity.ok(aiSummaryService.summarizeProject(projectId));
+//    }
+
     @PatchMapping("/{projectId}/transfer-leader")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> transferLeader(
