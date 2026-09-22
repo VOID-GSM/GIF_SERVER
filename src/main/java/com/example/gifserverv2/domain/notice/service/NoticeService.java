@@ -106,7 +106,7 @@ public class NoticeService {
                 .setColor(NOTICE_EMBED_COLOR)
                 .setTitle("📢 " + notice.getTitle())
                 .setDescription(notice.getContent())
-                .setFooter("GIF 공지")
+                .setFooter("GIF 새로운 공지가 올라왔어요!")
                 .setTimestamp(notice.getCreatedAt().atZone(ZoneId.systemDefault()));
 
         if (!notice.getTargetGrades().isEmpty()) {
@@ -121,4 +121,4 @@ public class NoticeService {
 
         discordBotService.sendNoticeEmbed(embedBuilder.build());
     }
-}
+}   

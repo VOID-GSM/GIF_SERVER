@@ -1,6 +1,5 @@
 package com.example.gifserverv2.domain.project.controller;
 
-import com.example.gifserverv2.domain.ai.service.AiSummaryService;
 import com.example.gifserverv2.domain.project.dto.request.*;
 import com.example.gifserverv2.domain.project.dto.response.*;
 import com.example.gifserverv2.domain.project.service.CommandProjectService;
@@ -28,7 +27,6 @@ public class ProjectController {
 
     private final QueryProjectService projectQueryService;
     private final CommandProjectService projectCommandService;
-    private final AiSummaryService aiSummaryService;
     private final ProjectNoteService projectNoteService;
     private final ProjectLinkService projectLinkService;
 
@@ -102,11 +100,6 @@ public class ProjectController {
     ) {
         return ResponseEntity.ok(projectQueryService.searchUsers(keyword));
     }
-
-//    @GetMapping("/{projectId}/summary")
-//    public ResponseEntity<String> summarizeProject(@PathVariable Long projectId) {
-//        return ResponseEntity.ok(aiSummaryService.summarizeProject(projectId));
-//    }
 
     @PatchMapping("/{projectId}/transfer-leader")
     @PreAuthorize("hasRole('ADMIN')")
