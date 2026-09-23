@@ -6,7 +6,7 @@ import com.example.gifserverv2.domain.inquiry.repository.InquiryRepository;
 import com.example.gifserverv2.domain.push.service.PushSenderService;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
-import com.example.gifserverv2.global.exception.InquiryException;
+import com.example.gifserverv2.domain.inquiry.exception.InquiryException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
