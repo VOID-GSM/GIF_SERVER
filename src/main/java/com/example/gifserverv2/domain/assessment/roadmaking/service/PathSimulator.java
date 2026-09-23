@@ -37,29 +37,7 @@ public class PathSimulator {
     }
 
     public boolean reaches(Vehicle vehicle, boolean[][] fence) {
-        int r = vehicle.position().row();
-        int c = vehicle.position().col();
-        Direction dir = vehicle.direction();
-        int limit = stepLimit();
-
-        for (int step = 0; step < limit; step++) {
-            int nr = r + dir.dRow();
-            int nc = c + dir.dCol();
-            if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) {
-                return false;
-            }
-            if (fence[nr][nc]) {
-                dir = dir.rotate();
-                continue;
-            }
-            r = nr;
-            c = nc;
-            Color person = personGrid[r][c];
-            if (person != null) {
-                return person == vehicle.color();
-            }
-        }
-        return false;
+        return trace(vehicle, fence).reached();
     }
 
     public Trace trace(Vehicle vehicle, boolean[][] fence) {
