@@ -40,6 +40,9 @@ public class UserEntity {
     @Column(name = "client_role")
     private ClientRole clientRole;
 
+    @Column(name = "github_username", nullable = true)
+    private String githubUsername;
+
     protected UserEntity() {
     }
 
@@ -149,5 +152,13 @@ public class UserEntity {
 
     public void updateAdminTeam(String adminTeam) {
         this.adminTeam = adminTeam;
+    }
+
+    public String getGithubUsername() {
+        return githubUsername;
+    }
+
+    public void updateGithubUsername(String githubUsername) {
+        this.githubUsername = githubUsername;
     }
 }
