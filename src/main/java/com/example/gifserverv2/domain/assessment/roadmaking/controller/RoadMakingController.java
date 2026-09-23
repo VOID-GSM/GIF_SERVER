@@ -9,6 +9,7 @@ import com.example.gifserverv2.domain.assessment.roadmaking.service.RoadMakingSe
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,12 +20,11 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('USER')")
 public class RoadMakingController {
-
     private final RoadMakingService roadMakingService;
 
     @PostMapping("/rounds")
     public ResponseEntity<StartRoadMakingRoundResponse> startRound(@AuthenticationPrincipal AuthenticatedUser user) {
-        return ResponseEntity.ok(roadMakingService.startRound(user.userId()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(roadMakingService.startRound(user.userId()));
     }
 
     @GetMapping("/rounds/{roundId}/problems/current")
