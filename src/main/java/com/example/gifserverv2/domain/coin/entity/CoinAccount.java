@@ -38,4 +38,14 @@ public class CoinAccount {
     public void addCoin(int amount) {
         this.balance += amount;
     }
+
+    public void deductCoin(int amount) {
+        if (amount < 0) {
+            throw new IllegalArgumentException("차감할 코인은 양수여야 합니다.");
+        }
+        if (this.balance < amount) {
+            throw new IllegalStateException("코인 잔액이 부족합니다.");
+        }
+        this.balance -= amount;
+    }
 }
