@@ -121,4 +121,4 @@ public class NoticeService {
 
         discordBotService.sendNoticeEmbed(embedBuilder.build());
     }
-}
+}   
