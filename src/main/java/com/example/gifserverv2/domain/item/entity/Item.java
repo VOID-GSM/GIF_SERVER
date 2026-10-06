@@ -16,15 +16,15 @@ public class Item {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private ItemCategory category;
-
-    @Column(nullable = false, length = 50)
+    @Column(nullable = false)
     private String name;
 
-    @Column(name = "item_key", nullable = false, length = 50, unique = true)
+    @Column(nullable = false, unique = true)
     private String itemKey;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ItemCategory category;
 
     @Column(nullable = false)
     private int price;
@@ -36,10 +36,10 @@ public class Item {
     private String imageUrl;
 
     @Builder
-    public Item(ItemCategory category, String name, String itemKey, int price, boolean isDefault, String imageUrl) {
-        this.category = category;
+    public Item(String name, String itemKey, ItemCategory category, int price, boolean isDefault, String imageUrl) {
         this.name = name;
         this.itemKey = itemKey;
+        this.category = category;
         this.price = price;
         this.isDefault = isDefault;
         this.imageUrl = imageUrl;
