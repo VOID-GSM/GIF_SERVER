@@ -1,21 +1,22 @@
 package com.example.gifserverv2.domain.auth.service;
 
 import com.example.gifserverv2.domain.auth.dto.request.OAuthSignInRequest;
-import com.example.gifserverv2.domain.auth.dto.response.OAuthSignInResponse;
-import com.example.gifserverv2.domain.auth.dto.response.CurrentUserResponse;
 import com.example.gifserverv2.domain.auth.dto.request.UpdateCurrentUserRequest;
-import com.example.gifserverv2.domain.user.entity.ClientRole;
-import com.example.gifserverv2.global.security.AuthenticatedUser;
+import com.example.gifserverv2.domain.auth.dto.response.CurrentUserResponse;
+import com.example.gifserverv2.domain.auth.dto.response.GithubUserInfo;
+import com.example.gifserverv2.domain.auth.dto.response.OAuthSignInResponse;
+import com.example.gifserverv2.domain.project.entity.ProjectMember;
+import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
+import com.example.gifserverv2.domain.user.entity.ClientRole;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
-import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
-import com.example.gifserverv2.domain.project.entity.ProjectMember;
+import com.example.gifserverv2.global.config.OAuthProperties;
+import com.example.gifserverv2.global.security.AuthenticatedUser;
 import com.example.gifserverv2.global.security.JwtTokenProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.example.gifserverv2.global.config.OAuthProperties;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -27,8 +28,8 @@ import team.themoment.datagsm.sdk.oauth.model.Student;
 import team.themoment.datagsm.sdk.oauth.model.TokenResponse;
 import team.themoment.datagsm.sdk.oauth.model.UserInfo;
 
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class AuthService {
@@ -36,6 +37,7 @@ public class AuthService {
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private final DataGsmOAuthClient dataGsmOAuthClient;
+    private final GithubOAuthClient githubOAuthClient; // 1. GitHub OAuth Client 추가
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final OAuthProperties oauthProperties;
@@ -44,9 +46,14 @@ public class AuthService {
     @Value("${app.void-emails:}")
     private List<String> voidEmails;
 
-    public AuthService(DataGsmOAuthClient dataGsmOAuthClient, UserRepository userRepository,
-                       JwtTokenProvider jwtTokenProvider, OAuthProperties oauthProperties, ProjectMemberRepository projectMemberRepository) {
+    public AuthService(DataGsmOAuthClient dataGsmOAuthClient,
+                       GithubOAuthClient githubOAuthClient,
+                       UserRepository userRepository,
+                       JwtTokenProvider jwtTokenProvider,
+                       OAuthProperties oauthProperties,
+                       ProjectMemberRepository projectMemberRepository) {
         this.dataGsmOAuthClient = dataGsmOAuthClient;
+        this.githubOAuthClient = githubOAuthClient;
         this.userRepository = userRepository;
         this.jwtTokenProvider = jwtTokenProvider;
         this.oauthProperties = oauthProperties;
@@ -134,7 +141,7 @@ public class AuthService {
                     user.getClientRole() != null ? user.getClientRole().name() : null);
         } catch (DataGsmException e) {
             log.warn("DataGSM OAuth error: status={}, message={}", e.getStatusCode(), e.getMessage());
-        throw new ResponseStatusException(resolveStatus(e.getStatusCode()), "OAuth 인증에 실패했습니다.", e);
+            throw new ResponseStatusException(resolveStatus(e.getStatusCode()), "OAuth 인증에 실패했습니다.", e);
         }
     }
 
@@ -190,6 +197,8 @@ public class AuthService {
                 user.getClientRole() != null ? user.getClientRole().name() : null,
                 projectId,
                 clientTeam,
+                user.getGithubUsername(),
+                user.getGithubAvatarUrl(),
                 null
         );
     }
@@ -288,7 +297,7 @@ public class AuthService {
         String grade = null;
 
         if (email == null || email.isBlank()) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Google 사용자 이메일을 가져오지 못했습니다.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Google 사용자 이메일을 가져오지 못했습니다.");
         }
 
         Role assignedRole = Role.ADMIN;
@@ -334,6 +343,8 @@ public class AuthService {
                 user.getClientRole() != null ? user.getClientRole().name() : null,
                 projectId,
                 clientTeam,
+                user.getGithubUsername(),
+                user.getGithubAvatarUrl(),
                 accessToken
         );
     }
@@ -342,5 +353,42 @@ public class AuthService {
     public String renewToken(Long userId) {
         UserEntity user = requireUser(userId);
         return jwtTokenProvider.createToken(user);
+    }
+
+    @Transactional
+    public CurrentUserResponse connectGithub(AuthenticatedUser caller, String code) {
+        if (caller == null || caller.userId() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증 정보가 필요합니다.");
+        }
+
+        UserEntity user = requireUser(caller.userId());
+
+        String githubAccessToken = githubOAuthClient.getAccessToken(code);
+
+        GithubUserInfo githubUser = githubOAuthClient.getUserInfo(githubAccessToken);
+
+        userRepository.findByGithubUsername(githubUser.login())
+                .ifPresent(existingUser -> {
+                    if (!existingUser.getId().equals(user.getId())) {
+                        throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 다른 계정에 연동된 GitHub 계정입니다.");
+                    }
+                });
+
+        user.updateGithubInfo(githubUser.login(), githubUser.avatarUrl());
+
+        return buildCurrentUserResponse(user);
+    }
+
+    @Transactional
+    public CurrentUserResponse disconnectGithub(AuthenticatedUser caller) {
+        if (caller == null || caller.userId() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증 정보가 필요합니다.");
+        }
+
+        UserEntity user = requireUser(caller.userId());
+
+        user.updateGithubInfo(null, null);
+
+        return buildCurrentUserResponse(user);
     }
 }
