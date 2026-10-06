@@ -43,6 +43,18 @@ public class UserEntity {
     @Column(name = "github_username", nullable = true)
     private String githubUsername;
 
+    @Column(name = "github_avatar_url")
+    private String githubAvatarUrl;
+
+    @Column(name = "github_access_token")
+    private String githubAccessToken;
+
+    @Column(name = "initial_commit_count")
+    private Integer initialCommitCount = 0;
+
+    @Column(name = "coin_balance", nullable = false, columnDefinition = "int default 0")
+    private int coinBalance = 0;
+
     protected UserEntity() {
     }
 
@@ -101,6 +113,26 @@ public class UserEntity {
         return clientRole;
     }
 
+    public String getGithubUsername() {
+        return githubUsername;
+    }
+
+    public String getGithubAvatarUrl() {
+        return githubAvatarUrl;
+    }
+
+    public String getGithubAccessToken() {
+        return githubAccessToken;
+    }
+
+    public Integer getInitialCommitCount() {
+        return initialCommitCount != null ? initialCommitCount : 0;
+    }
+
+    public int getCoinBalance() {
+        return coinBalance;
+    }
+
     public Role getEffectiveRole() {
         if (this.adminRole != null) {
             return Role.ADMIN;
@@ -154,11 +186,30 @@ public class UserEntity {
         this.adminTeam = adminTeam;
     }
 
-    public String getGithubUsername() {
-        return githubUsername;
-    }
-
     public void updateGithubUsername(String githubUsername) {
         this.githubUsername = githubUsername;
+    }
+
+    public void updateGithubInfo(String githubUsername, String githubAvatarUrl) {
+        this.githubUsername = githubUsername;
+        this.githubAvatarUrl = githubAvatarUrl;
+    }
+
+    public void connectGithub(String githubUsername, String githubAvatarUrl, String githubAccessToken, int initialCommitCount) {
+        this.githubUsername = githubUsername;
+        this.githubAvatarUrl = githubAvatarUrl;
+        this.githubAccessToken = githubAccessToken;
+        this.initialCommitCount = initialCommitCount;
+    }
+
+    public void disconnectGithub() {
+        this.githubUsername = null;
+        this.githubAvatarUrl = null;
+        this.githubAccessToken = null;
+        this.initialCommitCount = 0;
+    }
+
+    public void updateCoinBalance(int newCoinBalance) {
+        this.coinBalance = Math.max(0, newCoinBalance);
     }
 }
