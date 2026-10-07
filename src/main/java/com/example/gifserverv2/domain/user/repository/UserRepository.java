@@ -28,4 +28,6 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     @Query("SELECT u.id FROM UserEntity u WHERE u.adminRole = :adminRole")
     List<Long> findUserIdsByAdminRole(@Param("adminRole") AdminRole adminRole);
+
+    Optional<UserEntity> findByGithubUsername(String githubUsername);
 } 
