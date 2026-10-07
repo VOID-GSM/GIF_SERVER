@@ -20,7 +20,8 @@ public class GithubFetchService {
 
         try {
             HttpHeaders headers = new HttpHeaders();
-            headers.set("Accept", "application/vnd.github.cloak-preview+json");
+            headers.set("Accept", "application/vnd.github+json");
+            headers.set("X-GitHub-Api-Version", "2022-11-28");
 
             if (accessToken != null && !accessToken.isBlank()) {
                 headers.set("Authorization", "Bearer " + accessToken);
