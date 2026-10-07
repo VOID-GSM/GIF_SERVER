@@ -13,7 +13,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class GithubFetchService {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
 
     public int getCommitCount(String githubUsername, String accessToken) {
         String url = String.format("https://api.github.com/search/commits?q=author:%s", githubUsername);
