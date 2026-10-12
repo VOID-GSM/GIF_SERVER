@@ -32,9 +32,11 @@ public class RetrospectiveController {
             @RequestParam(required = false) RetrospectiveCategory category,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) RetrospectiveSort sort,
+            @RequestParam(defaultValue = "false") boolean bookmarkedOnly,
             Pageable pageable
     ) {
-        return ResponseEntity.ok(retrospectiveService.getList(user.userId(), category, keyword, sort, pageable));
+        return ResponseEntity.ok(
+                retrospectiveService.getList(user.userId(), category, keyword, sort, bookmarkedOnly, pageable));
     }
 
     @GetMapping("/{id}")
@@ -99,7 +101,7 @@ public class RetrospectiveController {
     }
 
     @GetMapping("/draft")
-    public ResponseEntity<List<ListRetrospectiveResponse>> getMyDrafts(
+    public ResponseEntity<List<DetailRetrospectiveResponse>> getMyDrafts(
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return ResponseEntity.ok(retrospectiveService.getMyDrafts(user.userId()));

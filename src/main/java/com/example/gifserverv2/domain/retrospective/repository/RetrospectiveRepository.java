@@ -21,12 +21,16 @@ public interface RetrospectiveRepository extends JpaRepository<Retrospective, Lo
               AND (r.visibility = :publicVisibility OR r.userId = :userId)
               AND (:category IS NULL OR r.category = :category)
               AND (:keyword IS NULL OR r.title LIKE CONCAT('%', :keyword, '%') OR r.content LIKE CONCAT('%', :keyword, '%'))
+              AND (:bookmarkedOnly = false OR EXISTS (
+                    SELECT 1 FROM RetrospectiveBookmark b
+                    WHERE b.retrospectiveId = r.id AND b.userId = :userId))
             """)
     Page<Retrospective> search(
             @Param("userId") Long userId,
             @Param("publicVisibility") RetrospectiveVisibility publicVisibility,
             @Param("category") RetrospectiveCategory category,
             @Param("keyword") String keyword,
+            @Param("bookmarkedOnly") boolean bookmarkedOnly,
             Pageable pageable
     );
 }

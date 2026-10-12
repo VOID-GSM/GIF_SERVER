@@ -61,6 +61,7 @@ public class RetrospectiveService {
                 .visibility(request.visibility())
                 .isDraft(false)
                 .relatedWorks(toEntities(request.relatedWorks()))
+                .tags(tagsOrEmpty(request.tags()))
                 .build();
 
         return retrospectiveRepository.save(retrospective).getId();
@@ -76,7 +77,8 @@ public class RetrospectiveService {
                 request.category(),
                 request.visibility(),
                 request.relatedWorks() != null ? toEntities(request.relatedWorks()) : null,
-                request.content() != null ? summarize(request.content()) : null
+                request.content() != null ? summarize(request.content()) : null,
+                normalizeTags(request.tags())
         );
     }
 
@@ -93,13 +95,14 @@ public class RetrospectiveService {
             RetrospectiveCategory category,
             String keyword,
             RetrospectiveSort sort,
+            boolean bookmarkedOnly,
             Pageable pageable
     ) {
         Pageable sorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), resolveSort(sort));
         String normalizedKeyword = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
 
         Page<Retrospective> retrospectives = retrospectiveRepository.search(
-                userId, RetrospectiveVisibility.PUBLIC, category, normalizedKeyword, sorted
+                userId, RetrospectiveVisibility.PUBLIC, category, normalizedKeyword, bookmarkedOnly, sorted
         );
 
         List<Retrospective> content = retrospectives.getContent();
@@ -171,6 +174,7 @@ public class RetrospectiveService {
                 .visibility(request.visibility() != null ? request.visibility() : RetrospectiveVisibility.PRIVATE)
                 .isDraft(true)
                 .relatedWorks(toEntities(request.relatedWorks()))
+                .tags(tagsOrEmpty(request.tags()))
                 .build();
 
         return retrospectiveRepository.save(draft).getId();
@@ -186,18 +190,20 @@ public class RetrospectiveService {
                 request.category(),
                 request.visibility(),
                 request.relatedWorks() != null ? toEntities(request.relatedWorks()) : null,
-                request.content() != null ? summarize(request.content()) : null
+                request.content() != null ? summarize(request.content()) : null,
+                normalizeTags(request.tags())
         );
     }
 
+    /** 임시저장 목록: content/tags/relatedWorks/projectId/teamName을 포함하는 상세 응답으로 반환 */
     @Transactional(readOnly = true)
-    public List<ListRetrospectiveResponse> getMyDrafts(Long userId) {
+    public List<DetailRetrospectiveResponse> getMyDrafts(Long userId) {
         List<Retrospective> drafts = retrospectiveRepository.findAllByIsDraftTrueAndUserIdOrderByUpdatedAtDesc(userId);
         AuthorAffiliation affiliation = getAuthorAffiliation(userId);
         String userName = getUserName(userId);
 
         return drafts.stream()
-                .map(r -> ListRetrospectiveResponse.from(r, affiliation, userName, false))
+                .map(r -> DetailRetrospectiveResponse.from(r, affiliation, userName, false, true))
                 .toList();
     }
 
@@ -247,6 +253,23 @@ public class RetrospectiveService {
                         .title(r.title())
                         .build())
                 .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    /** null이면 null 유지(Patch에서 "변경 없음"), 값이 있으면 공백 제거 + 중복 제거 */
+    private List<String> normalizeTags(List<String> tags) {
+        if (tags == null) {
+            return null;
+        }
+        return tags.stream()
+                .map(String::trim)
+                .filter(t -> !t.isEmpty())
+                .distinct()
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    private List<String> tagsOrEmpty(List<String> tags) {
+        List<String> normalized = normalizeTags(tags);
+        return normalized != null ? normalized : new ArrayList<>();
     }
 
     private String summarize(String content) {
@@ -304,7 +327,9 @@ public class RetrospectiveService {
                     project != null ? project.getGrade() : null,
                     project != null ? project.getClassNo() : null,
                     project != null ? project.getTeamNo() : null,
-                    member.getPart()
+                    member.getPart(),
+                    project != null ? project.getId() : null,
+                    project != null ? project.getName() : null   // 팀명 필드명이 다르면 여기만 수정
             ));
         }
         return result;

@@ -2,6 +2,7 @@ package com.example.gifserverv2.domain.retrospective.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -52,6 +53,13 @@ public class Retrospective {
     @Builder.Default
     private List<RetrospectiveRelatedWork> relatedWorks = new ArrayList<>();
 
+    @ElementCollection
+    @CollectionTable(name = "retrospective_tag", joinColumns = @JoinColumn(name = "retrospective_id"))
+    @Column(name = "tag", length = 30)
+    @BatchSize(size = 100)
+    @Builder.Default
+    private List<String> tags = new ArrayList<>();
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -70,7 +78,8 @@ public class Retrospective {
             RetrospectiveCategory category,
             RetrospectiveVisibility visibility,
             List<RetrospectiveRelatedWork> relatedWorks,
-            String summary
+            String summary,
+            List<String> tags
     ) {
         if (title != null) this.title = title;
         if (content != null) this.content = content;
@@ -81,6 +90,10 @@ public class Retrospective {
             this.relatedWorks.addAll(relatedWorks);
         }
         if (summary != null) this.summary = summary;
+        if (tags != null) {
+            this.tags.clear();
+            this.tags.addAll(tags);
+        }
         this.updatedAt = LocalDateTime.now();
     }
 
