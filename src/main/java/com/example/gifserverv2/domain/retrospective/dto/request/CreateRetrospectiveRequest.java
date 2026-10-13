@@ -25,5 +25,9 @@ public record CreateRetrospectiveRequest(
         String content,
 
         @Valid
-        List<RelatedWorkRequest> relatedWorks
+        List<RelatedWorkRequest> relatedWorks,
+
+        @Size(max = 10, message = "태그는 최대 10개까지 등록할 수 있습니다.")
+        List<@NotBlank(message = "태그는 비어 있을 수 없습니다.")
+        @Size(max = 30, message = "태그는 30자를 초과할 수 없습니다.") String> tags
 ) {}
