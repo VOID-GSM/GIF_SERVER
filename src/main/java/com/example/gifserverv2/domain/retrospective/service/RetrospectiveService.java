@@ -329,7 +329,7 @@ public class RetrospectiveService {
                     project != null ? project.getTeamNo() : null,
                     member.getPart(),
                     project != null ? project.getId() : null,
-                    project != null ? project.getName() : null   // 팀명 필드명이 다르면 여기만 수정
+                    project != null ? project.getTeamName() : null
             ));
         }
         return result;

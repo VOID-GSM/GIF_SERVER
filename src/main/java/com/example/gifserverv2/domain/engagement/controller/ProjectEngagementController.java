@@ -3,12 +3,12 @@ package com.example.gifserverv2.domain.engagement.controller;
 import com.example.gifserverv2.domain.engagement.dto.request.CreateCommentRequest;
 import com.example.gifserverv2.domain.engagement.dto.response.*;
 import com.example.gifserverv2.domain.engagement.service.ProjectEngagementService;
+import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +24,7 @@ public class ProjectEngagementController {
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId
     ) {
-        return ResponseEntity.ok(engagementService.getEngagement(projectId, user == null ? null : user.userId()));
+        return ResponseEntity.ok(engagementService.getEngagement(projectId, user.userId()));
     }
 
     @GetMapping("/comments")
@@ -42,19 +42,17 @@ public class ProjectEngagementController {
             @PathVariable Long projectId,
             @Valid @RequestBody CreateCommentRequest request
     ) {
-        return ResponseEntity.ok(engagementService.createComment(projectId, user.userId(), request));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(engagementService.createComment(projectId, user.userId(), request));
     }
 
     @DeleteMapping("/comments/{commentId}")
     public ResponseEntity<Void> deleteComment(
             @AuthenticationPrincipal AuthenticatedUser user,
-            Authentication authentication,
             @PathVariable Long projectId,
             @PathVariable Long commentId
     ) {
-        boolean isAdmin = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-        engagementService.deleteComment(projectId, commentId, user.userId(), isAdmin);
+        engagementService.deleteComment(projectId, commentId, user.userId(), user.role() == Role.ADMIN);
         return ResponseEntity.noContent().build();
     }
 
@@ -77,18 +75,8 @@ public class ProjectEngagementController {
     @PostMapping("/view")
     public ResponseEntity<ViewResponse> increaseView(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @PathVariable Long projectId,
-            HttpServletRequest httpRequest
+            @PathVariable Long projectId
     ) {
-        return ResponseEntity.ok(engagementService.increaseView(projectId, viewerKey(user, httpRequest)));
-    }
-
-    private String viewerKey(AuthenticatedUser user, HttpServletRequest request) {
-        if (user != null) return "u:" + user.userId();
-        String forwarded = request.getHeader("X-Forwarded-For");
-        String ip = (forwarded != null && !forwarded.isBlank())
-                ? forwarded.split(",")[0].trim()
-                : request.getRemoteAddr();
-        return "ip:" + ip;
+        return ResponseEntity.ok(engagementService.increaseView(projectId, user.userId()));
     }
 }

@@ -50,6 +50,7 @@ public class Retrospective {
 
     @ElementCollection
     @CollectionTable(name = "retrospective_related_work", joinColumns = @JoinColumn(name = "retrospective_id"))
+    @BatchSize(size = 100)
     @Builder.Default
     private List<RetrospectiveRelatedWork> relatedWorks = new ArrayList<>();
 
