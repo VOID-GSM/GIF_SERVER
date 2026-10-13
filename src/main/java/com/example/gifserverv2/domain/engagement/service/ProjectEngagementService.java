@@ -70,14 +70,12 @@ public class ProjectEngagementService {
         return new LikeResponse(liked, likeRepository.countByProjectId(projectId));
     }
 
-    /** 이미 취소된 상태여도 에러 없이 현재 상태를 반환한다. */
     public LikeResponse unlike(Long projectId, Long userId) {
         validateProject(projectId);
         likeRepository.deleteByProjectIdAndUserId(projectId, userId);
         return new LikeResponse(false, likeRepository.countByProjectId(projectId));
     }
 
-    /** 같은 사용자의 조회는 VIEW_DEDUP_WINDOW 동안 한 번만 집계한다. */
     public ViewResponse increaseView(Long projectId, Long userId) {
         validateProject(projectId);
         if (markViewed(projectId, userId)) {
@@ -86,7 +84,6 @@ public class ProjectEngagementService {
         return new ViewResponse(currentViews(projectId));
     }
 
-    /** 이번 조회를 집계해야 하면 true */
     private boolean markViewed(Long projectId, Long userId) {
         Instant now = Instant.now();
         if (viewRepository.refreshIfExpired(projectId, userId, now, now.minus(VIEW_DEDUP_WINDOW)) > 0) {
@@ -99,7 +96,6 @@ public class ProjectEngagementService {
             viewRepository.saveAndFlush(new ProjectView(projectId, userId, now));
             return true;
         } catch (DataIntegrityViolationException e) {
-            // 동시 요청이 먼저 첫 조회를 기록한 경우
             return false;
         }
     }
@@ -111,7 +107,6 @@ public class ProjectEngagementService {
         try {
             viewCountRepository.saveAndFlush(new ProjectViewCount(projectId, 1L));
         } catch (DataIntegrityViolationException e) {
-            // 동시 요청이 먼저 카운터 행을 만든 경우
             viewCountRepository.increment(projectId);
         }
     }
@@ -123,7 +118,7 @@ public class ProjectEngagementService {
     @Transactional(readOnly = true)
     public CommentPageResponse getComments(Long projectId, int page, int size) {
         validateProject(projectId);
-        int safePage = Math.max(page, 1) - 1; // 프론트는 1부터 시작
+        int safePage = Math.max(page, 1) - 1;
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         return CommentPageResponse.from(commentRepository
                 .findByProjectIdOrderByCreatedAtDescIdDesc(projectId, PageRequest.of(safePage, safeSize))
@@ -142,7 +137,6 @@ public class ProjectEngagementService {
         return CommentResponse.from(saved);
     }
 
-    /** 작성자 본인 또는 관리자만 삭제할 수 있다. */
     @Transactional
     public void deleteComment(Long projectId, Long commentId, Long userId, boolean isAdmin) {
         ProjectComment comment = commentRepository.findById(commentId)

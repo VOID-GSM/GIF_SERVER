@@ -195,7 +195,6 @@ public class RetrospectiveService {
         );
     }
 
-    /** 임시저장 목록: content/tags/relatedWorks/projectId/teamName을 포함하는 상세 응답으로 반환 */
     @Transactional(readOnly = true)
     public List<DetailRetrospectiveResponse> getMyDrafts(Long userId) {
         List<Retrospective> drafts = retrospectiveRepository.findAllByIsDraftTrueAndUserIdOrderByUpdatedAtDesc(userId);

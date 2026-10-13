@@ -103,7 +103,6 @@ class ProjectEngagementServiceTest {
     void 조회수는_중복_방지_시간이_지나면_다시_집계된다() {
         service.increaseView(projectId, userId);
         Instant now = Instant.now();
-        // 마지막 조회 시각을 1시간 전으로 되돌린다
         viewRepository.refreshIfExpired(projectId, userId, now.minus(1, ChronoUnit.HOURS), now.plusSeconds(1));
 
         assertThat(service.increaseView(projectId, userId).views()).isEqualTo(2);
@@ -169,7 +168,6 @@ class ProjectEngagementServiceTest {
         assertThatThrownBy(() -> service.createComment(projectId, userId, new CreateCommentRequest("여섯 번째")))
                 .isInstanceOfSatisfying(ResponseStatusException.class,
                         e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS));
-        // 다른 사용자는 영향을 받지 않는다
         service.createComment(projectId, otherUserId, new CreateCommentRequest("다른 사용자"));
     }
 

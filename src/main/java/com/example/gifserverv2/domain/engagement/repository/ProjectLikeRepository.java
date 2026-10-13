@@ -13,7 +13,6 @@ public interface ProjectLikeRepository extends JpaRepository<ProjectLike, Long> 
 
     long countByProjectId(Long projectId);
 
-    /** 삭제된 행 수(0 또는 1)를 반환한다. */
     @Transactional
     @Modifying
     @Query("DELETE FROM ProjectLike l WHERE l.projectId = :projectId AND l.userId = :userId")

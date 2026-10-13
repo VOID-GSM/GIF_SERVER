@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
-/** 사용자별 마지막 조회 시각. 조회수 중복 집계 방지에 사용한다. */
 @Entity
 @Table(
         name = "project_view",

@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 public interface ProjectViewCountRepository extends JpaRepository<ProjectViewCount, Long> {
 
-    /** 갱신된 행 수를 반환한다. 0이면 아직 카운터 행이 없는 프로젝트다. */
     @Transactional
     @Modifying
     @Query("UPDATE ProjectViewCount v SET v.views = v.views + 1 WHERE v.projectId = :projectId")

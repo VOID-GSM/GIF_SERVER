@@ -13,7 +13,6 @@ public interface ProjectViewRepository extends JpaRepository<ProjectView, Long> 
 
     boolean existsByProjectIdAndUserId(Long projectId, Long userId);
 
-    /** 마지막 조회가 cutoff 이전일 때만 갱신한다. 갱신된 행 수(0 또는 1)를 반환한다. */
     @Transactional
     @Modifying
     @Query("""
