@@ -1,7 +1,7 @@
 package com.example.gifserverv2.domain.auth.dto.response;
 
 public record CurrentUserResponse(
-        Long userId,
+        Long id,
         String email,
         String name,
         String studentNumber,
@@ -9,9 +9,13 @@ public record CurrentUserResponse(
         String role,
         String adminRole,
         String adminTeam,
-        boolean gradeHead,
+        boolean isGradeHead,
         String clientRole,
         Long projectId,
         String clientTeam,
+        String githubUsername,
+        String githubAvatarUrl,
+        int coinBalance,
         String accessToken
-) {}
+) {
+}

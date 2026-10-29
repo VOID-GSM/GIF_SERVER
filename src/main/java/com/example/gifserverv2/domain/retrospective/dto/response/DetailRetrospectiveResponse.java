@@ -7,6 +7,7 @@ import com.example.gifserverv2.domain.retrospective.entity.RetrospectiveVisibili
 import java.time.LocalDateTime;
 import java.util.List;
 
+/** 상세 조회 및 임시저장 목록(GET /draft)에서 공통으로 사용 */
 public record DetailRetrospectiveResponse(
         Long id,
         String title,
@@ -24,7 +25,10 @@ public record DetailRetrospectiveResponse(
         String content,
         List<RelatedWorkResponse> relatedWorks,
         boolean isDraft,
-        boolean isMine
+        boolean isMine,
+        List<String> tags,
+        Long projectId,
+        String teamName
 ) {
     public static DetailRetrospectiveResponse from(
             Retrospective retrospective,
@@ -50,7 +54,10 @@ public record DetailRetrospectiveResponse(
                 retrospective.getContent(),
                 retrospective.getRelatedWorks().stream().map(RelatedWorkResponse::from).toList(),
                 retrospective.isDraft(),
-                isMine
+                isMine,
+                List.copyOf(retrospective.getTags()),
+                affiliation.projectId(),
+                affiliation.teamName()
         );
     }
 }

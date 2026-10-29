@@ -5,6 +5,7 @@ import com.example.gifserverv2.domain.retrospective.entity.RetrospectiveCategory
 import com.example.gifserverv2.domain.retrospective.entity.RetrospectiveVisibility;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record ListRetrospectiveResponse(
         Long id,
@@ -19,7 +20,10 @@ public record ListRetrospectiveResponse(
         long bookmarkCount,
         boolean isBookmarked,
         String authorName,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        List<String> tags,
+        Long projectId,
+        String teamName
 ) {
     public static ListRetrospectiveResponse from(
             Retrospective retrospective,
@@ -40,7 +44,10 @@ public record ListRetrospectiveResponse(
                 retrospective.getBookmarkCount(),
                 isBookmarked,
                 authorName,
-                retrospective.getCreatedAt()
+                retrospective.getCreatedAt(),
+                List.copyOf(retrospective.getTags()),
+                affiliation.projectId(),
+                affiliation.teamName()
         );
     }
 }
