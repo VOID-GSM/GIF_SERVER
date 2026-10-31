@@ -15,12 +15,16 @@ import com.example.gifserverv2.domain.assessment.catchase.repository.CatChaseJud
 import com.example.gifserverv2.domain.assessment.catchase.repository.CatChaseQuestionRepository;
 import com.example.gifserverv2.domain.assessment.catchase.repository.CatChaseRoundRepository;
 import com.example.gifserverv2.domain.assessment.common.dto.StartAssessmentRoundRequest;
+import com.example.gifserverv2.domain.assessment.ranking.dto.AssessmentRankingResponse;
+import com.example.gifserverv2.domain.assessment.ranking.service.AssessmentRankingCalculator;
+import com.example.gifserverv2.domain.assessment.ranking.service.AssessmentRecord;
 import com.example.gifserverv2.domain.coin.entity.CoinAccount;
 import com.example.gifserverv2.domain.coin.repository.CoinAccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,6 +46,7 @@ public class CatChaseService {
     private final CatChaseQuestionRepository questionRepository;
     private final CatChaseJudgmentRepository judgmentRepository;
     private final CoinAccountRepository coinAccountRepository;
+    private final AssessmentRankingCalculator rankingCalculator;
 
     @Transactional
     public StartCatChaseRoundResponse startRound(Long userId, StartAssessmentRoundRequest request) {
@@ -138,6 +143,20 @@ public class CatChaseService {
         return roundRepository.findAllByUserIdOrderByCreatedAtDesc(userId).stream()
                 .map(CatChaseRoundSummaryResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public AssessmentRankingResponse getRanking(Long userId, int limit) {
+        List<AssessmentRecord> records = roundRepository.findAllByCompletedTrueAndQuestionCountGreaterThan(0).stream()
+                .map(round -> new AssessmentRecord(
+                        round.getUserId(),
+                        round.getCorrectCount(),
+                        round.getQuestionCount(),
+                        Duration.between(round.getCreatedAt(), round.getFinishedAt()).getSeconds(),
+                        round.getFinishedAt(),
+                        round.getEarnedCoin()))
+                .toList();
+        return rankingCalculator.rank(records, userId, limit);
     }
 
     private void completeRound(CatChaseRound round, LocalDateTime now) {

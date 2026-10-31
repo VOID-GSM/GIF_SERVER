@@ -9,6 +9,7 @@ import com.example.gifserverv2.domain.assessment.catchase.dto.response.StartCatC
 import com.example.gifserverv2.domain.assessment.catchase.dto.response.SubmitCatChaseJudgmentsResponse;
 import com.example.gifserverv2.domain.assessment.catchase.service.CatChaseService;
 import com.example.gifserverv2.domain.assessment.common.dto.StartAssessmentRoundRequest;
+import com.example.gifserverv2.domain.assessment.ranking.dto.AssessmentRankingResponse;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -72,5 +73,13 @@ public class CatChaseController {
     @GetMapping("/rounds")
     public ResponseEntity<List<CatChaseRoundSummaryResponse>> getMyRounds(@AuthenticationPrincipal AuthenticatedUser user) {
         return ResponseEntity.ok(catChaseService.getMyRounds(user.userId()));
+    }
+
+    @GetMapping("/ranking")
+    public ResponseEntity<AssessmentRankingResponse> getRanking(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestParam(defaultValue = "7") int limit
+    ) {
+        return ResponseEntity.ok(catChaseService.getRanking(user.userId(), limit));
     }
 }

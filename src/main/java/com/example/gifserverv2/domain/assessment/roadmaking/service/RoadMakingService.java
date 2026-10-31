@@ -1,6 +1,9 @@
 package com.example.gifserverv2.domain.assessment.roadmaking.service;
 
 import com.example.gifserverv2.domain.assessment.common.dto.StartAssessmentRoundRequest;
+import com.example.gifserverv2.domain.assessment.ranking.dto.AssessmentRankingResponse;
+import com.example.gifserverv2.domain.assessment.ranking.service.AssessmentRankingCalculator;
+import com.example.gifserverv2.domain.assessment.ranking.service.AssessmentRecord;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.request.FencePosition;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingProblemResponse;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingRoundResultResponse;
@@ -42,6 +45,7 @@ public class RoadMakingService {
     private final ProblemGenerator problemGenerator;
     private final BoardMapper boardMapper;
     private final CoinAccountRepository coinAccountRepository;
+    private final AssessmentRankingCalculator rankingCalculator;
 
     @Transactional
     public StartRoadMakingRoundResponse startRound(Long userId, StartAssessmentRoundRequest request) {
@@ -143,6 +147,20 @@ public class RoadMakingService {
             }
         }
         return RoadMakingRoundResultResponse.from(round);
+    }
+
+    @Transactional(readOnly = true)
+    public AssessmentRankingResponse getRanking(Long userId, int limit) {
+        List<AssessmentRecord> records = roundRepository.findAllByCompletedTrueAndQuestionCountGreaterThan(0).stream()
+                .map(round -> new AssessmentRecord(
+                        round.getUserId(),
+                        round.getSolvedCount(),
+                        round.getQuestionCount(),
+                        Duration.between(round.getStartedAt(), round.getFinishedAt()).getSeconds(),
+                        round.getFinishedAt(),
+                        round.getEarnedCoin()))
+                .toList();
+        return rankingCalculator.rank(records, userId, limit);
     }
 
     /** 전 문항 응답 또는 제한 시간 종료로 끝까지 진행한 라운드: 코인 지급 */

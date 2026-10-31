@@ -9,6 +9,8 @@ import com.example.gifserverv2.domain.assessment.catchase.entity.ConfidenceLevel
 import com.example.gifserverv2.domain.assessment.catchase.entity.Judgment;
 import com.example.gifserverv2.domain.assessment.catchase.exception.CatChaseException;
 import com.example.gifserverv2.domain.assessment.common.dto.StartAssessmentRoundRequest;
+import com.example.gifserverv2.domain.assessment.ranking.dto.AssessmentRankingResponse;
+import com.example.gifserverv2.domain.assessment.ranking.service.AssessmentRankingCalculator;
 import com.example.gifserverv2.domain.coin.entity.CoinAccount;
 import com.example.gifserverv2.domain.coin.repository.CoinAccountRepository;
 import com.example.gifserverv2.domain.user.entity.Role;
@@ -31,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect"
 })
-@Import(CatChaseService.class)
+@Import({CatChaseService.class, AssessmentRankingCalculator.class})
 class CatChaseServiceTest {
 
     @Autowired CatChaseService service;
@@ -101,6 +103,26 @@ class CatChaseServiceTest {
                 .isInstanceOf(CatChaseException.class);
     }
 
+    @Test
+    void 랭킹은_맞힌_수_순이며_기록이_없으면_me는_null이다() {
+        play(userId, 5, 3);
+        play(otherUserId, 10, 8);
+        play(userId, 4, 4); // 홍길동의 최고 기록은 4/4
+
+        AssessmentRankingResponse ranking = service.getRanking(userId, 7);
+
+        assertThat(ranking.rankings()).hasSize(2);
+        assertThat(ranking.rankings().get(0).name()).isEqualTo("김철수");
+        assertThat(ranking.rankings().get(0).correctCount()).isEqualTo(8);
+        assertThat(ranking.rankings().get(0).grade()).isEqualTo(2);
+        assertThat(ranking.me().rank()).isEqualTo(2);
+        assertThat(ranking.me().correctCount()).isEqualTo(4);
+        assertThat(ranking.me().totalCount()).isEqualTo(4);
+        assertThat(ranking.me().earnedCoin()).isEqualTo(60);
+
+        Long newcomer = userRepository.save(new UserEntity("c@gsm.hs.kr", "이영희", "3101", Role.USER, "3")).getId();
+        assertThat(service.getRanking(newcomer, 7).me()).isNull();
+    }
 
     /** questionCount 문항을 풀되 앞에서부터 correctCount 개만 맞힌다 */
     private CatChaseRoundResultResponse play(Long user, int questionCount, int correctCount) {
