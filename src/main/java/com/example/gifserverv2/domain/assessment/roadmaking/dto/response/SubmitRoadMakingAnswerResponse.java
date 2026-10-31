@@ -19,9 +19,10 @@ public record SubmitRoadMakingAnswerResponse(
     }
 
     public static SubmitRoadMakingAnswerResponse of(boolean correct, RoadMakingRound round,
-                                                    List<VehicleResult> vehicleResults, RoadMakingProblemResponse nextProblem) {
+                                                    List<VehicleResult> vehicleResults, RoadMakingProblemResponse nextProblem,
+                                                    RoadMakingRoundResultResponse result) {
         return new SubmitRoadMakingAnswerResponse(correct, false, round.getSolvedCount(), round.getWrongCount(),
-                vehicleResults, nextProblem, null);
+                vehicleResults, nextProblem, result);
     }
 
     public static SubmitRoadMakingAnswerResponse timeOver(RoadMakingRound round, RoadMakingRoundResultResponse result) {

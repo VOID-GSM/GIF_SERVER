@@ -38,8 +38,13 @@ public class RoadMakingProblem {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String boardJson;
 
+    // 정답 여부
     @Column(nullable = false)
     private boolean solved;
+
+    // 정답/오답 상관없이 응답을 마쳤는지 여부
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean answered;
 
     @Column(nullable = false)
     private int attemptCount;
@@ -67,8 +72,18 @@ public class RoadMakingProblem {
         this.attemptCount++;
     }
 
+    public boolean isAnswered() {
+        // 문항 수 도입 이전에 푼 문제는 answered 없이 solved 만 true
+        return answered || solved;
+    }
+
     public void markSolved(LocalDateTime now) {
         this.solved = true;
+        this.answered = true;
         this.solvedAt = now;
+    }
+
+    public void markWrong() {
+        this.answered = true;
     }
 }
