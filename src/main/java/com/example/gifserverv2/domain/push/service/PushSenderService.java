@@ -12,6 +12,7 @@ import nl.martijndwars.webpush.Notification;
 import nl.martijndwars.webpush.PushService;
 import org.apache.http.HttpResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ import java.util.Map;
 
 @Slf4j
 @Service
+@DependsOn("webPushConfig") // PushService 생성 전에 BouncyCastle provider 등록이 필요하다
 @RequiredArgsConstructor
 public class PushSenderService {
 
