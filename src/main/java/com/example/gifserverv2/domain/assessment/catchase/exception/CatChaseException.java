@@ -13,8 +13,16 @@ public class CatChaseException extends ResponseStatusException {
         return new CatChaseException(HttpStatus.NOT_FOUND, "게임 라운드를 찾을 수 없습니다.");
     }
 
+    public static CatChaseException questionNotFound() {
+        return new CatChaseException(HttpStatus.NOT_FOUND, "문항을 찾을 수 없습니다.");
+    }
+
+    public static CatChaseException alreadyFinished() {
+        return new CatChaseException(HttpStatus.CONFLICT, "이미 종료된 검사입니다.");
+    }
+
     public static CatChaseException alreadySubmitted() {
-        return new CatChaseException(HttpStatus.CONFLICT, "이미 판단 결과를 제출한 라운드입니다.");
+        return new CatChaseException(HttpStatus.CONFLICT, "이미 판단 결과를 제출한 문항입니다.");
     }
 
     public static CatChaseException invalidPosition() {

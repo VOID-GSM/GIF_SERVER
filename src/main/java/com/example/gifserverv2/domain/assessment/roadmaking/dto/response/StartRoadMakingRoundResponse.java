@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 
 public record StartRoadMakingRoundResponse(
         Long roundId,
+        int questionCount,
         LocalDateTime startedAt,
         LocalDateTime expiresAt,
         long remainingSeconds,
@@ -14,6 +15,7 @@ public record StartRoadMakingRoundResponse(
 ) {
     public static StartRoadMakingRoundResponse of(RoadMakingRound round, RoadMakingProblemResponse problem, LocalDateTime now) {
         long remaining = Math.max(0, Duration.between(now, round.getExpiresAt()).getSeconds());
-        return new StartRoadMakingRoundResponse(round.getId(), round.getStartedAt(), round.getExpiresAt(), remaining, problem);
+        return new StartRoadMakingRoundResponse(round.getId(), round.getQuestionCount(), round.getStartedAt(),
+                round.getExpiresAt(), remaining, problem);
     }
 }

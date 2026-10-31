@@ -1,5 +1,6 @@
 package com.example.gifserverv2.global.exception;
 
+import com.example.gifserverv2.domain.assessment.roadmaking.exception.RoadMakingException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +46,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleResponseStatus(ResponseStatusException e, HttpServletRequest request) {
         HttpStatus status = HttpStatus.valueOf(e.getStatusCode().value());
         return buildResponse(status, e.getReason(), request);
+    }
+
+    @ExceptionHandler(RoadMakingException.class)
+    public ResponseEntity<Map<String, Object>> handleRoadMaking(RoadMakingException e, HttpServletRequest request) {
+        return buildResponse(e.getErrorCode().getStatus(), e.getMessage(), request);
     }
 
     @ExceptionHandler(AccessDeniedException.class)

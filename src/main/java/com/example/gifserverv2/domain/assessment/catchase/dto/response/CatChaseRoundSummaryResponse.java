@@ -6,17 +6,23 @@ import java.time.LocalDateTime;
 
 public record CatChaseRoundSummaryResponse(
         Long roundId,
-        int mouseCount,
-        int catCount,
-        boolean answered,
+        int questionCount,
+        int answeredCount,
+        int correctCount,
+        boolean finished,
+        boolean completed,
+        int earnedCoin,
         LocalDateTime createdAt
 ) {
-    public static CatChaseRoundSummaryResponse from(CatChaseRound round, boolean answered) {
+    public static CatChaseRoundSummaryResponse from(CatChaseRound round) {
         return new CatChaseRoundSummaryResponse(
                 round.getId(),
-                round.getMousePositions().size(),
-                round.getCatPositions().size(),
-                answered,
+                round.getQuestionCount(),
+                round.getAnsweredCount(),
+                round.getCorrectCount(),
+                !round.isInProgress(),
+                round.isCompleted(),
+                round.getEarnedCoin(),
                 round.getCreatedAt()
         );
     }

@@ -1,5 +1,6 @@
 package com.example.gifserverv2.domain.assessment.roadmaking.controller;
 
+import com.example.gifserverv2.domain.assessment.common.dto.StartAssessmentRoundRequest;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.request.SubmitRoadMakingAnswerRequest;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingProblemResponse;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingRoundResultResponse;
@@ -23,10 +24,12 @@ public class RoadMakingController {
     private final RoadMakingService roadMakingService;
 
     @PostMapping("/rounds")
-    public ResponseEntity<StartRoadMakingRoundResponse> startRound(@AuthenticationPrincipal AuthenticatedUser user) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(roadMakingService.startRound(user.userId()));
+    public ResponseEntity<StartRoadMakingRoundResponse> startRound(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @Valid @RequestBody StartAssessmentRoundRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(roadMakingService.startRound(user.userId(), request));
     }
-
     @GetMapping("/rounds/{roundId}/problems/current")
     public ResponseEntity<RoadMakingProblemResponse> getCurrentProblem(
             @AuthenticationPrincipal AuthenticatedUser user,
