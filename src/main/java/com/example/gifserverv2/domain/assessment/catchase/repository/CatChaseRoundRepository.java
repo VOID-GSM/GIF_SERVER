@@ -13,4 +13,6 @@ public interface CatChaseRoundRepository extends JpaRepository<CatChaseRound, Lo
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<CatChaseRound> findByIdAndUserId(Long id, Long userId);
+
+    List<CatChaseRound> findAllByCompletedTrueAndQuestionCountGreaterThan(int questionCount);
 }

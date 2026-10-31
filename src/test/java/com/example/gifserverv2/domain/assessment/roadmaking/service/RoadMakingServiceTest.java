@@ -1,6 +1,7 @@
 package com.example.gifserverv2.domain.assessment.roadmaking.service;
 
 import com.example.gifserverv2.domain.assessment.common.dto.StartAssessmentRoundRequest;
+import com.example.gifserverv2.domain.assessment.ranking.service.AssessmentRankingCalculator;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.request.FencePosition;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.request.SubmitRoadMakingAnswerRequest;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingProblemResponse;
@@ -36,7 +37,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect"
 })
-@Import({RoadMakingService.class, ProblemGenerator.class, BoardMapper.class,
+@Import({RoadMakingService.class, ProblemGenerator.class, BoardMapper.class, AssessmentRankingCalculator.class,
         RoadMakingServiceTest.Config.class})
 class RoadMakingServiceTest {
 
@@ -79,6 +80,10 @@ class RoadMakingServiceTest {
         assertThat(result.solvedCount() + result.wrongCount()).isEqualTo(3);
         assertThat(result.earnedCoin()).isEqualTo(20 + 10 * result.solvedCount());
         assertThat(balanceOf(userId)).isEqualTo(result.earnedCoin());
+
+        var ranking = service.getRanking(userId, 7);
+        assertThat(ranking.me()).isNotNull();
+        assertThat(ranking.me().totalCount()).isEqualTo(3);
     }
 
     @Test
@@ -92,7 +97,7 @@ class RoadMakingServiceTest {
     }
 
     @Test
-    void 중간에_종료하면_코인이_지급되지_않는다() {
+    void 중간에_종료하면_코인이_지급되지_않고_랭킹에도_없다() {
         var start = service.startRound(userId, new StartAssessmentRoundRequest(5));
         service.submit(userId, start.roundId(), start.problem().problemId(), anyFences(start.problem()));
 
@@ -101,6 +106,7 @@ class RoadMakingServiceTest {
         assertThat(result.completed()).isFalse();
         assertThat(result.earnedCoin()).isZero();
         assertThat(balanceOf(userId)).isZero();
+        assertThat(service.getRanking(userId, 7).me()).isNull();
     }
 
     /** 빈 칸에 요구 개수만큼 울타리를 놓는다 (정답 여부는 상관없음) */
