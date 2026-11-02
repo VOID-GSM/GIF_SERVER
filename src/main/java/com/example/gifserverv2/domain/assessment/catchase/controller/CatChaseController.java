@@ -78,8 +78,9 @@ public class CatChaseController {
     @GetMapping("/ranking")
     public ResponseEntity<AssessmentRankingResponse> getRanking(
             @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestParam(defaultValue = "10") int questionCount,
             @RequestParam(defaultValue = "7") int limit
     ) {
-        return ResponseEntity.ok(catChaseService.getRanking(user.userId(), limit));
+        return ResponseEntity.ok(catChaseService.getRanking(user.userId(), questionCount, limit));
     }
 }

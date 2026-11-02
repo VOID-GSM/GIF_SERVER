@@ -121,24 +121,38 @@ class CatChaseServiceTest {
     }
 
     @Test
-    void 랭킹은_맞힌_수_순이며_기록이_없으면_me는_null이다() {
+    void 랭킹은_같은_문항_수끼리_맞힌_수_순으로_매기고_사용자별_최고_기록을_쓴다() {
         play(userId, 5, 3);
+        play(otherUserId, 5, 4);
+        play(userId, 5, 5); // 홍길동의 5문항 최고 기록은 5/5
         play(otherUserId, 10, 8);
-        play(userId, 4, 4); // 홍길동의 최고 기록은 4/4
 
-        AssessmentRankingResponse ranking = service.getRanking(userId, 7);
+        AssessmentRankingResponse ranking = service.getRanking(userId, 5, 7);
 
+        assertThat(ranking.questionCount()).isEqualTo(5);
         assertThat(ranking.rankings()).hasSize(2);
-        assertThat(ranking.rankings().get(0).name()).isEqualTo("김철수");
-        assertThat(ranking.rankings().get(0).correctCount()).isEqualTo(8);
-        assertThat(ranking.rankings().get(0).grade()).isEqualTo(2);
-        assertThat(ranking.me().rank()).isEqualTo(2);
-        assertThat(ranking.me().correctCount()).isEqualTo(4);
-        assertThat(ranking.me().totalCount()).isEqualTo(4);
-        assertThat(ranking.me().earnedCoin()).isEqualTo(60);
+        assertThat(ranking.rankings().get(0).name()).isEqualTo("홍길동");
+        assertThat(ranking.rankings().get(0).correctCount()).isEqualTo(5);
+        assertThat(ranking.rankings().get(0).earnedCoin()).isEqualTo(70);
+        assertThat(ranking.rankings().get(1).name()).isEqualTo("김철수");
+        assertThat(ranking.rankings().get(1).grade()).isEqualTo(2);
+        assertThat(ranking.me().rank()).isEqualTo(1);
+        assertThat(ranking.me().totalCount()).isEqualTo(5);
 
+        // 10문항 랭킹에는 10문항 기록만 들어간다
+        AssessmentRankingResponse tenQuestions = service.getRanking(userId, 10, 7);
+        assertThat(tenQuestions.rankings()).extracting(r -> r.name()).containsExactly("김철수");
+        assertThat(tenQuestions.me()).isNull();
+    }
+
+    @Test
+    void 기록이_없으면_me는_null이고_범위_밖_문항_수는_거절한다() {
         Long newcomer = userRepository.save(new UserEntity("c@gsm.hs.kr", "이영희", "3101", Role.USER, "3")).getId();
-        assertThat(service.getRanking(newcomer, 7).me()).isNull();
+
+        assertThat(service.getRanking(newcomer, 3, 7).me()).isNull();
+        assertThat(service.getRanking(newcomer, 3, 7).rankings()).isEmpty();
+        assertThatThrownBy(() -> service.getRanking(newcomer, 2, 7)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.getRanking(newcomer, 11, 7)).isInstanceOf(IllegalArgumentException.class);
     }
 
     /** questionCount 문항을 풀되 앞에서부터 correctCount 개만 맞힌다 */

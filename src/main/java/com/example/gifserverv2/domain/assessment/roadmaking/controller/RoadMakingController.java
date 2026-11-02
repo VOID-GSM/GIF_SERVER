@@ -35,9 +35,10 @@ public class RoadMakingController {
     @GetMapping("/ranking")
     public ResponseEntity<AssessmentRankingResponse> getRanking(
             @AuthenticationPrincipal AuthenticatedUser user,
+            @RequestParam(defaultValue = "10") int questionCount,
             @RequestParam(defaultValue = "7") int limit
     ) {
-        return ResponseEntity.ok(roadMakingService.getRanking(user.userId(), limit));
+        return ResponseEntity.ok(roadMakingService.getRanking(user.userId(), questionCount, limit));
     }
 
     @GetMapping("/rounds/{roundId}/problems/current")

@@ -17,5 +17,5 @@ public interface RoadMakingRoundRepository extends JpaRepository<RoadMakingRound
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<RoadMakingRound> findFirstByUserIdAndStatus(Long userId, RoundStatus status);
 
-    List<RoadMakingRound> findAllByCompletedTrueAndQuestionCountGreaterThan(int questionCount);
+    List<RoadMakingRound> findAllByCompletedTrueAndQuestionCount(int questionCount);
 }

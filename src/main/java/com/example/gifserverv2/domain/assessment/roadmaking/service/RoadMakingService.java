@@ -149,8 +149,9 @@ public class RoadMakingService {
     }
 
     @Transactional(readOnly = true)
-    public AssessmentRankingResponse getRanking(Long userId, int limit) {
-        List<AssessmentRecord> records = roundRepository.findAllByCompletedTrueAndQuestionCountGreaterThan(0).stream()
+    public AssessmentRankingResponse getRanking(Long userId, int questionCount, int limit) {
+        AssessmentRankingCalculator.validateQuestionCount(questionCount);
+        List<AssessmentRecord> records = roundRepository.findAllByCompletedTrueAndQuestionCount(questionCount).stream()
                 .map(round -> new AssessmentRecord(
                         round.getUserId(),
                         round.getSolvedCount(),
@@ -159,7 +160,7 @@ public class RoadMakingService {
                         round.getFinishedAt(),
                         round.getEarnedCoin()))
                 .toList();
-        return rankingCalculator.rank(records, userId, limit);
+        return rankingCalculator.rank(questionCount, records, userId, limit);
     }
 
     /**

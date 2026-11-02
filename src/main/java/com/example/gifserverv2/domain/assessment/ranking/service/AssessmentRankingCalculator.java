@@ -1,5 +1,6 @@
 package com.example.gifserverv2.domain.assessment.ranking.service;
 
+import com.example.gifserverv2.domain.assessment.common.dto.StartAssessmentRoundRequest;
 import com.example.gifserverv2.domain.assessment.ranking.dto.AssessmentRankingResponse;
 import com.example.gifserverv2.domain.assessment.ranking.dto.AssessmentRankingResponse.RankingEntry;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
@@ -18,7 +19,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 사용자별 최고 기록으로 순위를 매긴다.
+ * 같은 문항 수로 끝까지 진행한 기록끼리 비교해, 사용자별 최고 기록으로 순위를 매긴다.
  * 정렬: 맞힌 수 ↓ → 정답률 ↓ → 소요 시간 ↑ → 먼저 달성한 순
  */
 @Component
@@ -37,7 +38,15 @@ public class AssessmentRankingCalculator {
 
     private final UserRepository userRepository;
 
-    public AssessmentRankingResponse rank(List<AssessmentRecord> records, Long myUserId, int limit) {
+    public static void validateQuestionCount(int questionCount) {
+        if (questionCount < StartAssessmentRoundRequest.MIN_QUESTION_COUNT
+                || questionCount > StartAssessmentRoundRequest.MAX_QUESTION_COUNT) {
+            throw new IllegalArgumentException("문항 수는 3개 이상 10개 이하여야 합니다.");
+        }
+    }
+
+    /** records 는 모두 questionCount 문항으로 진행한 기록이어야 한다 */
+    public AssessmentRankingResponse rank(int questionCount, List<AssessmentRecord> records, Long myUserId, int limit) {
         int safeLimit = Math.max(1, Math.min(limit, MAX_LIMIT));
 
         List<AssessmentRecord> bestPerUser = new ArrayList<>(records.stream()
@@ -65,7 +74,7 @@ public class AssessmentRankingCalculator {
         RankingEntry me = myIndex < 0 ? null
                 : toEntry(myIndex + 1, bestPerUser.get(myIndex), users.get(myUserId));
 
-        return new AssessmentRankingResponse(rankings, me);
+        return new AssessmentRankingResponse(questionCount, rankings, me);
     }
 
     private static int compareAccuracyDesc(AssessmentRecord a, AssessmentRecord b) {

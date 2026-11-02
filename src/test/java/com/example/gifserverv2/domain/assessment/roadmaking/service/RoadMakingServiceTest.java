@@ -88,7 +88,7 @@ class RoadMakingServiceTest {
         assertThat(balanceOf(userId)).isEqualTo(result.earnedCoin());
         assertThat(userRepository.findById(userId).orElseThrow().getCoinBalance()).isEqualTo(result.earnedCoin());
 
-        var ranking = service.getRanking(userId, 7);
+        var ranking = service.getRanking(userId, 3, 7);
         assertThat(ranking.me()).isNotNull();
         assertThat(ranking.me().totalCount()).isEqualTo(3);
     }
@@ -113,7 +113,7 @@ class RoadMakingServiceTest {
         assertThat(result.completed()).isFalse();
         assertThat(result.earnedCoin()).isZero();
         assertThat(balanceOf(userId)).isZero();
-        assertThat(service.getRanking(userId, 7).me()).isNull();
+        assertThat(service.getRanking(userId, 5, 7).me()).isNull();
     }
 
     @Test
