@@ -8,9 +8,12 @@ import com.example.gifserverv2.domain.assessment.catchase.dto.response.SubmitCat
 import com.example.gifserverv2.domain.assessment.catchase.entity.ConfidenceLevel;
 import com.example.gifserverv2.domain.assessment.catchase.entity.Judgment;
 import com.example.gifserverv2.domain.assessment.catchase.exception.CatChaseException;
+import com.example.gifserverv2.domain.assessment.common.AssessmentCoinRewarder;
 import com.example.gifserverv2.domain.assessment.common.dto.StartAssessmentRoundRequest;
 import com.example.gifserverv2.domain.assessment.ranking.dto.AssessmentRankingResponse;
 import com.example.gifserverv2.domain.assessment.ranking.service.AssessmentRankingCalculator;
+import com.example.gifserverv2.domain.assessment.catchase.entity.CatChaseRound;
+import com.example.gifserverv2.domain.assessment.catchase.repository.CatChaseRoundRepository;
 import com.example.gifserverv2.domain.coin.entity.CoinAccount;
 import com.example.gifserverv2.domain.coin.repository.CoinAccountRepository;
 import com.example.gifserverv2.domain.user.entity.Role;
@@ -33,12 +36,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect"
 })
-@Import({CatChaseService.class, AssessmentRankingCalculator.class})
+@Import({CatChaseService.class, AssessmentCoinRewarder.class, AssessmentRankingCalculator.class})
 class CatChaseServiceTest {
 
     @Autowired CatChaseService service;
     @Autowired UserRepository userRepository;
     @Autowired CoinAccountRepository coinAccountRepository;
+    @Autowired CatChaseRoundRepository roundRepository;
 
     Long userId;
     Long otherUserId;
@@ -68,6 +72,19 @@ class CatChaseServiceTest {
         assertThat(result.correctCount()).isEqualTo(3);
         assertThat(result.earnedCoin()).isEqualTo(50);
         assertThat(balanceOf(userId)).isEqualTo(50);
+        // 프로필에 보이는 코인도 함께 갱신된다
+        assertThat(userRepository.findById(userId).orElseThrow().getCoinBalance()).isEqualTo(50);
+    }
+
+    @Test
+    void 문항_수_도입_이전_라운드는_종료된_라운드로_취급한다() {
+        CatChaseRound legacy = roundRepository.save(CatChaseRound.start(userId, 0));
+
+        assertThat(legacy.isInProgress()).isFalse();
+        assertThat(service.getMyRounds(userId).get(0).finished()).isTrue();
+        assertThatThrownBy(() -> service.getCurrentQuestion(userId, legacy.getId()))
+                .isInstanceOf(CatChaseException.class);
+        assertThat(service.finishRound(userId, legacy.getId()).earnedCoin()).isZero();
     }
 
     @Test

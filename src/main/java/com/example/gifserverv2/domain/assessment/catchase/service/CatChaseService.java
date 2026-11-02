@@ -14,12 +14,11 @@ import com.example.gifserverv2.domain.assessment.catchase.exception.CatChaseExce
 import com.example.gifserverv2.domain.assessment.catchase.repository.CatChaseJudgmentRepository;
 import com.example.gifserverv2.domain.assessment.catchase.repository.CatChaseQuestionRepository;
 import com.example.gifserverv2.domain.assessment.catchase.repository.CatChaseRoundRepository;
+import com.example.gifserverv2.domain.assessment.common.AssessmentCoinRewarder;
 import com.example.gifserverv2.domain.assessment.common.dto.StartAssessmentRoundRequest;
 import com.example.gifserverv2.domain.assessment.ranking.dto.AssessmentRankingResponse;
 import com.example.gifserverv2.domain.assessment.ranking.service.AssessmentRankingCalculator;
 import com.example.gifserverv2.domain.assessment.ranking.service.AssessmentRecord;
-import com.example.gifserverv2.domain.coin.entity.CoinAccount;
-import com.example.gifserverv2.domain.coin.repository.CoinAccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,7 +44,7 @@ public class CatChaseService {
     private final CatChaseRoundRepository roundRepository;
     private final CatChaseQuestionRepository questionRepository;
     private final CatChaseJudgmentRepository judgmentRepository;
-    private final CoinAccountRepository coinAccountRepository;
+    private final AssessmentCoinRewarder coinRewarder;
     private final AssessmentRankingCalculator rankingCalculator;
 
     @Transactional
@@ -164,9 +163,7 @@ public class CatChaseService {
         if (round.isCoinRewarded()) {
             return;
         }
-        CoinAccount account = coinAccountRepository.findByUserId(round.getUserId())
-                .orElseGet(() -> coinAccountRepository.save(CoinAccount.open(round.getUserId())));
-        account.addCoin(round.calculateCoin());
+        coinRewarder.reward(round.getUserId(), round.calculateCoin());
         round.markCoinRewarded();
     }
 

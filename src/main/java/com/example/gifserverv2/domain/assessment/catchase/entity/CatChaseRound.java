@@ -65,7 +65,12 @@ public class CatChaseRound {
     }
 
     public boolean isInProgress() {
-        return finishedAt == null;
+        // 문항 수 도입 이전 라운드(questionCount = 0)는 finishedAt 이 없어도 종료된 것으로 본다
+        return finishedAt == null && !isLegacy();
+    }
+
+    public boolean isLegacy() {
+        return questionCount == 0;
     }
 
     public boolean isAllAnswered() {

@@ -51,7 +51,7 @@ public class RoadMakingRound {
     @Column(nullable = false)
     private int wrongCount;
 
-    // 끝까지 진행(전 문항 응답 또는 제한 시간 종료)했는지 여부. 중간 이탈이면 false
+    // 끝까지 진행(전 문항 응답, 또는 1문항 이상 응답 후 제한 시간 종료)했는지 여부. 중간 이탈이면 false
     @Column(nullable = false, columnDefinition = "boolean default false")
     private boolean completed;
 
