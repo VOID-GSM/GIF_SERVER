@@ -5,18 +5,15 @@ import com.example.gifserverv2.domain.push.entity.PushSubscription;
 import com.example.gifserverv2.domain.push.repository.NotificationRepository;
 import com.example.gifserverv2.domain.push.repository.PushSubscriptionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.martijndwars.webpush.Notification;
 import nl.martijndwars.webpush.PushService;
 import org.apache.http.HttpResponse;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.GeneralSecurityException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,22 +26,7 @@ public class PushSenderService {
     private final PushSubscriptionRepository pushSubscriptionRepository;
     private final NotificationRepository notificationRepository;
     private final ObjectMapper objectMapper;
-
-    @Value("${vapid.public-key}")
-    private String publicKey;
-
-    @Value("${vapid.private-key}")
-    private String privateKey;
-
-    @Value("${vapid.subject}")
-    private String subject;
-
-    private PushService pushService;
-
-    @PostConstruct
-    public void init() throws GeneralSecurityException {
-        this.pushService = new PushService(publicKey, privateKey, subject);
-    }
+    private final PushService pushService;
 
     @Async
     public void sendNotification(Long targetUserId, String title, String body, String targetUrl) {
@@ -62,11 +44,6 @@ public class PushSenderService {
         for (PushSubscription sub : subscriptions) {
             sendToSubscription(sub, payload);
         }
-    }
-
-    @Async
-    public void sendNotification(Long targetUserId, String title, String body) {
-        sendNotification(targetUserId, title, body, null);
     }
 
     public void sendBulkNotifications(List<Long> userIds, String title, String body, String targetUrl) {
@@ -91,15 +68,6 @@ public class PushSenderService {
     @Async
     public void sendBulkNotificationsAsync(List<Long> userIds, String title, String body, String targetUrl) {
         sendBulkNotifications(userIds, title, body, targetUrl);
-    }
-
-    public void sendBulkNotifications(List<Long> userIds, String title, String body) {
-        sendBulkNotifications(userIds, title, body, null);
-    }
-
-    @Async
-    public void sendBulkNotificationsAsync(List<Long> userIds, String title, String body) {
-        sendBulkNotifications(userIds, title, body, null);
     }
 
     @Transactional
