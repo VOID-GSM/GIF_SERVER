@@ -17,7 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import team.themoment.datagsm.sdk.oauth.DataGsmOAuthClient;
 import team.themoment.datagsm.sdk.oauth.exception.DataGsmException;
+import team.themoment.datagsm.sdk.oauth.model.AccountObjectType;
+import team.themoment.datagsm.sdk.oauth.model.AccountStatus;
 import team.themoment.datagsm.sdk.oauth.model.Student;
+import team.themoment.datagsm.sdk.oauth.model.Teacher;
 import team.themoment.datagsm.sdk.oauth.model.TokenResponse;
 import team.themoment.datagsm.sdk.oauth.model.UserInfo;
 
@@ -63,23 +66,35 @@ public class AuthService {
                     codeVerifier);
             UserInfo userInfo = dataGsmOAuthClient.getUserInfo(tokenResponse.getAccessToken());
 
-            Student student = userInfo.getStudent();
             String email = userInfo.getEmail();
-            boolean isStudent = userInfo.isStudent();
+            AccountObjectType objectType = userInfo.getObjectType();
+
+            if (userInfo.getStatus() != AccountStatus.ACTIVE) {
+                log.warn("Inactive DataGSM account login blocked: email='{}', status={}", email, userInfo.getStatus());
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "승인이 완료되지 않은 계정입니다.");
+            }
 
             String name = null;
             String studentNumber = null;
             String grade = null;
             Role assignedRole = Role.USER;
 
-            if (!isStudent) {
-                assignedRole = Role.ADMIN;
-                if (email != null && !email.isBlank() && email.contains("@")) {
-                    name = email.split("@")[0];
-                } else {
-                    name = email;
+            if (objectType == AccountObjectType.TEACHER) {
+                Teacher teacher = userInfo.getTeacher();
+                if (teacher == null) {
+                    log.warn("Teacher info missing in UserInfo: email='{}'", email);
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "선생님 정보가 없습니다.");
                 }
-            } else {
+
+                name = teacher.getName();
+                if (email == null || email.isBlank() || name == null || name.isBlank()) {
+                    log.warn("Invalid teacher info: email='{}', name='{}'", email, name);
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "선생님 정보가 유효하지 않습니다.");
+                }
+
+                assignedRole = Role.ADMIN;
+            } else if (objectType == AccountObjectType.STUDENT) {
+                Student student = userInfo.getStudent();
                 if (student == null) {
                     log.warn("Student info missing in UserInfo: {}", userInfo);
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학생 정보가 없습니다.");
@@ -109,6 +124,9 @@ public class AuthService {
                     log.warn("Grade 3 student login blocked: email='{}', name='{}'", email, name);
                     throw new ResponseStatusException(HttpStatus.FORBIDDEN, "3학년은 로그인할 수 없습니다.");
                 }
+            } else {
+                log.warn("Unsupported DataGSM account type login blocked: email='{}', objectType={}", email, objectType);
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "로그인할 수 없는 계정 유형입니다.");
             }
 
             UserEntity user = findOrCreateUser(email, name, studentNumber, assignedRole, grade);
