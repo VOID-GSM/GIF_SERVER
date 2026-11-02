@@ -88,11 +88,11 @@ class CatChaseServiceTest {
     }
 
     @Test
-    void 모두_틀려도_끝까지_진행하면_기본_20코인이_지급된다() {
+    void 끝까지_진행해도_모두_틀리면_코인이_지급되지_않는다() {
         CatChaseRoundResultResponse result = play(userId, 3, 0);
 
-        assertThat(result.earnedCoin()).isEqualTo(20);
-        assertThat(balanceOf(userId)).isEqualTo(20);
+        assertThat(result.earnedCoin()).isZero();
+        assertThat(balanceOf(userId)).isZero();
     }
 
     @Test

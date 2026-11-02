@@ -17,6 +17,9 @@ public class AssessmentCoinRewarder {
     private final UserRepository userRepository;
 
     public void reward(Long userId, int amount) {
+        if (amount <= 0) {
+            return;
+        }
         CoinAccount account = coinAccountRepository.findByUserId(userId)
                 .orElseGet(() -> coinAccountRepository.save(CoinAccount.open(userId)));
         account.addCoin(amount);

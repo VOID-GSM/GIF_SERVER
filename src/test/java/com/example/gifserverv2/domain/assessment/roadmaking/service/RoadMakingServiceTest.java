@@ -84,7 +84,7 @@ class RoadMakingServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.completed()).isTrue();
         assertThat(result.solvedCount() + result.wrongCount()).isEqualTo(3);
-        assertThat(result.earnedCoin()).isEqualTo(20 + 10 * result.solvedCount());
+        assertThat(result.earnedCoin()).isEqualTo(result.solvedCount() > 0 ? 20 + 10 * result.solvedCount() : 0);
         assertThat(balanceOf(userId)).isEqualTo(result.earnedCoin());
         assertThat(userRepository.findById(userId).orElseThrow().getCoinBalance()).isEqualTo(result.earnedCoin());
 
