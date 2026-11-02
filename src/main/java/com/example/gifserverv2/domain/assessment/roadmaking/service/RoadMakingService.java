@@ -1,5 +1,6 @@
 package com.example.gifserverv2.domain.assessment.roadmaking.service;
 
+import com.example.gifserverv2.domain.assessment.common.AssessmentCoinRewarder;
 import com.example.gifserverv2.domain.assessment.common.dto.StartAssessmentRoundRequest;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.request.FencePosition;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingProblemResponse;
@@ -19,8 +20,6 @@ import com.example.gifserverv2.domain.assessment.roadmaking.model.Trace;
 import com.example.gifserverv2.domain.assessment.roadmaking.repository.RoadMakingProblemRepository;
 import com.example.gifserverv2.domain.assessment.roadmaking.repository.RoadMakingRoundRepository;
 import com.example.gifserverv2.domain.assessment.roadmaking.service.ProblemGenerator.GeneratedProblem;
-import com.example.gifserverv2.domain.coin.entity.CoinAccount;
-import com.example.gifserverv2.domain.coin.repository.CoinAccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +40,7 @@ public class RoadMakingService {
     private final RoadMakingProblemRepository problemRepository;
     private final ProblemGenerator problemGenerator;
     private final BoardMapper boardMapper;
-    private final CoinAccountRepository coinAccountRepository;
+    private final AssessmentCoinRewarder coinRewarder;
 
     @Transactional
     public StartRoadMakingRoundResponse startRound(Long userId, StartAssessmentRoundRequest request) {
@@ -55,7 +54,7 @@ public class RoadMakingService {
                 RoadMakingProblem current = findCurrentProblem(round);
                 return StartRoadMakingRoundResponse.of(round, toProblemResponse(current), now);
             }
-            completeRound(round, now);
+            closeExpiredRound(round, now);
         }
 
         RoadMakingRound round = roundRepository.save(
@@ -73,7 +72,7 @@ public class RoadMakingService {
             throw new RoadMakingException(RoadMakingErrorCode.ROUND_ALREADY_FINISHED);
         }
         if (round.isExpired(now)) {
-            completeRound(round, now);
+            closeExpiredRound(round, now);
             throw new RoadMakingException(RoadMakingErrorCode.ROUND_TIME_OVER);
         }
         return toProblemResponse(findCurrentProblem(round));
@@ -88,7 +87,7 @@ public class RoadMakingService {
             throw new RoadMakingException(RoadMakingErrorCode.ROUND_ALREADY_FINISHED);
         }
         if (round.isExpired(now.minus(GRACE))) {
-            completeRound(round, now);
+            closeExpiredRound(round, now);
             return SubmitRoadMakingAnswerResponse.timeOver(round, RoadMakingRoundResultResponse.from(round));
         }
 
@@ -136,7 +135,7 @@ public class RoadMakingService {
         RoadMakingRound round = getOwnedRound(userId, roundId);
         if (round.isInProgress()) {
             if (round.isExpired(now)) {
-                completeRound(round, now);
+                closeExpiredRound(round, now);
             } else {
                 // 모든 문항을 풀기 전에 직접 종료하면 이탈로 보고 코인을 지급하지 않는다
                 round.abandon(now);
@@ -145,15 +144,25 @@ public class RoadMakingService {
         return RoadMakingRoundResultResponse.from(round);
     }
 
+    /**
+     * 제한 시간 종료: 한 문항 이상 응답했으면 끝까지 진행한 것으로 보고, 하나도 풀지 않았으면 이탈로 본다.
+     * (방치만으로 기본 코인을 받는 것을 막기 위함)
+     */
+    private void closeExpiredRound(RoadMakingRound round, LocalDateTime now) {
+        if (round.getAnsweredCount() > 0) {
+            completeRound(round, now);
+        } else {
+            round.abandon(now);
+        }
+    }
+
     /** 전 문항 응답 또는 제한 시간 종료로 끝까지 진행한 라운드: 코인 지급 */
     private void completeRound(RoadMakingRound round, LocalDateTime now) {
         round.complete(now);
         if (round.isCoinRewarded()) {
             return;
         }
-        CoinAccount account = coinAccountRepository.findByUserId(round.getUserId())
-                .orElseGet(() -> coinAccountRepository.save(CoinAccount.open(round.getUserId())));
-        account.addCoin(round.calculateCoin());
+        coinRewarder.reward(round.getUserId(), round.calculateCoin());
         round.markCoinRewarded();
     }
 

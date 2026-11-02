@@ -1,6 +1,9 @@
 package com.example.gifserverv2.domain.assessment.roadmaking.service;
 
+import com.example.gifserverv2.domain.assessment.common.AssessmentCoinRewarder;
 import com.example.gifserverv2.domain.assessment.common.dto.StartAssessmentRoundRequest;
+import com.example.gifserverv2.domain.assessment.roadmaking.entity.RoadMakingRound;
+import com.example.gifserverv2.domain.assessment.roadmaking.repository.RoadMakingRoundRepository;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.request.FencePosition;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.request.SubmitRoadMakingAnswerRequest;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingProblemResponse;
@@ -24,6 +27,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.TestConfiguration;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -36,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect"
 })
-@Import({RoadMakingService.class, ProblemGenerator.class, BoardMapper.class,
+@Import({RoadMakingService.class, ProblemGenerator.class, BoardMapper.class, AssessmentCoinRewarder.class,
         RoadMakingServiceTest.Config.class})
 class RoadMakingServiceTest {
 
@@ -51,6 +56,7 @@ class RoadMakingServiceTest {
     @Autowired RoadMakingService service;
     @Autowired UserRepository userRepository;
     @Autowired CoinAccountRepository coinAccountRepository;
+    @Autowired RoadMakingRoundRepository roundRepository;
 
     Long userId;
 
@@ -79,6 +85,7 @@ class RoadMakingServiceTest {
         assertThat(result.solvedCount() + result.wrongCount()).isEqualTo(3);
         assertThat(result.earnedCoin()).isEqualTo(20 + 10 * result.solvedCount());
         assertThat(balanceOf(userId)).isEqualTo(result.earnedCoin());
+        assertThat(userRepository.findById(userId).orElseThrow().getCoinBalance()).isEqualTo(result.earnedCoin());
     }
 
     @Test
@@ -97,6 +104,19 @@ class RoadMakingServiceTest {
         service.submit(userId, start.roundId(), start.problem().problemId(), anyFences(start.problem()));
 
         RoadMakingRoundResultResponse result = service.finishRound(userId, start.roundId());
+
+        assertThat(result.completed()).isFalse();
+        assertThat(result.earnedCoin()).isZero();
+        assertThat(balanceOf(userId)).isZero();
+    }
+
+    @Test
+    void 한_문항도_풀지_않고_제한_시간이_지나면_코인이_지급되지_않는다() {
+        LocalDateTime startedLongAgo = LocalDateTime.now().minusMinutes(10);
+        RoadMakingRound round = roundRepository.save(
+                RoadMakingRound.start(userId, 3, startedLongAgo, Duration.ofMinutes(5)));
+
+        RoadMakingRoundResultResponse result = service.finishRound(userId, round.getId());
 
         assertThat(result.completed()).isFalse();
         assertThat(result.earnedCoin()).isZero();
