@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
  * 고양이 술래잡기 검사 1회. 한 라운드 안에 questionCount 개의 문항(CatChaseQuestion)이 순서대로 출제된다.
  */
 @Entity
-@Table(name = "cat_chase_round")
+@Table(name = "cat_chase_round", indexes = @Index(name = "idx_cat_chase_round_ranking", columnList = "completed, question_count"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CatChaseRound {

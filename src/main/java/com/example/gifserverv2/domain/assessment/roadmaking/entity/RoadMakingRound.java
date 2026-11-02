@@ -8,6 +8,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -17,7 +18,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "road_making_round")
+@Table(name = "road_making_round", indexes = @Index(name = "idx_road_making_round_ranking", columnList = "completed, question_count"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RoadMakingRound {
