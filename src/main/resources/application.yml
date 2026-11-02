@@ -26,7 +26,7 @@ spring:
       max-request-size: 10MB
   jackson:
     time-zone: Asia/Seoul
-    datetime:
+    serialization:
       write-dates-as-timestamps: false
 
 oauth:
