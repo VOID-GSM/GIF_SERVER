@@ -2,6 +2,9 @@ package com.example.gifserverv2.domain.assessment.roadmaking.service;
 
 import com.example.gifserverv2.domain.assessment.common.AssessmentCoinRewarder;
 import com.example.gifserverv2.domain.assessment.common.dto.StartAssessmentRoundRequest;
+import com.example.gifserverv2.domain.assessment.ranking.dto.AssessmentRankingResponse;
+import com.example.gifserverv2.domain.assessment.ranking.service.AssessmentRankingCalculator;
+import com.example.gifserverv2.domain.assessment.ranking.service.AssessmentRecord;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.request.FencePosition;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingProblemResponse;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingRoundResultResponse;
@@ -41,6 +44,7 @@ public class RoadMakingService {
     private final ProblemGenerator problemGenerator;
     private final BoardMapper boardMapper;
     private final AssessmentCoinRewarder coinRewarder;
+    private final AssessmentRankingCalculator rankingCalculator;
 
     @Transactional
     public StartRoadMakingRoundResponse startRound(Long userId, StartAssessmentRoundRequest request) {
@@ -142,6 +146,21 @@ public class RoadMakingService {
             }
         }
         return RoadMakingRoundResultResponse.from(round);
+    }
+
+    @Transactional(readOnly = true)
+    public AssessmentRankingResponse getRanking(Long userId, int questionCount, int limit) {
+        AssessmentRankingCalculator.validateQuestionCount(questionCount);
+        List<AssessmentRecord> records = roundRepository.findAllByCompletedTrueAndQuestionCount(questionCount).stream()
+                .map(round -> new AssessmentRecord(
+                        round.getUserId(),
+                        round.getSolvedCount(),
+                        round.getQuestionCount(),
+                        Duration.between(round.getStartedAt(), round.getFinishedAt()).getSeconds(),
+                        round.getFinishedAt(),
+                        round.getEarnedCoin()))
+                .toList();
+        return rankingCalculator.rank(questionCount, records, userId, limit);
     }
 
     /**

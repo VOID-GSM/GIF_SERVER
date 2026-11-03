@@ -10,6 +10,8 @@ import com.example.gifserverv2.domain.assessment.catchase.entity.Judgment;
 import com.example.gifserverv2.domain.assessment.catchase.exception.CatChaseException;
 import com.example.gifserverv2.domain.assessment.common.AssessmentCoinRewarder;
 import com.example.gifserverv2.domain.assessment.common.dto.StartAssessmentRoundRequest;
+import com.example.gifserverv2.domain.assessment.ranking.dto.AssessmentRankingResponse;
+import com.example.gifserverv2.domain.assessment.ranking.service.AssessmentRankingCalculator;
 import com.example.gifserverv2.domain.assessment.catchase.entity.CatChaseRound;
 import com.example.gifserverv2.domain.assessment.catchase.repository.CatChaseRoundRepository;
 import com.example.gifserverv2.domain.coin.entity.CoinAccount;
@@ -34,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect"
 })
-@Import({CatChaseService.class, AssessmentCoinRewarder.class})
+@Import({CatChaseService.class, AssessmentCoinRewarder.class, AssessmentRankingCalculator.class})
 class CatChaseServiceTest {
 
     @Autowired CatChaseService service;
@@ -118,6 +120,40 @@ class CatChaseServiceTest {
                 .isInstanceOf(CatChaseException.class);
     }
 
+    @Test
+    void 랭킹은_같은_문항_수끼리_맞힌_수_순으로_매기고_사용자별_최고_기록을_쓴다() {
+        play(userId, 5, 3);
+        play(otherUserId, 5, 4);
+        play(userId, 5, 5); // 홍길동의 5문항 최고 기록은 5/5
+        play(otherUserId, 10, 8);
+
+        AssessmentRankingResponse ranking = service.getRanking(userId, 5, 7);
+
+        assertThat(ranking.questionCount()).isEqualTo(5);
+        assertThat(ranking.rankings()).hasSize(2);
+        assertThat(ranking.rankings().get(0).name()).isEqualTo("홍길동");
+        assertThat(ranking.rankings().get(0).correctCount()).isEqualTo(5);
+        assertThat(ranking.rankings().get(0).earnedCoin()).isEqualTo(70);
+        assertThat(ranking.rankings().get(1).name()).isEqualTo("김철수");
+        assertThat(ranking.rankings().get(1).grade()).isEqualTo(2);
+        assertThat(ranking.me().rank()).isEqualTo(1);
+        assertThat(ranking.me().totalCount()).isEqualTo(5);
+
+        // 10문항 랭킹에는 10문항 기록만 들어간다
+        AssessmentRankingResponse tenQuestions = service.getRanking(userId, 10, 7);
+        assertThat(tenQuestions.rankings()).extracting(r -> r.name()).containsExactly("김철수");
+        assertThat(tenQuestions.me()).isNull();
+    }
+
+    @Test
+    void 기록이_없으면_me는_null이고_범위_밖_문항_수는_거절한다() {
+        Long newcomer = userRepository.save(new UserEntity("c@gsm.hs.kr", "이영희", "3101", Role.USER, "3")).getId();
+
+        assertThat(service.getRanking(newcomer, 3, 7).me()).isNull();
+        assertThat(service.getRanking(newcomer, 3, 7).rankings()).isEmpty();
+        assertThatThrownBy(() -> service.getRanking(newcomer, 2, 7)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.getRanking(newcomer, 11, 7)).isInstanceOf(IllegalArgumentException.class);
+    }
 
     /** questionCount 문항을 풀되 앞에서부터 correctCount 개만 맞힌다 */
     private CatChaseRoundResultResponse play(Long user, int questionCount, int correctCount) {

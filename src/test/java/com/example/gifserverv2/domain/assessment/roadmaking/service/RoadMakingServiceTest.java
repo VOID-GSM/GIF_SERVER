@@ -2,6 +2,7 @@ package com.example.gifserverv2.domain.assessment.roadmaking.service;
 
 import com.example.gifserverv2.domain.assessment.common.AssessmentCoinRewarder;
 import com.example.gifserverv2.domain.assessment.common.dto.StartAssessmentRoundRequest;
+import com.example.gifserverv2.domain.assessment.ranking.service.AssessmentRankingCalculator;
 import com.example.gifserverv2.domain.assessment.roadmaking.entity.RoadMakingRound;
 import com.example.gifserverv2.domain.assessment.roadmaking.repository.RoadMakingRoundRepository;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.request.FencePosition;
@@ -41,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect"
 })
-@Import({RoadMakingService.class, ProblemGenerator.class, BoardMapper.class, AssessmentCoinRewarder.class,
+@Import({RoadMakingService.class, ProblemGenerator.class, BoardMapper.class, AssessmentCoinRewarder.class, AssessmentRankingCalculator.class,
         RoadMakingServiceTest.Config.class})
 class RoadMakingServiceTest {
 
@@ -86,6 +87,10 @@ class RoadMakingServiceTest {
         assertThat(result.earnedCoin()).isEqualTo(result.solvedCount() > 0 ? 20 + 10 * result.solvedCount() : 0);
         assertThat(balanceOf(userId)).isEqualTo(result.earnedCoin());
         assertThat(userRepository.findById(userId).orElseThrow().getCoinBalance()).isEqualTo(result.earnedCoin());
+
+        var ranking = service.getRanking(userId, 3, 7);
+        assertThat(ranking.me()).isNotNull();
+        assertThat(ranking.me().totalCount()).isEqualTo(3);
     }
 
     @Test
@@ -99,7 +104,7 @@ class RoadMakingServiceTest {
     }
 
     @Test
-    void 중간에_종료하면_코인이_지급되지_않는다() {
+    void 중간에_종료하면_코인이_지급되지_않고_랭킹에도_없다() {
         var start = service.startRound(userId, new StartAssessmentRoundRequest(5));
         service.submit(userId, start.roundId(), start.problem().problemId(), anyFences(start.problem()));
 
@@ -108,6 +113,7 @@ class RoadMakingServiceTest {
         assertThat(result.completed()).isFalse();
         assertThat(result.earnedCoin()).isZero();
         assertThat(balanceOf(userId)).isZero();
+        assertThat(service.getRanking(userId, 5, 7).me()).isNull();
     }
 
     @Test
