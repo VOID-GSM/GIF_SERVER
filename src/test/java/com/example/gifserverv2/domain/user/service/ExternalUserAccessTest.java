@@ -31,7 +31,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
@@ -130,10 +129,19 @@ class ExternalUserAccessTest {
         assertThat(external.getStudentNumber()).isNull();
     }
 
+    @Test
+    void 외부_사용자는_학번이_빈_값이면_이름을_수정할_수_있다() {
+        UpdateCurrentUserRequest request = new UpdateCurrentUserRequest("새이름", "", null, null, null);
+
+        userService.updateCurrentUser(caller(), request);
+
+        assertThat(external.getName()).isEqualTo("새이름");
+        assertThat(external.getStudentNumber()).isNull();
+    }
+
     private void assertForbidden(UpdateCurrentUserRequest request) {
         assertThatThrownBy(() -> userService.updateCurrentUser(caller(), request))
-                .isInstanceOfSatisfying(ResponseStatusException.class,
-                        e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN));
+                .isInstanceOf(AccessDeniedException.class);
     }
 
     private AuthenticatedUser caller() {
