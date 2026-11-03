@@ -63,7 +63,7 @@ class RetrospectiveServiceTest {
         Long id = createPublic("회고", List.of("React", " 성능 개선 ", "React"));
 
         ListRetrospectiveResponse listed = service
-                .getList(readerId, null, null, null, false, PageRequest.of(0, 10)).getContent().get(0);
+                .getList(readerId, null, null, null, false, false, PageRequest.of(0, 10)).getContent().get(0);
         assertThat(listed.tags()).containsExactly("React", "성능 개선");
         assertThat(listed.projectId()).isEqualTo(projectId);
         assertThat(listed.teamName()).isEqualTo("더모먼트");
@@ -91,19 +91,48 @@ class RetrospectiveServiceTest {
         createPublic("북마크 안 한 글", List.of());
         service.toggleBookmark(readerId, bookmarked);
 
-        assertThat(service.getList(readerId, null, null, null, false, PageRequest.of(0, 10)).getTotalElements())
+        assertThat(service.getList(readerId, null, null, null, false, false, PageRequest.of(0, 10)).getTotalElements())
                 .isEqualTo(2);
-        assertThat(service.getList(readerId, null, null, null, true, PageRequest.of(0, 10)).getContent())
+        assertThat(service.getList(readerId, null, null, null, true, false, PageRequest.of(0, 10)).getContent())
                 .extracting(ListRetrospectiveResponse::id).containsExactly(bookmarked);
-        assertThat(service.getList(authorId, null, null, null, true, PageRequest.of(0, 10)).getTotalElements())
+        assertThat(service.getList(authorId, null, null, null, true, false, PageRequest.of(0, 10)).getTotalElements())
                 .isZero();
+    }
+
+    @Test
+    void mine은_내가_쓴_회고만_반환하고_목록에_isMine이_포함된다() {
+        Long mine = createPublic("내 글", List.of());
+        service.create(readerId, new CreateRetrospectiveRequest(
+                RetrospectiveCategory.RETROSPECTIVE, RetrospectiveVisibility.PUBLIC, "남의 글", "내용", null, null));
+
+        List<ListRetrospectiveResponse> all = service
+                .getList(authorId, null, null, null, false, false, PageRequest.of(0, 10)).getContent();
+        assertThat(all).hasSize(2);
+        assertThat(all).filteredOn(ListRetrospectiveResponse::isMine)
+                .extracting(ListRetrospectiveResponse::id).containsExactly(mine);
+
+        assertThat(service.getList(authorId, null, null, null, false, true, PageRequest.of(0, 10)).getContent())
+                .extracting(ListRetrospectiveResponse::id).containsExactly(mine);
+    }
+
+    @Test
+    void 관련작업_url이_저장되고_응답에_포함된다() {
+        Long id = service.create(authorId, new CreateRetrospectiveRequest(
+                RetrospectiveCategory.RETROSPECTIVE, RetrospectiveVisibility.PUBLIC, "회고", "내용",
+                List.of(new RelatedWorkRequest(RelatedWorkType.PR, 12, "로그인 수정", "https://github.com/org/repo/pull/12"),
+                        new RelatedWorkRequest(RelatedWorkType.ISSUE, 3, "url 없음", null)),
+                null));
+
+        assertThat(service.getDetail(authorId, id).relatedWorks())
+                .extracting(r -> r.url())
+                .containsExactly("https://github.com/org/repo/pull/12", null);
     }
 
     @Test
     void 임시저장_목록에_본문_태그_관련작업_팀_정보가_포함된다() {
         service.createDraft(authorId, new RetrospectivePatchRequest(
                 null, null, "임시 제목", "임시 본문",
-                List.of(new RelatedWorkRequest(RelatedWorkType.PR, 12, "로그인 개선")),
+                List.of(new RelatedWorkRequest(RelatedWorkType.PR, 12, "로그인 개선", "https://github.com/org/repo/pull/12")),
                 List.of("초안")));
 
         List<DetailRetrospectiveResponse> drafts = service.getMyDrafts(authorId);
@@ -113,6 +142,7 @@ class RetrospectiveServiceTest {
         assertThat(draft.content()).isEqualTo("임시 본문");
         assertThat(draft.tags()).containsExactly("초안");
         assertThat(draft.relatedWorks()).hasSize(1);
+        assertThat(draft.relatedWorks().get(0).url()).isEqualTo("https://github.com/org/repo/pull/12");
         assertThat(draft.projectId()).isEqualTo(projectId);
         assertThat(draft.teamName()).isEqualTo("더모먼트");
         assertThat(service.getMyDrafts(readerId)).isEmpty();

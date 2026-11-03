@@ -24,6 +24,7 @@ public interface RetrospectiveRepository extends JpaRepository<Retrospective, Lo
               AND (:bookmarkedOnly = false OR EXISTS (
                     SELECT 1 FROM RetrospectiveBookmark b
                     WHERE b.retrospectiveId = r.id AND b.userId = :userId))
+              AND (:mineOnly = false OR r.userId = :userId)
             """)
     Page<Retrospective> search(
             @Param("userId") Long userId,
@@ -31,6 +32,7 @@ public interface RetrospectiveRepository extends JpaRepository<Retrospective, Lo
             @Param("category") RetrospectiveCategory category,
             @Param("keyword") String keyword,
             @Param("bookmarkedOnly") boolean bookmarkedOnly,
+            @Param("mineOnly") boolean mineOnly,
             Pageable pageable
     );
 }

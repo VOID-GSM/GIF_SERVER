@@ -96,13 +96,14 @@ public class RetrospectiveService {
             String keyword,
             RetrospectiveSort sort,
             boolean bookmarkedOnly,
+            boolean mineOnly,
             Pageable pageable
     ) {
         Pageable sorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), resolveSort(sort));
         String normalizedKeyword = (keyword == null || keyword.isBlank()) ? null : keyword.trim();
 
         Page<Retrospective> retrospectives = retrospectiveRepository.search(
-                userId, RetrospectiveVisibility.PUBLIC, category, normalizedKeyword, bookmarkedOnly, sorted
+                userId, RetrospectiveVisibility.PUBLIC, category, normalizedKeyword, bookmarkedOnly, mineOnly, sorted
         );
 
         List<Retrospective> content = retrospectives.getContent();
@@ -115,7 +116,8 @@ public class RetrospectiveService {
                 r,
                 affiliationMap.getOrDefault(r.getUserId(), AuthorAffiliation.empty()),
                 userNameMap.get(r.getUserId()),
-                bookmarkedIds.contains(r.getId())
+                bookmarkedIds.contains(r.getId()),
+                r.isOwnedBy(userId)
         ));
     }
 
@@ -250,6 +252,7 @@ public class RetrospectiveService {
                         .type(r.type())
                         .number(r.number())
                         .title(r.title())
+                        .url(r.url() == null || r.url().isBlank() ? null : r.url().trim())
                         .build())
                 .collect(Collectors.toCollection(ArrayList::new));
     }
