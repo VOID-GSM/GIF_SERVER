@@ -47,6 +47,10 @@ public class UserService {
         UserEntity user = requireUser(caller.userId());
         boolean changed = false;
 
+        if (user.getEffectiveRole() == Role.EXTERNAL && (request.clientRole() != null || request.studentNumber() != null)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "외부 사용자는 학생 정보를 수정할 수 없습니다.");
+        }
+
         String newName = (request.name() != null && !request.name().isBlank()) ? request.name() : user.getName();
         String newStudentNumber = (request.studentNumber() != null && !request.studentNumber().isBlank()) ? request.studentNumber() : user.getStudentNumber();
 
