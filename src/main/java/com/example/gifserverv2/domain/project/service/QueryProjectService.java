@@ -1,6 +1,8 @@
 package com.example.gifserverv2.domain.project.service;
 
+import com.example.gifserverv2.domain.engagement.entity.ProjectViewCount;
 import com.example.gifserverv2.domain.engagement.repository.ProjectLikeRepository;
+import com.example.gifserverv2.domain.engagement.repository.ProjectViewCountRepository;
 import com.example.gifserverv2.domain.project.dto.response.DetailProjectResponse;
 import com.example.gifserverv2.domain.project.dto.response.ListProjectResponse;
 import com.example.gifserverv2.domain.project.dto.response.UserSearchResponse;
@@ -31,6 +33,7 @@ public class QueryProjectService {
     private final UserSearchRepository userSearchRepository;
     private final UserRepository userRepository;
     private final ProjectLikeRepository likeRepository;
+    private final ProjectViewCountRepository viewCountRepository; // 추가: 조회수 조회용
 
     @Transactional(readOnly = true)
     public List<UserSearchResponse> searchUsers(String keyword) {
@@ -82,7 +85,9 @@ public class QueryProjectService {
                 project,
                 userMap,
                 likeRepository.countByProjectId(projectId),
-                likeRepository.existsByProjectIdAndUserId(projectId, userId)
+                likeRepository.existsByProjectIdAndUserId(projectId, userId),
+                // 추가: 조회 기록이 아직 없는 프로젝트는 0으로 처리
+                viewCountRepository.findById(projectId).map(ProjectViewCount::getViews).orElse(0L)
         );
     }
 
@@ -96,12 +101,16 @@ public class QueryProjectService {
                 .collect(Collectors.toMap(ProjectLikeRepository.ProjectLikeCount::getProjectId,
                         ProjectLikeRepository.ProjectLikeCount::getLikeCount));
         Set<Long> likedProjectIds = new HashSet<>(likeRepository.findLikedProjectIds(userId, projectIds));
+        // 추가: 프로젝트마다 따로 조회하지 않고 쿼리 1번으로 전체 조회수를 가져온다 (N+1 방지)
+        Map<Long, Long> viewCounts = viewCountRepository.findAllById(projectIds).stream()
+                .collect(Collectors.toMap(ProjectViewCount::getProjectId, ProjectViewCount::getViews));
 
         return projects.stream()
                 .map(p -> ListProjectResponse.from(
                         p,
                         likeCounts.getOrDefault(p.getId(), 0L),
-                        likedProjectIds.contains(p.getId())))
+                        likedProjectIds.contains(p.getId()),
+                        viewCounts.getOrDefault(p.getId(), 0L)))
                 .toList();
     }
 

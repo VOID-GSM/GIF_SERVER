@@ -10,9 +10,10 @@ public record ListProjectResponse(
         String logo,
         Integer grade,
         long likeCount,
-        @JsonProperty("isLiked") boolean isLiked
+        @JsonProperty("isLiked") boolean isLiked,
+        long viewCount
 ) {
-    public static ListProjectResponse from(Project project, long likeCount, boolean isLiked) {
+    public static ListProjectResponse from(Project project, long likeCount, boolean isLiked, long viewCount) {
         return new ListProjectResponse(
                 project.getId(),
                 project.getName(),
@@ -20,7 +21,8 @@ public record ListProjectResponse(
                 project.getLogo(),
                 project.getGrade(),
                 likeCount,
-                isLiked
+                isLiked,
+                viewCount
         );
     }
 }
