@@ -185,14 +185,14 @@ class AuthServiceTest {
     }
 
     @Test
-    void Google_재로그인은_기존_외부_사용자를_재사용한다() {
-        UserEntity existing = new UserEntity("visitor@gmail.com", "옛이름", null, Role.EXTERNAL);
+    void Google_재로그인은_기존_외부_사용자를_재사용하고_수정한_이름을_유지한다() {
+        UserEntity existing = new UserEntity("visitor@gmail.com", "직접바꾼이름", null, Role.EXTERNAL);
         when(userRepository.findByEmail("visitor@gmail.com")).thenReturn(Optional.of(existing));
 
-        OAuthSignInResponse response = authService.signInWithGoogle("google-token", googleInfo("visitor@gmail.com", "새이름"));
+        OAuthSignInResponse response = authService.signInWithGoogle("google-token", googleInfo("visitor@gmail.com", "구글이름"));
 
         verify(userRepository, never()).save(any());
-        assertThat(response.name()).isEqualTo("새이름");
+        assertThat(response.name()).isEqualTo("직접바꾼이름");
         assertThat(existing.getRole()).isEqualTo(Role.EXTERNAL);
     }
 

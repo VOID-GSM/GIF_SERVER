@@ -216,7 +216,6 @@ public class AuthService {
                         log.warn("Google login blocked for non-external account: email='{}'", email);
                         throw new ResponseStatusException(HttpStatus.FORBIDDEN, "교내 계정은 DataGSM 로그인을 이용해주세요.");
                     }
-                    existing.updateProfile(name, null, null);
                     return existing;
                 })
                 .orElseGet(() -> userRepository.save(new UserEntity(email, name, null, Role.EXTERNAL)));
