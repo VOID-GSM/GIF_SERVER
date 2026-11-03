@@ -7,6 +7,7 @@ import com.example.gifserverv2.domain.auth.service.GithubOAuthClient;
 import com.example.gifserverv2.domain.coin.service.GithubFetchService;
 import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
+import com.example.gifserverv2.domain.user.entity.AccountType;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.ClientRole;
 import com.example.gifserverv2.domain.user.entity.Role;
@@ -166,6 +167,7 @@ public class UserService {
                 user.getStudentNumber(),
                 user.getGrade(),
                 user.getEffectiveRole().name(),
+                AccountType.of(user).name(),
                 user.getAdminRole() != null ? user.getAdminRole().name() : null,
                 user.getAdminTeam(),
                 user.isGradeHead(),

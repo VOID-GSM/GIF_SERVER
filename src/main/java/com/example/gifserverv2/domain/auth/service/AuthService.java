@@ -2,6 +2,7 @@ package com.example.gifserverv2.domain.auth.service;
 
 import com.example.gifserverv2.domain.auth.dto.request.OAuthSignInRequest;
 import com.example.gifserverv2.domain.auth.dto.response.OAuthSignInResponse;
+import com.example.gifserverv2.domain.user.entity.AccountType;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
@@ -140,6 +141,7 @@ public class AuthService {
                     user.getStudentNumber(),
                     user.getGrade(),
                     user.getRole().name(),
+                    AccountType.of(user).name(),
                     user.getAdminRole() != null ? user.getAdminRole().name() : null,
                     user.getAdminTeam(),
                     user.isGradeHead(),
@@ -172,6 +174,7 @@ public class AuthService {
                 user.getStudentNumber(),
                 user.getGrade(),
                 user.getRole().name(),
+                AccountType.of(user).name(),
                 user.getAdminRole() != null ? user.getAdminRole().name() : null,
                 user.getAdminTeam(),
                 user.isGradeHead(),
