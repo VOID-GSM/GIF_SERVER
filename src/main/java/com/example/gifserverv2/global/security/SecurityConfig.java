@@ -26,6 +26,8 @@ import java.util.stream.Collectors;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    private static final String[] SCHOOL_ROLES = {"USER", "ADMIN"};
+
     private final TokenAuthenticationFilter tokenAuthenticationFilter;
     private final List<String> allowedOrigins;
 
@@ -48,21 +50,27 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                        .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                        .accessDeniedHandler(new JsonAccessDeniedHandler()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/dg/start", "/api/auth/dg/callback").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/google/start", "/api/auth/google/callback").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/signin").permitAll()
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
-                        .requestMatchers("/api/score/**").authenticated()
-                        .requestMatchers("/api/project/**").authenticated()
-                        .requestMatchers("/api/form/**").authenticated()
-                        .requestMatchers("/api/ai/**").authenticated()
-                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
-                        .anyRequest().authenticated())
+                        .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
+                        // 외부 사용자(EXTERNAL)는 아래 조회·참여 API만 사용할 수 있다.
+                        .requestMatchers(HttpMethod.GET, "/api/project/me", "/api/project/admin").hasAnyRole(SCHOOL_ROLES)
+                        .requestMatchers(HttpMethod.GET, "/api/project/*", "/api/project/*/links",
+                                "/api/project/*/engagement", "/api/project/*/comments").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/project/*/comments", "/api/project/*/like",
+                                "/api/project/*/view").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/project/*/comments/*", "/api/project/*/like").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/users/me").authenticated()
+                        .requestMatchers("/api/notifications/**", "/api/push/**").authenticated()
+                        .anyRequest().hasAnyRole(SCHOOL_ROLES))
                 .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

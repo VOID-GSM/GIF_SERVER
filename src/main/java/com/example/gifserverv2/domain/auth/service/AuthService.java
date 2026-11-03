@@ -2,6 +2,7 @@ package com.example.gifserverv2.domain.auth.service;
 
 import com.example.gifserverv2.domain.auth.dto.request.OAuthSignInRequest;
 import com.example.gifserverv2.domain.auth.dto.response.OAuthSignInResponse;
+import com.example.gifserverv2.domain.user.entity.AccountType;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
@@ -140,6 +141,7 @@ public class AuthService {
                     user.getStudentNumber(),
                     user.getGrade(),
                     user.getRole().name(),
+                    AccountType.of(user).name(),
                     user.getAdminRole() != null ? user.getAdminRole().name() : null,
                     user.getAdminTeam(),
                     user.isGradeHead(),
@@ -159,9 +161,9 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Google 사용자 이메일을 가져오지 못했습니다.");
         }
 
-        Role assignedRole = Role.ADMIN;
+        String displayName = (name != null && !name.isBlank()) ? name : email.split("@")[0];
 
-        UserEntity user = findOrCreateUser(email, name, null, assignedRole, null);
+        UserEntity user = findOrCreateExternalUser(email, displayName);
         String token = jwtTokenProvider.createToken(user);
 
         return new OAuthSignInResponse(
@@ -172,6 +174,7 @@ public class AuthService {
                 user.getStudentNumber(),
                 user.getGrade(),
                 user.getRole().name(),
+                AccountType.of(user).name(),
                 user.getAdminRole() != null ? user.getAdminRole().name() : null,
                 user.getAdminTeam(),
                 user.isGradeHead(),
@@ -204,6 +207,18 @@ public class AuthService {
     private HttpStatus resolveStatus(int statusCode) {
         HttpStatus resolved = HttpStatus.resolve(statusCode);
         return resolved != null ? resolved : HttpStatus.BAD_GATEWAY;
+    }
+
+    private UserEntity findOrCreateExternalUser(String email, String name) {
+        return userRepository.findByEmail(email)
+                .map(existing -> {
+                    if (existing.getEffectiveRole() != Role.EXTERNAL) {
+                        log.warn("Google login blocked for non-external account: email='{}'", email);
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "교내 계정은 DataGSM 로그인을 이용해주세요.");
+                    }
+                    return existing;
+                })
+                .orElseGet(() -> userRepository.save(new UserEntity(email, name, null, Role.EXTERNAL)));
     }
 
     private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role, String grade) {

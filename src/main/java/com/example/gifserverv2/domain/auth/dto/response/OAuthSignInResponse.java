@@ -8,6 +8,7 @@ public record OAuthSignInResponse(
         String studentNumber,
         String grade,
         String role,
+        String accountType,
         String adminRole,
         String adminTeam,
         boolean gradeHead,
