@@ -57,14 +57,14 @@ class AccountTypeAccessTest {
     void 외부_사용자는_프로젝트를_생성할_수_없다() throws Exception {
         mockMvc.perform(multipart("/api/project").with(as(Role.EXTERNAL)))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value(JsonAccessDeniedHandler.EXTERNAL_USER_FORBIDDEN));
+                .andExpect(jsonPath("$.code").value(AccessDeniedCode.EXTERNAL_USER_FORBIDDEN.name()));
     }
 
     @Test
     void 외부_사용자는_프로젝트를_수정할_수_없다() throws Exception {
         mockMvc.perform(multipart(HttpMethod.PUT, "/api/project/1/update").with(as(Role.EXTERNAL)))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value(JsonAccessDeniedHandler.EXTERNAL_USER_FORBIDDEN));
+                .andExpect(jsonPath("$.code").value(AccessDeniedCode.EXTERNAL_USER_FORBIDDEN.name()));
     }
 
     @Test
@@ -72,7 +72,7 @@ class AccountTypeAccessTest {
         mockMvc.perform(post("/api/form/submit").with(as(Role.EXTERNAL))
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value(JsonAccessDeniedHandler.EXTERNAL_USER_FORBIDDEN));
+                .andExpect(jsonPath("$.code").value(AccessDeniedCode.EXTERNAL_USER_FORBIDDEN.name()));
     }
 
     @Test
@@ -106,6 +106,13 @@ class AccountTypeAccessTest {
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isOk());
         mockMvc.perform(post("/api/project/1/like").with(as(Role.USER))).andExpect(status().isOk());
+    }
+
+    @Test
+    void 메서드_권한에서_막혀도_403_응답에_code가_포함된다() throws Exception {
+        mockMvc.perform(get("/api/project/admin").with(as(Role.USER)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(AccessDeniedCode.ACCESS_DENIED.name()));
     }
 
     private RequestPostProcessor as(Role role) {
