@@ -1,5 +1,7 @@
 package com.example.gifserverv2.domain.assessment.roadmaking.service;
 
+import com.example.gifserverv2.domain.assessment.common.AssessmentCoinRewarder;
+import com.example.gifserverv2.domain.assessment.common.dto.StartAssessmentRoundRequest;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.request.FencePosition;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingProblemResponse;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingRoundResultResponse;
@@ -18,8 +20,6 @@ import com.example.gifserverv2.domain.assessment.roadmaking.model.Trace;
 import com.example.gifserverv2.domain.assessment.roadmaking.repository.RoadMakingProblemRepository;
 import com.example.gifserverv2.domain.assessment.roadmaking.repository.RoadMakingRoundRepository;
 import com.example.gifserverv2.domain.assessment.roadmaking.service.ProblemGenerator.GeneratedProblem;
-import com.example.gifserverv2.domain.coin.entity.CoinAccount;
-import com.example.gifserverv2.domain.coin.repository.CoinAccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,10 +40,10 @@ public class RoadMakingService {
     private final RoadMakingProblemRepository problemRepository;
     private final ProblemGenerator problemGenerator;
     private final BoardMapper boardMapper;
-    private final CoinAccountRepository coinAccountRepository;
+    private final AssessmentCoinRewarder coinRewarder;
 
     @Transactional
-    public StartRoadMakingRoundResponse startRound(Long userId) {
+    public StartRoadMakingRoundResponse startRound(Long userId, StartAssessmentRoundRequest request) {
         LocalDateTime now = LocalDateTime.now();
 
         Optional<RoadMakingRound> active =
@@ -54,10 +54,11 @@ public class RoadMakingService {
                 RoadMakingProblem current = findCurrentProblem(round);
                 return StartRoadMakingRoundResponse.of(round, toProblemResponse(current), now);
             }
-            closeRound(round, now);
+            closeExpiredRound(round, now);
         }
 
-        RoadMakingRound round = roundRepository.save(RoadMakingRound.start(userId, now, TIME_LIMIT));
+        RoadMakingRound round = roundRepository.save(
+                RoadMakingRound.start(userId, request.questionCount(), now, TIME_LIMIT));
         RoadMakingProblem first = issueProblem(round, now);
         return StartRoadMakingRoundResponse.of(round, toProblemResponse(first), now);
     }
@@ -71,7 +72,7 @@ public class RoadMakingService {
             throw new RoadMakingException(RoadMakingErrorCode.ROUND_ALREADY_FINISHED);
         }
         if (round.isExpired(now)) {
-            closeRound(round, now);
+            closeExpiredRound(round, now);
             throw new RoadMakingException(RoadMakingErrorCode.ROUND_TIME_OVER);
         }
         return toProblemResponse(findCurrentProblem(round));
@@ -86,13 +87,13 @@ public class RoadMakingService {
             throw new RoadMakingException(RoadMakingErrorCode.ROUND_ALREADY_FINISHED);
         }
         if (round.isExpired(now.minus(GRACE))) {
-            closeRound(round, now);
+            closeExpiredRound(round, now);
             return SubmitRoadMakingAnswerResponse.timeOver(round, RoadMakingRoundResultResponse.from(round));
         }
 
         RoadMakingProblem problem = problemRepository.findByIdAndRoundId(problemId, roundId)
                 .orElseThrow(() -> new RoadMakingException(RoadMakingErrorCode.PROBLEM_NOT_FOUND));
-        if (problem.isSolved()) {
+        if (problem.isAnswered()) {
             throw new RoadMakingException(RoadMakingErrorCode.PROBLEM_ALREADY_SOLVED);
         }
 
@@ -108,35 +109,60 @@ public class RoadMakingService {
                 .toList();
         boolean correct = results.stream().allMatch(VehicleResult::reached);
 
+        // 한 문항은 한 번만 응답할 수 있고, 맞히든 틀리든 다음 문항으로 넘어간다
         problem.increaseAttempt();
-        if (!correct) {
+        if (correct) {
+            problem.markSolved(now);
+            round.markSolved();
+        } else {
+            problem.markWrong();
             round.markWrong();
-            return SubmitRoadMakingAnswerResponse.of(false, round, results, null);
         }
 
-        problem.markSolved(now);
-        round.markSolved();
+        if (round.isAllAnswered()) {
+            completeRound(round, now);
+            return SubmitRoadMakingAnswerResponse.of(correct, round, results, null,
+                    RoadMakingRoundResultResponse.from(round));
+        }
+
         RoadMakingProblem next = issueProblem(round, now);
-        return SubmitRoadMakingAnswerResponse.of(true, round, results, toProblemResponse(next));
+        return SubmitRoadMakingAnswerResponse.of(correct, round, results, toProblemResponse(next), null);
     }
 
     @Transactional
     public RoadMakingRoundResultResponse finishRound(Long userId, Long roundId) {
+        LocalDateTime now = LocalDateTime.now();
         RoadMakingRound round = getOwnedRound(userId, roundId);
         if (round.isInProgress()) {
-            closeRound(round, LocalDateTime.now());
+            if (round.isExpired(now)) {
+                closeExpiredRound(round, now);
+            } else {
+                // 모든 문항을 풀기 전에 직접 종료하면 이탈로 보고 코인을 지급하지 않는다
+                round.abandon(now);
+            }
         }
         return RoadMakingRoundResultResponse.from(round);
     }
 
-    private void closeRound(RoadMakingRound round, LocalDateTime now) {
-        round.finish(now);
+    /**
+     * 제한 시간 종료: 한 문항 이상 응답했으면 끝까지 진행한 것으로 보고, 하나도 풀지 않았으면 이탈로 본다.
+     * (방치만으로 기본 코인을 받는 것을 막기 위함)
+     */
+    private void closeExpiredRound(RoadMakingRound round, LocalDateTime now) {
+        if (round.getAnsweredCount() > 0) {
+            completeRound(round, now);
+        } else {
+            round.abandon(now);
+        }
+    }
+
+    /** 전 문항 응답 또는 제한 시간 종료로 끝까지 진행한 라운드: 코인 지급 */
+    private void completeRound(RoadMakingRound round, LocalDateTime now) {
+        round.complete(now);
         if (round.isCoinRewarded()) {
             return;
         }
-        CoinAccount account = coinAccountRepository.findByUserId(round.getUserId())
-                .orElseGet(() -> coinAccountRepository.save(CoinAccount.open(round.getUserId())));
-        account.addCoin(round.calculateCoin());
+        coinRewarder.reward(round.getUserId(), round.calculateCoin());
         round.markCoinRewarded();
     }
 
@@ -146,7 +172,9 @@ public class RoadMakingService {
     }
 
     private RoadMakingProblem findCurrentProblem(RoadMakingRound round) {
-        return problemRepository.findFirstByRoundIdAndSolvedFalseOrderBySequenceAsc(round.getId())
+        // 다음 문항은 이전 문항에 응답한 뒤에만 발급되므로, 가장 최근 문항이 현재 문항이다
+        return problemRepository.findFirstByRoundIdOrderBySequenceDesc(round.getId())
+                .filter(problem -> !problem.isAnswered())
                 .orElseThrow(() -> new RoadMakingException(RoadMakingErrorCode.PROBLEM_NOT_FOUND));
     }
 
@@ -154,7 +182,7 @@ public class RoadMakingService {
         GeneratedProblem generated = problemGenerator.generate(round.getSolvedCount());
         return problemRepository.save(RoadMakingProblem.issue(
                 round,
-                round.getSolvedCount() + 1,
+                round.getAnsweredCount() + 1,
                 generated.minFenceCount(),
                 boardMapper.toJson(generated.board()),
                 now
