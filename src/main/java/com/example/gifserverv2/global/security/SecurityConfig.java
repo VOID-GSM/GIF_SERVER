@@ -57,7 +57,6 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
                         .requestMatchers("/api/score/**").authenticated()
-                        .requestMatchers("/api/score/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/project/*/view").permitAll()   // 추가: 비로그인 조회수 허용
                         .requestMatchers("/api/project/**").authenticated()
                         .requestMatchers("/api/project/**").authenticated()
