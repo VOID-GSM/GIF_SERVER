@@ -1,6 +1,7 @@
 package com.example.gifserverv2.domain.auth.service;
 
 import com.example.gifserverv2.domain.auth.dto.response.OAuthSignInResponse;
+import com.example.gifserverv2.domain.user.entity.AccountType;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
@@ -75,6 +76,7 @@ class AuthServiceTest {
 
         assertThat(response.name()).isEqualTo("김선생");
         assertThat(response.role()).isEqualTo(Role.ADMIN.name());
+        assertThat(response.accountType()).isEqualTo(AccountType.TEACHER.name());
         assertThat(response.studentNumber()).isNull();
     }
 
@@ -104,6 +106,7 @@ class AuthServiceTest {
 
         assertThat(response.name()).isEqualTo("김학생");
         assertThat(response.role()).isEqualTo(Role.USER.name());
+        assertThat(response.accountType()).isEqualTo(AccountType.STUDENT.name());
         assertThat(response.studentNumber()).isEqualTo("2101");
     }
 
@@ -166,6 +169,7 @@ class AuthServiceTest {
         OAuthSignInResponse response = authService.signInWithGoogle("google-token", googleInfo("visitor@gmail.com", "방문객"));
 
         assertThat(response.role()).isEqualTo(Role.EXTERNAL.name());
+        assertThat(response.accountType()).isEqualTo(AccountType.EXTERNAL.name());
         assertThat(response.name()).isEqualTo("방문객");
         assertThat(response.adminRole()).isNull();
         assertThat(response.studentNumber()).isNull();
