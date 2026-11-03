@@ -42,7 +42,8 @@ public class InquiryWriterService {
             pushSenderService.sendBulkNotificationsAsync(
                     voidUserIds,
                     PushMessageTemplate.INQUIRY_RECEIVED.getTitle(),
-                    PushMessageTemplate.INQUIRY_RECEIVED.getBodyTemplate()
+                    PushMessageTemplate.INQUIRY_RECEIVED.getBodyTemplate(),
+                    PushMessageTemplate.INQUIRY_RECEIVED.formatTargetUrl(savedInquiryId)
             );
         }
 

@@ -50,14 +50,16 @@ public class CommandProjectService {
                 pushSenderService.sendBulkNotifications(
                         reconciliation.addedMemberIds(),
                         PushMessageTemplate.TEAM_MEMBER_ADDED.getTitle(),
-                        PushMessageTemplate.TEAM_MEMBER_ADDED.formatBody(coreResult.projectName())
+                        PushMessageTemplate.TEAM_MEMBER_ADDED.formatBody(coreResult.projectName()),
+                        PushMessageTemplate.TEAM_MEMBER_ADDED.formatTargetUrl(projectId)
                 );
             }
             if (!reconciliation.removedMemberIds().isEmpty()) {
                 pushSenderService.sendBulkNotifications(
                         reconciliation.removedMemberIds(),
                         PushMessageTemplate.TEAM_MEMBER_REMOVED.getTitle(),
-                        PushMessageTemplate.TEAM_MEMBER_REMOVED.formatBody(coreResult.projectName())
+                        PushMessageTemplate.TEAM_MEMBER_REMOVED.formatBody(coreResult.projectName()),
+                        PushMessageTemplate.TEAM_MEMBER_REMOVED.formatTargetUrl()
                 );
             }
         }
@@ -78,7 +80,8 @@ public class CommandProjectService {
         pushSenderService.sendBulkNotifications(
                 teacherIds,
                 PushMessageTemplate.PROJECT_CREATED.getTitle(),
-                PushMessageTemplate.PROJECT_CREATED.formatBody(created.projectName())
+                PushMessageTemplate.PROJECT_CREATED.formatBody(created.projectName()),
+                PushMessageTemplate.PROJECT_CREATED.formatTargetUrl(created.projectId())
         );
 
         return created.projectId();
@@ -115,13 +118,15 @@ public class CommandProjectService {
         pushSenderService.sendBulkNotifications(
                 result.memberUserIds(),
                 PushMessageTemplate.LEADER_TRANSFERRED_CLIENT.getTitle(),
-                PushMessageTemplate.LEADER_TRANSFERRED_CLIENT.formatBody(result.projectName(), result.newLeaderName())
+                PushMessageTemplate.LEADER_TRANSFERRED_CLIENT.formatBody(result.projectName(), result.newLeaderName()),
+                PushMessageTemplate.LEADER_TRANSFERRED_CLIENT.formatTargetUrl(projectId)
         );
 
         pushSenderService.sendBulkNotifications(
                 result.teacherIds(),
                 PushMessageTemplate.LEADER_TRANSFERRED_ADMIN.getTitle(),
-                PushMessageTemplate.LEADER_TRANSFERRED_ADMIN.formatBody(result.masterName(), result.projectName(), result.newLeaderName())
+                PushMessageTemplate.LEADER_TRANSFERRED_ADMIN.formatBody(result.masterName(), result.projectName(), result.newLeaderName()),
+                PushMessageTemplate.LEADER_TRANSFERRED_ADMIN.formatTargetUrl(projectId)
         );
     }
 }

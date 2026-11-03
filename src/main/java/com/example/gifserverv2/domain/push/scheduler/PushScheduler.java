@@ -66,22 +66,28 @@ public class PushScheduler {
 
             String title;
             String body;
+            String targetUrl;
 
             if (hoursLeft == 1) {
                 title = PushMessageTemplate.DEADLINE_1_HOUR.getTitle();
                 body = PushMessageTemplate.DEADLINE_1_HOUR.formatBody(form.getTitle());
+                targetUrl = PushMessageTemplate.DEADLINE_1_HOUR.formatTargetUrl(form.getId());
             } else if (hoursLeft == 5) {
                 title = PushMessageTemplate.DEADLINE_5_HOURS.getTitle();
                 body = PushMessageTemplate.DEADLINE_5_HOURS.formatBody(form.getTitle());
+                targetUrl = PushMessageTemplate.DEADLINE_5_HOURS.formatTargetUrl(form.getId());
             } else if (hoursLeft == 24) {
                 title = PushMessageTemplate.DEADLINE_1_DAY.getTitle();
                 body = PushMessageTemplate.DEADLINE_1_DAY.formatBody(form.getTitle());
+                targetUrl = PushMessageTemplate.DEADLINE_1_DAY.formatTargetUrl(form.getId());
             } else if (hoursLeft == 72) {
                 title = PushMessageTemplate.DEADLINE_3_DAYS.getTitle();
                 body = PushMessageTemplate.DEADLINE_3_DAYS.formatBody(form.getTitle());
+                targetUrl = PushMessageTemplate.DEADLINE_3_DAYS.formatTargetUrl(form.getId());
             } else if (hoursLeft == -1) {
                 title = PushMessageTemplate.DEADLINE_MISSED.getTitle();
                 body = PushMessageTemplate.DEADLINE_MISSED.formatBody(form.getTitle());
+                targetUrl = PushMessageTemplate.DEADLINE_MISSED.formatTargetUrl(form.getId());
             } else {
                 continue;
             }
@@ -96,7 +102,7 @@ public class PushScheduler {
                 if (!submittedKeySet.contains(key)) {
                     List<Long> targetUserIds = projectUserIdsMap.getOrDefault(project.getId(), List.of());
                     if (!targetUserIds.isEmpty()) {
-                        pushSenderService.sendBulkNotifications(targetUserIds, title, body);
+                        pushSenderService.sendBulkNotifications(targetUserIds, title, body, targetUrl);
                     }
                 }
             }
@@ -145,7 +151,8 @@ public class PushScheduler {
                             event.getEventName(),
                             startDateStr,
                             endDateStr
-                    )
+                    ),
+                    PushMessageTemplate.SCHEDULE_CURRENT_PERIOD.formatTargetUrl(projectId)
             );
         }
     }

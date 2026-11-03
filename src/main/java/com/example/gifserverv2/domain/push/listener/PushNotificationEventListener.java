@@ -19,7 +19,8 @@ public class PushNotificationEventListener {
         pushSenderService.sendBulkNotifications(
                 event.userIds(),
                 event.title(),
-                event.body()
+                event.body(),
+                event.targetUrl()
         );
     }
 }
