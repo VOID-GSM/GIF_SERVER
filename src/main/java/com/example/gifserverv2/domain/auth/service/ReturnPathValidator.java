@@ -1,8 +1,5 @@
 package com.example.gifserverv2.domain.auth.service;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
 /**
  * 로그인 후 복귀 경로(returnTo) 검증.
  * Open Redirect 방지를 위해 같은 사이트 안의 상대 경로("/"로 시작)만 허용한다.
@@ -32,14 +29,8 @@ public final class ReturnPathValidator {
                 return null;
             }
         }
-        try {
-            URI uri = new URI(returnTo);
-            if (uri.getScheme() != null || uri.getRawAuthority() != null) {
-                return null;
-            }
-        } catch (URISyntaxException e) {
-            return null;
-        }
+        // 여기까지 통과한 값은 "/"로 시작하고 "//"가 아니므로 scheme·authority 를 가질 수 없다.
+        // java.net.URI 파싱은 "[", "%" 등 브라우저가 허용하는 문자도 거부하므로 사용하지 않는다.
         return returnTo;
     }
 }

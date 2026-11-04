@@ -15,7 +15,10 @@ class ReturnPathValidatorTest {
             "/projects/12",
             "/projects/12?tab=comments",
             "/retrospectives?sort=latest#top",
-            "/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8"
+            "/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8",
+            "/projects?tags=[1]",
+            "/search?q=100%",
+            "/search?q={a|b}^c"
     })
     void 같은_사이트의_상대_경로는_허용한다(String returnTo) {
         assertThat(ReturnPathValidator.sanitize(returnTo)).isEqualTo(returnTo);
