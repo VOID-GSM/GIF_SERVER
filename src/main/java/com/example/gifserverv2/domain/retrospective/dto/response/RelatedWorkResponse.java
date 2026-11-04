@@ -6,9 +6,10 @@ import com.example.gifserverv2.domain.retrospective.entity.RetrospectiveRelatedW
 public record RelatedWorkResponse(
         RelatedWorkType type,
         Integer number,
-        String title
+        String title,
+        String url
 ) {
     public static RelatedWorkResponse from(RetrospectiveRelatedWork work) {
-        return new RelatedWorkResponse(work.getType(), work.getNumber(), work.getTitle());
+        return new RelatedWorkResponse(work.getType(), work.getNumber(), work.getTitle(), work.getUrl());
     }
 }

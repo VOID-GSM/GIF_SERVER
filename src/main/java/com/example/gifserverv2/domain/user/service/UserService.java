@@ -7,15 +7,18 @@ import com.example.gifserverv2.domain.auth.service.GithubOAuthClient;
 import com.example.gifserverv2.domain.coin.service.GithubFetchService;
 import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
+import com.example.gifserverv2.domain.user.entity.AccountType;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.ClientRole;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
+import com.example.gifserverv2.global.security.AccessDeniedCode;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import com.example.gifserverv2.global.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -46,6 +49,12 @@ public class UserService {
 
         UserEntity user = requireUser(caller.userId());
         boolean changed = false;
+
+        boolean studentInfoRequested = request.clientRole() != null
+                || (request.studentNumber() != null && !request.studentNumber().isBlank());
+        if (user.getEffectiveRole() == Role.EXTERNAL && studentInfoRequested) {
+            throw new AccessDeniedException(AccessDeniedCode.EXTERNAL_USER_FORBIDDEN.getMessage());
+        }
 
         String newName = (request.name() != null && !request.name().isBlank()) ? request.name() : user.getName();
         String newStudentNumber = (request.studentNumber() != null && !request.studentNumber().isBlank()) ? request.studentNumber() : user.getStudentNumber();
@@ -162,6 +171,7 @@ public class UserService {
                 user.getStudentNumber(),
                 user.getGrade(),
                 user.getEffectiveRole().name(),
+                AccountType.of(user).name(),
                 user.getAdminRole() != null ? user.getAdminRole().name() : null,
                 user.getAdminTeam(),
                 user.isGradeHead(),

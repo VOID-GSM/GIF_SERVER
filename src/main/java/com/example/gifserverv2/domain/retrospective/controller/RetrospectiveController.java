@@ -33,10 +33,11 @@ public class RetrospectiveController {
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) RetrospectiveSort sort,
             @RequestParam(defaultValue = "false") boolean bookmarkedOnly,
+            @RequestParam(defaultValue = "false") boolean mine,
             Pageable pageable
     ) {
         return ResponseEntity.ok(
-                retrospectiveService.getList(user.userId(), category, keyword, sort, bookmarkedOnly, pageable));
+                retrospectiveService.getList(user.userId(), category, keyword, sort, bookmarkedOnly, mine, pageable));
     }
 
     @GetMapping("/{id}")

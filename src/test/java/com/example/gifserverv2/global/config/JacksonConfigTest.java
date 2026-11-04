@@ -38,6 +38,15 @@ class JacksonConfigTest {
         });
     }
 
+    @Test
+    void 알_수_없는_필드는_무시된다() {
+        runner.run(context -> {
+            ObjectMapper mapper = context.getBean(ObjectMapper.class);
+            Holder holder = mapper.readValue("{\"value\":\"2026-10-31T16:25:45\",\"unknown\":1}", Holder.class);
+            assertThat(holder.value).isEqualTo(LocalDateTime.of(2026, 10, 31, 16, 25, 45));
+        });
+    }
+
     static class Holder {
         public LocalDateTime value;
     }

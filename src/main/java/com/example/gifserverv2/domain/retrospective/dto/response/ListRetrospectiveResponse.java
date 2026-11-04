@@ -19,6 +19,7 @@ public record ListRetrospectiveResponse(
         String part,
         long bookmarkCount,
         boolean isBookmarked,
+        boolean isMine,
         String authorName,
         LocalDateTime createdAt,
         List<String> tags,
@@ -29,7 +30,8 @@ public record ListRetrospectiveResponse(
             Retrospective retrospective,
             AuthorAffiliation affiliation,
             String authorName,
-            boolean isBookmarked
+            boolean isBookmarked,
+            boolean isMine
     ) {
         return new ListRetrospectiveResponse(
                 retrospective.getId(),
@@ -43,6 +45,7 @@ public record ListRetrospectiveResponse(
                 affiliation.part(),
                 retrospective.getBookmarkCount(),
                 isBookmarked,
+                isMine,
                 authorName,
                 retrospective.getCreatedAt(),
                 List.copyOf(retrospective.getTags()),

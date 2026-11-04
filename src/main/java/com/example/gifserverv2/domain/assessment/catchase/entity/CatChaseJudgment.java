@@ -20,6 +20,10 @@ public class CatChaseJudgment {
     @Column(name = "round_id", nullable = false)
     private Long roundId;
 
+    // 문항 도입 이전 판단 기록은 null
+    @Column(name = "question_id")
+    private Long questionId;
+
     @Column(nullable = false)
     private int position;
 
@@ -40,5 +44,10 @@ public class CatChaseJudgment {
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
+    }
+
+    /** 쥐가 있었으면 FOUND, 없었으면 MISSED 가 정답 */
+    public boolean isCorrect() {
+        return (judgment == Judgment.FOUND) == hadMouse;
     }
 }

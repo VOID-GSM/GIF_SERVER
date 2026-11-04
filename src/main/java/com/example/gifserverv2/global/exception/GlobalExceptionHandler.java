@@ -1,5 +1,7 @@
 package com.example.gifserverv2.global.exception;
 
+import com.example.gifserverv2.domain.assessment.roadmaking.exception.RoadMakingException;
+import com.example.gifserverv2.global.security.AccessDeniedCode;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,9 +49,17 @@ public class GlobalExceptionHandler {
         return buildResponse(status, e.getReason(), request);
     }
 
+    @ExceptionHandler(RoadMakingException.class)
+    public ResponseEntity<Map<String, Object>> handleRoadMaking(RoadMakingException e, HttpServletRequest request) {
+        return buildResponse(e.getErrorCode().getStatus(), e.getMessage(), request);
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException e, HttpServletRequest request) {
-        return buildResponse(HttpStatus.FORBIDDEN, "접근 권한이 없습니다.", request);
+        AccessDeniedCode code = AccessDeniedCode.current();
+        ResponseEntity<Map<String, Object>> response = buildResponse(HttpStatus.FORBIDDEN, code.getMessage(), request);
+        response.getBody().put("code", code.name());
+        return response;
     }
 
     @ExceptionHandler(Exception.class)
