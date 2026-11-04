@@ -60,7 +60,7 @@ public class GoogleOAuthFlowService {
         this.oauthProperties = oauthProperties;
     }
 
-    public URI createLoginRedirect(String redirectUri) {
+    public URI createLoginRedirect(String redirectUri, String returnTo) {
         List<String> allowed = oauthProperties.getGoogle().getRedirectUris();
 
         if (allowed == null || allowed.isEmpty()) {
@@ -84,7 +84,7 @@ public class GoogleOAuthFlowService {
                 + "&access_type=offline"
                 + "&prompt=consent";
 
-        oauthStateStore.save(state, redirectUri, codeVerifier, STATE_TTL);
+        oauthStateStore.save(state, redirectUri, codeVerifier, ReturnPathValidator.sanitize(returnTo), STATE_TTL);
         return URI.create(url);
     }
 
@@ -130,7 +130,7 @@ public class GoogleOAuthFlowService {
             throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_GATEWAY, "사용자 정보를 가져오지 못했습니다.");
         }
 
-        return authService.signInWithGoogle(accessToken, userInfo);
+        return authService.signInWithGoogle(accessToken, userInfo).withReturnTo(loginState.returnTo());
     }
 
     private static String urlEncode(String value) {

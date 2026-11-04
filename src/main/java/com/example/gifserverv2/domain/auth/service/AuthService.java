@@ -145,7 +145,8 @@ public class AuthService {
                     user.getAdminRole() != null ? user.getAdminRole().name() : null,
                     user.getAdminTeam(),
                     user.isGradeHead(),
-                    user.getClientRole() != null ? user.getClientRole().name() : null);
+                    user.getClientRole() != null ? user.getClientRole().name() : null,
+                    null);
         } catch (DataGsmException e) {
             log.warn("DataGSM OAuth error: status={}, message={}", e.getStatusCode(), e.getMessage());
             throw new ResponseStatusException(resolveStatus(e.getStatusCode()), "OAuth 인증에 실패했습니다.", e);
@@ -178,7 +179,8 @@ public class AuthService {
                 user.getAdminRole() != null ? user.getAdminRole().name() : null,
                 user.getAdminTeam(),
                 user.isGradeHead(),
-                user.getClientRole() != null ? user.getClientRole().name() : null);
+                user.getClientRole() != null ? user.getClientRole().name() : null,
+                null);
     }
 
     @Transactional(readOnly = true)
