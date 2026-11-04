@@ -11,12 +11,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import com.example.gifserverv2.domain.engagement.service.AnonymousViewService;
+import jakarta.servlet.http.HttpServletRequest;
+
 
 @RestController
 @RequestMapping("/api/project/{projectId}")
 @RequiredArgsConstructor
 public class ProjectEngagementController {
 
+    private final AnonymousViewService anonymousViewService;
     private final ProjectEngagementService engagementService;
 
     @GetMapping("/engagement")
@@ -75,8 +79,14 @@ public class ProjectEngagementController {
     @PostMapping("/view")
     public ResponseEntity<ViewResponse> increaseView(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @PathVariable Long projectId
+            @PathVariable Long projectId,
+            @RequestHeader(value = "X-Visitor-Id", required = false) String visitorId,
+            HttpServletRequest request
     ) {
-        return ResponseEntity.ok(engagementService.increaseView(projectId, user.userId()));
+        if (user != null) {
+            return ResponseEntity.ok(engagementService.increaseView(projectId, user.userId()));
+        }
+        return ResponseEntity.ok(anonymousViewService.increaseView(
+                projectId, visitorId, request.getRemoteAddr(), request.getHeader("User-Agent")));
     }
 }

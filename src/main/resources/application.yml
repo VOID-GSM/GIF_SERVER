@@ -29,6 +29,10 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 
+# 추가: 프록시(Cloudtype) 뒤에서 실제 클라이언트 IP를 쓰기 위한 설정
+server:
+  forward-headers-strategy: native
+
 oauth:
   datagsm:
     client-id: ${DATAGSM_CLIENT_ID:}

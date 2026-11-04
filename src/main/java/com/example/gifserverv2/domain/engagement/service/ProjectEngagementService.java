@@ -160,4 +160,12 @@ public class ProjectEngagementService {
             throw ProjectException.notFound();
         }
     }
+
+    /** 중복 판정이 끝난 조회를 반영한다. (비로그인용) counted가 true일 때만 +1 */
+    public ViewResponse applyView(Long projectId, boolean counted) {
+        if (counted) {
+            incrementViews(projectId);
+        }
+        return new ViewResponse(currentViews(projectId));
+    }
 }

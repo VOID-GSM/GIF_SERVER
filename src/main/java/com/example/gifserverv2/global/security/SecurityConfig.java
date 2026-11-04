@@ -59,20 +59,20 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/signin").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
+                        // 비로그인 방문자도 조회수를 올릴 수 있다. 아래 POST 인증 규칙보다 반드시 먼저 와야 한다.
+                        .requestMatchers(HttpMethod.POST, "/api/project/*/view").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
                         // 외부 사용자(EXTERNAL)는 아래 조회·참여 API만 사용할 수 있다.
                         .requestMatchers(HttpMethod.GET, "/api/project/me", "/api/project/admin").hasAnyRole(SCHOOL_ROLES)
                         .requestMatchers(HttpMethod.GET, "/api/project/*", "/api/project/*/links",
                                 "/api/project/*/engagement", "/api/project/*/comments").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/project/*/comments", "/api/project/*/like",
-                                "/api/project/*/view").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/project/*/comments", "/api/project/*/like").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/project/*/comments/*", "/api/project/*/like").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/users/me").authenticated()
                         .requestMatchers("/api/notifications/**", "/api/push/**").authenticated()
                         .anyRequest().hasAnyRole(SCHOOL_ROLES))
                 .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
         return http.build();
     }
 

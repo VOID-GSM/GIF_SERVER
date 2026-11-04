@@ -35,6 +35,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.example.gifserverv2.domain.engagement.service.AnonymousViewService;
 
 @WebMvcTest({ProjectController.class, ProjectEngagementController.class, FormController.class})
 @Import({SecurityConfig.class, TokenAuthenticationFilter.class})
@@ -44,6 +45,8 @@ class AccountTypeAccessTest {
     @MockitoBean JwtTokenProvider jwtTokenProvider;
     @MockitoBean JpaMetamodelMappingContext jpaMetamodelMappingContext;
     @MockitoBean QueryProjectService queryProjectService;
+    @MockitoBean AiSummaryService aiSummaryService;
+    @MockitoBean AnonymousViewService anonymousViewService;
     @MockitoBean CommandProjectService commandProjectService;
     @MockitoBean ProjectNoteService projectNoteService;
     @MockitoBean ProjectLinkService projectLinkService;
@@ -51,7 +54,6 @@ class AccountTypeAccessTest {
     @MockitoBean AdminFormService adminFormService;
     @MockitoBean ClientFormService clientFormService;
     @MockitoBean FormFileService formFileService;
-    @MockitoBean AiSummaryService aiSummaryService;
 
     @Test
     void 외부_사용자는_프로젝트를_생성할_수_없다() throws Exception {
