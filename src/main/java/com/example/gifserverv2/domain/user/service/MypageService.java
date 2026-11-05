@@ -72,11 +72,12 @@ public class MypageService {
         validateProfileImage(file);
 
         // 파일을 먼저 저장하고, DB 반영에 실패하면 새 파일을 지운다. 기존 파일은 DB 반영 후에 지운다.
+        // 사용자 행을 잠가서 동시 업로드가 같은 기존 값을 읽어 새 파일 하나가 고아로 남지 않게 한다.
         String newUrl = fileStorageService.save(file, PROFILE_IMAGE_DIR);
         String oldUrl;
         try {
             oldUrl = transactionTemplate.execute(status -> {
-                UserEntity user = requireUser(userId);
+                UserEntity user = requireUserForUpdate(userId);
                 String previous = user.getProfileImageUrl();
                 user.changeProfileImageUrl(newUrl);
                 return previous;
@@ -91,7 +92,7 @@ public class MypageService {
 
     public MypageResponse deleteProfileImage(Long userId) {
         String oldUrl = transactionTemplate.execute(status -> {
-            UserEntity user = requireUser(userId);
+            UserEntity user = requireUserForUpdate(userId);
             String previous = user.getProfileImageUrl();
             user.changeProfileImageUrl(null);
             return previous;
@@ -115,8 +116,7 @@ public class MypageService {
         String title = normalizeTitle(request.title());
 
         // 동시에 추가 요청이 와도 최대 개수를 넘지 않도록 사용자 행을 잠그고 센다.
-        userRepository.findByIdForUpdate(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+        requireUserForUpdate(userId);
         if (userLinkRepository.countByUserId(userId) >= UserLink.MAX_LINKS_PER_USER) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "개인 사이트 링크는 최대 " + UserLink.MAX_LINKS_PER_USER + "개까지 등록할 수 있습니다.");
@@ -179,6 +179,15 @@ public class MypageService {
 
     private UserEntity requireUser(Long userId) {
         return userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
+    }
+
+    /**
+     * 사용자 행을 잠근다. 동시 요청이 이전 값을 같이 읽어
+     * 링크 개수 제한을 넘기거나 프로필 이미지 파일이 고아로 남는 것을 막는다.
+     */
+    private UserEntity requireUserForUpdate(Long userId) {
+        return userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
     }
 

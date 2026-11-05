@@ -30,6 +30,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -133,6 +139,33 @@ class MypageServiceTest {
         assertThat(deleted.profileImageUrl()).isEqualTo("https://avatars/octocat");
         assertThat(deleted.customProfileImage()).isFalse();
         verify(fileStorageService).delete("https://files/users/profile/b.png");
+    }
+
+    @Test
+    void 프로필_이미지를_동시에_올려도_DB에_남지_않은_파일은_삭제된다() throws Exception {
+        // 두 요청이 파일 저장까지 마친 뒤 동시에 DB 반영 단계로 들어가게 한다.
+        CyclicBarrier bothSaved = new CyclicBarrier(2);
+        AtomicInteger sequence = new AtomicInteger();
+        given(fileStorageService.save(any(), eq("users/profile"))).willAnswer(invocation -> {
+            String url = "https://files/users/profile/" + sequence.incrementAndGet() + ".png";
+            bothSaved.await(5, TimeUnit.SECONDS);
+            return url;
+        });
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            Future<MypageResponse> first = executor.submit(() -> service.updateProfileImage(userId, image("a.png")));
+            Future<MypageResponse> second = executor.submit(() -> service.updateProfileImage(userId, image("b.png")));
+            first.get(10, TimeUnit.SECONDS);
+            second.get(10, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdownNow();
+        }
+
+        String saved = userRepository.findById(userId).orElseThrow().getProfileImageUrl();
+        String orphan = saved.endsWith("/1.png") ? "https://files/users/profile/2.png" : "https://files/users/profile/1.png";
+        verify(fileStorageService).delete(orphan);
+        verify(fileStorageService, never()).delete(saved);
     }
 
     @ParameterizedTest
