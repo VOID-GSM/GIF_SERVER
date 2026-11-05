@@ -161,7 +161,7 @@ public class PushScheduler {
                             endDateStr
                     ),
                     PushMessageTemplate.SCHEDULE_CURRENT_PERIOD.formatTargetUrl(projectId),
-                    PushMessageTemplate.SCHEDULE_CURRENT_PERIOD.formatTag(event.getId())
+                    PushMessageTemplate.SCHEDULE_CURRENT_PERIOD.formatTag(event.getId(), today)
             );
         }
     }

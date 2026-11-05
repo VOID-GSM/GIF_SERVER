@@ -8,6 +8,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import nl.martijndwars.webpush.PushService;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -37,6 +39,7 @@ class PushSenderServicePayloadTest {
     void tag_는_알림_종류와_대상_id_로_만든다() {
         assertThat(PushMessageTemplate.DEADLINE_5_HOURS.formatTag(12L)).isEqualTo("deadline-5-hours-12");
         assertThat(PushMessageTemplate.INQUIRY_ANSWERED.formatTag(34L)).isEqualTo("inquiry-answered-34");
-        assertThat(PushMessageTemplate.SCORE_PUBLISHED.formatTag()).isEqualTo("score-published");
+        assertThat(PushMessageTemplate.SCHEDULE_CURRENT_PERIOD.formatTag(3L, LocalDate.of(2026, 11, 5)))
+                .isEqualTo("schedule-current-period-3-2026-11-05");
     }
 }

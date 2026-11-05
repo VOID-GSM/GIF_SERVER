@@ -134,7 +134,6 @@ public class PushSenderService {
         pushSubscriptionRepository.delete(sub);
     }
 
-    // tag 는 받는 사람마다 따로 생기는 알림 id 가 아니라 "알림 종류 + 대상 id" 라서 일괄 발송에서도 payload 하나를 공유할 수 있다.
     String createPayload(String title, String body, String targetUrl, String tag) {
         try {
             Map<String, String> payloadMap = new HashMap<>();
