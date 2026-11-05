@@ -76,6 +76,7 @@ public class ProjectController {
         return ResponseEntity.ok(projectQueryService.getProjectsByGrade(grade, userId));
     }
 
+    @PutMapping(value = "/{projectId}/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> updateProject(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId,
