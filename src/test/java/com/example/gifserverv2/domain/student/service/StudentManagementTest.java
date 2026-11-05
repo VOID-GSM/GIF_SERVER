@@ -124,7 +124,7 @@ class StudentManagementTest {
         TeamJoinRequestResponse request = adminStudentService.requestAssign(master, loner.getId(), projectA.getId());
 
         assertThat(projectMemberRepository.existsByUserId(loner.getId())).isFalse();
-        verify(pushSenderService).sendNotification(eq(leader.getId()), anyString(), anyString(), anyString());
+        verify(pushSenderService).sendNotification(eq(leader.getId()), anyString(), anyString(), anyString(), anyString());
         assertThat(adminStudentService.getStudents("박누락", null, null).get(0).pendingRequest().projectId())
                 .isEqualTo(projectA.getId());
 
@@ -133,7 +133,7 @@ class StudentManagementTest {
         ProjectMember added = projectMemberRepository.findByProjectIdAndUserId(projectA.getId(), loner.getId()).orElseThrow();
         assertThat(added.getRole()).isEqualTo(ClientRole.MEMBER);
         assertThat(teamJoinRequestRepository.findById(request.requestId()).orElseThrow().getStatus()).isEqualTo(Status.ACCEPTED);
-        verify(pushSenderService).sendNotification(eq(loner.getId()), anyString(), anyString(), anyString());
+        verify(pushSenderService).sendNotification(eq(loner.getId()), anyString(), anyString(), anyString(), anyString());
     }
 
     @Test
@@ -144,7 +144,7 @@ class StudentManagementTest {
 
         assertThat(projectMemberRepository.existsByUserId(loner.getId())).isFalse();
         assertThat(teamJoinRequestRepository.findById(request.requestId()).orElseThrow().getRejectReason()).isEqualTo("인원이 다 찼어요");
-        verify(pushSenderService).sendNotification(eq(master.userId()), anyString(), anyString(), anyString());
+        verify(pushSenderService).sendNotification(eq(master.userId()), anyString(), anyString(), anyString(), anyString());
     }
 
     @Test
@@ -266,7 +266,7 @@ class StudentManagementTest {
         adminStudentService.cancelRequest(master, request.requestId());
 
         assertStatus(() -> teamJoinRequestService.respond(auth(leader, null), request.requestId(), true, null), HttpStatus.CONFLICT);
-        verify(pushSenderService, never()).sendNotification(eq(loner.getId()), anyString(), anyString(), anyString());
+        verify(pushSenderService, never()).sendNotification(eq(loner.getId()), anyString(), anyString(), anyString(), anyString());
     }
 
     private void addMember(Project project, UserEntity user, ClientRole role) {

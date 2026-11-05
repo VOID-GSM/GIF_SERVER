@@ -18,13 +18,13 @@ class StudentNotifier {
 
     private final PushSenderService pushSenderService;
 
-    void send(Long userId, PushMessageTemplate template, String body, String targetUrl) {
-        afterCommit(() -> pushSenderService.sendNotification(userId, template.getTitle(), body, targetUrl));
+    void send(Long userId, PushMessageTemplate template, String body, String targetUrl, String tag) {
+        afterCommit(() -> pushSenderService.sendNotification(userId, template.getTitle(), body, targetUrl, tag));
     }
 
-    void sendAll(List<Long> userIds, PushMessageTemplate template, String body, String targetUrl) {
+    void sendAll(List<Long> userIds, PushMessageTemplate template, String body, String targetUrl, String tag) {
         if (userIds.isEmpty()) return;
-        afterCommit(() -> pushSenderService.sendBulkNotificationsAsync(userIds, template.getTitle(), body, targetUrl));
+        afterCommit(() -> pushSenderService.sendBulkNotificationsAsync(userIds, template.getTitle(), body, targetUrl, tag));
     }
 
     private static void afterCommit(Runnable action) {

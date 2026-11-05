@@ -59,7 +59,8 @@ public class TeamJoinRequestService {
             request.reject(reason);
             notifier.send(request.getRequestedBy(), PushMessageTemplate.TEAM_JOIN_REJECTED,
                     PushMessageTemplate.TEAM_JOIN_REJECTED.formatBody(project.getName(), student.getName()),
-                    PushMessageTemplate.TEAM_JOIN_REJECTED.formatTargetUrl(project.getId()));
+                    PushMessageTemplate.TEAM_JOIN_REJECTED.formatTargetUrl(project.getId()),
+                    PushMessageTemplate.TEAM_JOIN_REJECTED.formatTag(request.getId()));
             return;
         }
 
@@ -75,7 +76,8 @@ public class TeamJoinRequestService {
 
         notifier.send(student.getId(), PushMessageTemplate.TEAM_MEMBER_ADDED,
                 PushMessageTemplate.TEAM_MEMBER_ADDED.formatBody(project.getName()),
-                PushMessageTemplate.TEAM_MEMBER_ADDED.formatTargetUrl(project.getId()));
+                PushMessageTemplate.TEAM_MEMBER_ADDED.formatTargetUrl(project.getId()),
+                PushMessageTemplate.TEAM_MEMBER_ADDED.formatTag(project.getId()));
     }
 
     private void requireLeader(Long projectId, Long userId) {

@@ -88,7 +88,8 @@ public class AdminStudentService {
 
         notifier.send(leader.getUserId(), PushMessageTemplate.TEAM_JOIN_REQUESTED,
                 PushMessageTemplate.TEAM_JOIN_REQUESTED.formatBody(student.getName(), project.getName()),
-                PushMessageTemplate.TEAM_JOIN_REQUESTED.formatTargetUrl(projectId));
+                PushMessageTemplate.TEAM_JOIN_REQUESTED.formatTargetUrl(projectId),
+                PushMessageTemplate.TEAM_JOIN_REQUESTED.formatTag(request.getId()));
 
         return TeamJoinRequestMapper.toResponse(request, student);
     }
@@ -140,11 +141,13 @@ public class AdminStudentService {
         for (ProjectMember previous : memberships) {
             notifier.send(userId, PushMessageTemplate.TEAM_MEMBER_REMOVED,
                     PushMessageTemplate.TEAM_MEMBER_REMOVED.formatBody(previous.getProject().getName()),
-                    PushMessageTemplate.TEAM_MEMBER_REMOVED.formatTargetUrl());
+                    PushMessageTemplate.TEAM_MEMBER_REMOVED.formatTargetUrl(),
+                    PushMessageTemplate.TEAM_MEMBER_REMOVED.formatTag(previous.getProject().getId()));
         }
         notifier.send(userId, PushMessageTemplate.TEAM_MEMBER_ADDED,
                 PushMessageTemplate.TEAM_MEMBER_ADDED.formatBody(target.getName()),
-                PushMessageTemplate.TEAM_MEMBER_ADDED.formatTargetUrl(projectId));
+                PushMessageTemplate.TEAM_MEMBER_ADDED.formatTargetUrl(projectId),
+                PushMessageTemplate.TEAM_MEMBER_ADDED.formatTag(projectId));
     }
 
     @Transactional
@@ -161,7 +164,8 @@ public class AdminStudentService {
 
         notifier.send(userId, PushMessageTemplate.TEAM_MEMBER_REMOVED,
                 PushMessageTemplate.TEAM_MEMBER_REMOVED.formatBody(projectName),
-                PushMessageTemplate.TEAM_MEMBER_REMOVED.formatTargetUrl());
+                PushMessageTemplate.TEAM_MEMBER_REMOVED.formatTargetUrl(),
+                PushMessageTemplate.TEAM_MEMBER_REMOVED.formatTag(projectId));
     }
 
     /**
@@ -193,7 +197,8 @@ public class AdminStudentService {
         notifier.sendAll(projectMemberRepository.findUserIdsByProjectId(projectId),
                 PushMessageTemplate.LEADER_TRANSFERRED_CLIENT,
                 PushMessageTemplate.LEADER_TRANSFERRED_CLIENT.formatBody(projectName, newLeaderName),
-                PushMessageTemplate.LEADER_TRANSFERRED_CLIENT.formatTargetUrl(projectId));
+                PushMessageTemplate.LEADER_TRANSFERRED_CLIENT.formatTargetUrl(projectId),
+                PushMessageTemplate.LEADER_TRANSFERRED_CLIENT.formatTag(projectId));
     }
 
     /** 같은 학생을 동시에 두 팀에 배정하지 않도록 학생 행을 잠근다. */
