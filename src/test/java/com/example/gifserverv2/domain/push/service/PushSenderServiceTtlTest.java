@@ -1,6 +1,7 @@
 package com.example.gifserverv2.domain.push.service;
 
 import com.example.gifserverv2.domain.push.entity.PushMessageTemplate;
+import com.example.gifserverv2.domain.push.entity.PushOptions;
 import com.example.gifserverv2.domain.push.entity.PushSubscription;
 import com.example.gifserverv2.domain.push.repository.NotificationRepository;
 import com.example.gifserverv2.domain.push.repository.PushSubscriptionRepository;

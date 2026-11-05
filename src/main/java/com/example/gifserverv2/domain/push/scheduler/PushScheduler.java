@@ -10,7 +10,7 @@ import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
 import com.example.gifserverv2.domain.push.entity.PushMessageTemplate;
-import com.example.gifserverv2.domain.push.service.PushOptions;
+import com.example.gifserverv2.domain.push.entity.PushOptions;
 import com.example.gifserverv2.domain.push.service.PushSenderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,6 +1,4 @@
-package com.example.gifserverv2.domain.push.service;
-
-import nl.martijndwars.webpush.Urgency;
+package com.example.gifserverv2.domain.push.entity;
 
 import java.time.Duration;
 
@@ -23,5 +21,10 @@ public record PushOptions(Duration ttl, Urgency urgency) {
 
     public int ttlSeconds() {
         return Math.toIntExact(ttl.toSeconds());
+    }
+
+    /** Web Push Urgency 헤더 값 (RFC 8030) */
+    public enum Urgency {
+        VERY_LOW, LOW, NORMAL, HIGH
     }
 }

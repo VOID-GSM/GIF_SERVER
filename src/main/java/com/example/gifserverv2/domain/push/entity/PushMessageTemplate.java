@@ -1,9 +1,8 @@
 package com.example.gifserverv2.domain.push.entity;
 
-import com.example.gifserverv2.domain.push.service.PushOptions;
+import com.example.gifserverv2.domain.push.entity.PushOptions.Urgency;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import nl.martijndwars.webpush.Urgency;
 
 import java.time.Duration;
 

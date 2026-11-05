@@ -1,8 +1,8 @@
 package com.example.gifserverv2.domain.push.scheduler;
 
 import com.example.gifserverv2.domain.push.entity.PushMessageTemplate;
-import com.example.gifserverv2.domain.push.service.PushOptions;
-import nl.martijndwars.webpush.Urgency;
+import com.example.gifserverv2.domain.push.entity.PushOptions;
+import com.example.gifserverv2.domain.push.entity.PushOptions.Urgency;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;

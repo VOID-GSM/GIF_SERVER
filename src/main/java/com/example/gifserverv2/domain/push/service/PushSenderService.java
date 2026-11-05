@@ -1,6 +1,7 @@
 package com.example.gifserverv2.domain.push.service;
 
 import com.example.gifserverv2.domain.push.entity.NotificationHistory;
+import com.example.gifserverv2.domain.push.entity.PushOptions;
 import com.example.gifserverv2.domain.push.entity.PushSubscription;
 import com.example.gifserverv2.domain.push.repository.NotificationRepository;
 import com.example.gifserverv2.domain.push.repository.PushSubscriptionRepository;
@@ -107,7 +108,7 @@ public class PushSenderService {
                     .payload(payload)
                     .ttl(options.ttlSeconds());
             if (options.urgency() != null) {
-                builder.urgency(options.urgency());
+                builder.urgency(nl.martijndwars.webpush.Urgency.valueOf(options.urgency().name()));
             }
             Notification notification = builder.build();
 
