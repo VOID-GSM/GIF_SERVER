@@ -34,6 +34,8 @@ public class SchemaPatchRunner implements ApplicationRunner {
                             "JOIN form_field_answer ffa ON ce.form_field_answer_id = ffa.id " +
                             "SET ce.project_id = ffa.project_id " +
                             "WHERE ce.project_id IS NULL"),
+            new ColumnSpec("users", "major", "VARCHAR(50) NULL"),
+            new ColumnSpec("users", "profile_image_url", "VARCHAR(500) NULL"),
     };
 
     @Override
