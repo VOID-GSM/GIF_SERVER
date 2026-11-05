@@ -15,6 +15,7 @@ import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,7 +41,12 @@ public class TeamJoinRequestService {
                 userRepository);
     }
 
-    @Transactional
+    /**
+     * 수락 시점에 학생이 이미 다른 경로로 팀에 들어가 있으면 요청을 취소로 닫고 409 를 준다.
+     * 닫은 상태가 롤백되지 않도록 StudentException 은 롤백하지 않는다.
+     * (그 외 StudentException 은 모두 데이터를 바꾸기 전에 던진다.)
+     */
+    @Transactional(noRollbackFor = StudentException.class)
     public void respond(AuthenticatedUser caller, Long requestId, boolean accept, String rejectReason) {
         TeamJoinRequest request = teamJoinRequestRepository.findById(requestId)
                 .orElseThrow(StudentException::requestNotFound);
@@ -65,7 +71,8 @@ public class TeamJoinRequestService {
         }
 
         if (projectMemberRepository.existsByUserId(student.getId())) {
-            throw StudentException.alreadyAssigned();
+            request.cancel();
+            throw new StudentException(HttpStatus.CONFLICT, "학생이 이미 다른 팀에 소속되어 요청이 취소되었습니다.");
         }
         request.accept();
         projectMemberRepository.save(ProjectMember.builder()
