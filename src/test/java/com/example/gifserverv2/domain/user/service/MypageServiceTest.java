@@ -168,7 +168,13 @@ class MypageServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"javascript:alert(1)", "ftp://files.example.com", "blog.example.com", "https://", "http://exa mple.com"})
+    @ValueSource(strings = {"https://my_blog.tistory.com", "https://한글.kr/글", "HTTPS://Blog.Example.com/path?q=1"})
+    void 밑줄이나_한글_도메인도_정상_주소로_등록된다(String url) {
+        assertThat(service.addLink(userId, new UserLinkRequest(null, url)).url()).isEqualTo(url);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"http:/x", "javascript:alert(1)", "ftp://files.example.com", "blog.example.com", "https://", "http://exa mple.com"})
     void http_https가_아닌_링크는_400(String url) {
         assertStatus(HttpStatus.BAD_REQUEST, () -> service.addLink(userId, new UserLinkRequest(null, url)));
     }

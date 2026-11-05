@@ -206,8 +206,10 @@ public class MypageService {
         try {
             URI uri = new URI(trimmed);
             String scheme = uri.getScheme();
+            // getHost() 는 "_"가 있거나 한글 도메인이면 null 이라, 호스트 존재 여부는 authority 로 확인한다.
+            String authority = uri.getRawAuthority();
             if (scheme == null || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))
-                    || uri.getHost() == null) {
+                    || authority == null || authority.isBlank()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "http 또는 https 주소만 등록할 수 있습니다.");
             }
             return trimmed;
