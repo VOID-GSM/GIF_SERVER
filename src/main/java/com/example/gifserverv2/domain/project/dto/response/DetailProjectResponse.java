@@ -17,12 +17,14 @@ public record DetailProjectResponse(
         List<MemberInfo> members,
         long likeCount,
         @JsonProperty("isLiked") boolean isLiked,
-        long viewCount
-) {
+        long viewCount,
+        long commentCount
+) implements ProjectDetailResponse {
     public record MemberInfo(Long userId, String name, String studentNumber, String role) {}
 
     public static DetailProjectResponse from(Project project, Map<Long, UserEntity> userMap,
-                                             long likeCount, boolean isLiked, long viewCount) {
+                                             long likeCount, boolean isLiked,
+                                             long viewCount, long commentCount) {
         List<MemberInfo> memberInfos = project.getMembers().stream()
                 .map(m -> {
                     UserEntity user = userMap.get(m.getUserId());
@@ -33,16 +35,9 @@ public record DetailProjectResponse(
                 .toList();
 
         return new DetailProjectResponse(
-                project.getId(),
-                project.getName(),
-                project.getTeamName(),
-                project.getDescription(),
-                project.getLogo(),
-                project.getGrade(),
-                memberInfos,
-                likeCount,
-                isLiked,
-                viewCount
+                project.getId(), project.getName(), project.getTeamName(),
+                project.getDescription(), project.getLogo(), project.getGrade(),
+                memberInfos, likeCount, isLiked, viewCount, commentCount
         );
     }
 }
