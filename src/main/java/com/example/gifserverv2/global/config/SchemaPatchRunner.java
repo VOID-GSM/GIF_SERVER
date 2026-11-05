@@ -11,6 +11,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.List;
 
 @Slf4j
 @Component
@@ -18,6 +19,25 @@ import java.sql.Statement;
 public class SchemaPatchRunner implements ApplicationRunner {
 
     private final DataSource dataSource;
+
+    /** ddl-auto 로 만들어지지 않는 환경을 위해 없으면 생성한다. 컬럼 점검보다 먼저 실행된다. */
+    private static final TableSpec[] REQUIRED_TABLES = {
+            new TableSpec("user_tech_stack", List.of(
+                    "CREATE TABLE IF NOT EXISTS user_tech_stack (" +
+                            "user_id BIGINT NOT NULL, " +
+                            "sort_order INT NOT NULL, " +
+                            "name VARCHAR(30) NOT NULL, " +
+                            "PRIMARY KEY (user_id, sort_order), " +
+                            "CONSTRAINT fk_user_tech_stack_user FOREIGN KEY (user_id) REFERENCES users (id))")),
+            new TableSpec("user_link", List.of(
+                    "CREATE TABLE IF NOT EXISTS user_link (" +
+                            "id BIGINT NOT NULL AUTO_INCREMENT, " +
+                            "user_id BIGINT NOT NULL, " +
+                            "title VARCHAR(30) NULL, " +
+                            "url VARCHAR(500) NOT NULL, " +
+                            "PRIMARY KEY (id))",
+                    "CREATE INDEX idx_user_link_user_id ON user_link (user_id)")),
+    };
 
     private static final ColumnSpec[] REQUIRED_COLUMNS = {
             new ColumnSpec("form", "created_by_user_id", "BIGINT NULL"),
@@ -41,12 +61,44 @@ public class SchemaPatchRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         try (Connection connection = dataSource.getConnection()) {
+            for (TableSpec spec : REQUIRED_TABLES) {
+                ensureTable(connection, spec);
+            }
             for (ColumnSpec spec : REQUIRED_COLUMNS) {
                 ensureColumn(connection, spec);
             }
         } catch (Exception e) {
             log.error("[SchemaPatch] 스키마 점검 중 DB 연결에 실패했습니다.", e);
         }
+    }
+
+    private void ensureTable(Connection connection, TableSpec spec) {
+        try {
+            if (tableExists(connection, spec.table())) {
+                return;
+            }
+            for (String sql : spec.createSqls()) {
+                try (Statement statement = connection.createStatement()) {
+                    statement.executeUpdate(sql);
+                }
+            }
+            log.warn("[SchemaPatch] 누락된 테이블 {}을(를) 생성했습니다.", spec.table());
+        } catch (Exception e) {
+            log.error("[SchemaPatch] {} 테이블 확인/생성 중 오류가 발생했습니다.", spec.table(), e);
+        }
+    }
+
+    private boolean tableExists(Connection connection, String table) throws Exception {
+        DatabaseMetaData metaData = connection.getMetaData();
+        // DB 마다 식별자 대소문자 처리가 달라 소문자·대문자 모두 확인한다.
+        for (String name : List.of(table, table.toUpperCase())) {
+            try (ResultSet resultSet = metaData.getTables(connection.getCatalog(), null, name, new String[]{"TABLE"})) {
+                if (resultSet.next()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private void ensureColumn(Connection connection, ColumnSpec spec) {
@@ -73,9 +125,18 @@ public class SchemaPatchRunner implements ApplicationRunner {
 
     private boolean columnExists(Connection connection, String table, String column) throws Exception {
         DatabaseMetaData metaData = connection.getMetaData();
-        try (ResultSet resultSet = metaData.getColumns(connection.getCatalog(), null, table, column)) {
-            return resultSet.next();
+        // DB 마다 식별자 대소문자 처리가 달라 소문자·대문자 모두 확인한다.
+        for (String[] name : List.of(new String[]{table, column}, new String[]{table.toUpperCase(), column.toUpperCase()})) {
+            try (ResultSet resultSet = metaData.getColumns(connection.getCatalog(), null, name[0], name[1])) {
+                if (resultSet.next()) {
+                    return true;
+                }
+            }
         }
+        return false;
+    }
+
+    private record TableSpec(String table, List<String> createSqls) {
     }
 
     private record ColumnSpec(String table, String column, String definition, String backfillSql) {
