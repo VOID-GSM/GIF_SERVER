@@ -85,7 +85,7 @@ public class QueryProjectService {
                 likeRepository.countByProjectId(projectId),
                 likeRepository.existsByProjectIdAndUserId(projectId, userId),
                 currentViews(projectId),
-                commentRepository.countByProjectId(projectId)
+                commentRepository.countByProjectIdAndHiddenFalseAndDeletedAtIsNull(projectId)
         );
     }
 
@@ -100,7 +100,7 @@ public class QueryProjectService {
                 likeRepository.countByProjectId(projectId),
                 liked,
                 currentViews(projectId),
-                commentRepository.countByProjectId(projectId)
+                commentRepository.countByProjectIdAndHiddenFalseAndDeletedAtIsNull(projectId)
         );
     }
 

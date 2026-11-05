@@ -153,7 +153,7 @@ public class ProjectEngagementService {
         ProjectComment saved = commentRepository.save(
                 new ProjectComment(projectId, userId, author.getName(), request.content().trim()));
         // 방금 작성한 댓글이라 본인 댓글이다.
-        return CommentResponse.from(saved, author.getDisplayProfileImageUrl(), true);
+        return CommentResponse.from(saved, author.getGithubAvatarUrl(), true);
     }
 
     @Transactional

@@ -63,6 +63,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/project/*/view").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/project/filter").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/project/{projectId:\\d+}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/project/{projectId:\\d+}/comments").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
                         // 외부 사용자(EXTERNAL)는 아래 조회·참여 API만 사용할 수 있다.
                         .requestMatchers(HttpMethod.GET, "/api/project/me", "/api/project/admin").hasAnyRole(SCHOOL_ROLES)
