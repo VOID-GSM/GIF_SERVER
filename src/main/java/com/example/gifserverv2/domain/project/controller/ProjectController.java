@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import com.example.gifserverv2.domain.user.entity.Role;
 
 @RestController
 @RequestMapping("/api/project")
@@ -53,10 +54,15 @@ public class ProjectController {
     }
 
     @GetMapping("/{projectId}")
-    public ResponseEntity<DetailProjectResponse> getProject(
+    public ResponseEntity<ProjectDetailResponse> getProject(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId
     ) {
+        // 비로그인·외부 사용자는 공개용 응답, 교내 사용자는 기존 응답
+        if (user == null || user.role() == Role.EXTERNAL) {
+            Long userId = user == null ? null : user.userId();
+            return ResponseEntity.ok(projectQueryService.getPublicProject(projectId, userId));
+        }
         return ResponseEntity.ok(projectQueryService.getProject(projectId, user.userId()));
     }
 
@@ -65,12 +71,11 @@ public class ProjectController {
             @AuthenticationPrincipal AuthenticatedUser user,
             @RequestParam(required = false) Integer grade
     ) {
-        return ResponseEntity.ok(projectQueryService.getProjectsByGrade(grade, user.userId()));
+        // 비로그인이면 user 가 null 이다.
+        Long userId = user == null ? null : user.userId();
+        return ResponseEntity.ok(projectQueryService.getProjectsByGrade(grade, userId));
     }
 
-    @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
-            schema = @Schema(implementation = UpdateProjectRequest.class)))
-    @PutMapping(value = "/{projectId}/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Void> updateProject(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId,
