@@ -68,4 +68,19 @@ public enum PushMessageTemplate {
         }
         return String.format(this.targetUrlTemplate, args);
     }
+
+    /**
+     * 웹 푸시 알림 tag. 브라우저는 tag 가 같은 알림을 하나로 교체해서 보여주므로,
+     * 같은 알림이 중복 전달돼도(재전송, 같은 기기 구독 중복 등) 기기에는 한 건만 남는다. (#213)
+     * 예: FORM_ANNOUNCED.formatTag(12) -> "form-announced-12"
+     */
+    public String formatTag(Object... ids) {
+        StringBuilder tag = new StringBuilder(name().toLowerCase().replace('_', '-'));
+        if (ids != null) {
+            for (Object id : ids) {
+                tag.append('-').append(id);
+            }
+        }
+        return tag.toString();
+    }
 }

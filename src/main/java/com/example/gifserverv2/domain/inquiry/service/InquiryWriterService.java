@@ -43,7 +43,8 @@ public class InquiryWriterService {
                     voidUserIds,
                     PushMessageTemplate.INQUIRY_RECEIVED.getTitle(),
                     PushMessageTemplate.INQUIRY_RECEIVED.getBodyTemplate(),
-                    PushMessageTemplate.INQUIRY_RECEIVED.formatTargetUrl(savedInquiryId)
+                    PushMessageTemplate.INQUIRY_RECEIVED.formatTargetUrl(savedInquiryId),
+                    PushMessageTemplate.INQUIRY_RECEIVED.formatTag(savedInquiryId)
             );
         }
 

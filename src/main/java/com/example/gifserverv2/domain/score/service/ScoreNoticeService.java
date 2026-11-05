@@ -77,7 +77,8 @@ public class ScoreNoticeService {
                     allUserIds,
                     PushMessageTemplate.SCORE_PUBLISHED.getTitle(),
                     PushMessageTemplate.SCORE_PUBLISHED.formatBody(),
-                    PushMessageTemplate.SCORE_PUBLISHED.formatTargetUrl()
+                    PushMessageTemplate.SCORE_PUBLISHED.formatTargetUrl(),
+                    PushMessageTemplate.SCORE_PUBLISHED.formatTag()
             ));
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "공지 저장 중 오류가 발생했습니다.", e);
