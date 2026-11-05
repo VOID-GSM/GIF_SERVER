@@ -19,6 +19,14 @@ public record PushOptions(Duration ttl, Urgency urgency) {
         }
     }
 
+    /**
+     * TTL 이 max 를 넘지 않게 줄인 옵션을 반환한다. (max 가 음수면 0)
+     */
+    public PushOptions withTtlAtMost(Duration max) {
+        Duration capped = max.isNegative() ? Duration.ZERO : max;
+        return ttl.compareTo(capped) <= 0 ? this : new PushOptions(capped, urgency);
+    }
+
     public int ttlSeconds() {
         return Math.toIntExact(ttl.toSeconds());
     }

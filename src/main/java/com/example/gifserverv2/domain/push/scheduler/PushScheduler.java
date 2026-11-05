@@ -73,7 +73,7 @@ public class PushScheduler {
             String title = template.getTitle();
             String body = template.formatBody(form.getTitle());
             String targetUrl = template.formatTargetUrl(form.getId());
-            PushOptions options = template.getPushOptions();
+            PushOptions options = deadlineOptions(template, Duration.between(now, form.getDeadline()));
 
             List<Project> targetProjects = (form.getTargetGrade() == null)
                     ? allProjects
@@ -101,6 +101,18 @@ public class PushScheduler {
             case -1 -> PushMessageTemplate.DEADLINE_MISSED;
             default -> null;
         };
+    }
+
+    /**
+     * hoursLeft 는 반올림이라 "1시간 전" 알림이 마감 30분 전에 나갈 수도 있다.
+     * 마감 전 알림이 마감 이후에 도착하지 않도록 TTL 을 마감까지 남은 시간으로 제한한다.
+     */
+    static PushOptions deadlineOptions(PushMessageTemplate template, Duration untilDeadline) {
+        PushOptions options = template.getPushOptions();
+        if (template == PushMessageTemplate.DEADLINE_MISSED) {
+            return options;
+        }
+        return options.withTtlAtMost(untilDeadline);
     }
 
     @Scheduled(cron = "0 0 9 * * *")
