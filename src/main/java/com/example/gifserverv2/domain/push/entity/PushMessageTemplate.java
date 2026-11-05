@@ -1,7 +1,10 @@
 package com.example.gifserverv2.domain.push.entity;
 
+import com.example.gifserverv2.domain.push.entity.PushOptions.Urgency;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+
+import java.time.Duration;
 
 @Getter
 @RequiredArgsConstructor
@@ -35,6 +38,21 @@ public enum PushMessageTemplate {
     private final String title;
     private final String bodyTemplate;
     private final String targetUrlTemplate;
+
+    /**
+     * 마감 알림은 다음 단계 알림 전까지만 의미가 있으므로 TTL 을 짧게 두어,
+     * 기기가 오프라인일 때 지난 알림이 나중에 몰아서 도착하지 않게 한다. (#208)
+     */
+    public PushOptions getPushOptions() {
+        return switch (this) {
+            case DEADLINE_3_DAYS -> new PushOptions(Duration.ofHours(48), Urgency.HIGH);  // D-1 알림 전까지
+            case DEADLINE_1_DAY -> new PushOptions(Duration.ofHours(19), Urgency.HIGH);   // 5시간 전 알림 전까지
+            case DEADLINE_5_HOURS -> new PushOptions(Duration.ofHours(4), Urgency.HIGH);  // 1시간 전 알림 전까지
+            case DEADLINE_1_HOUR -> new PushOptions(Duration.ofHours(1), Urgency.HIGH);   // 마감 시각까지
+            case DEADLINE_MISSED -> new PushOptions(Duration.ofHours(24), null);         // 미제출 팀이 바로 확인해야 의미가 있다
+            default -> PushOptions.DEFAULT;
+        };
+    }
 
     public String formatBody(Object... args) {
         if (args == null || args.length == 0) {

@@ -1,10 +1,12 @@
 package com.example.gifserverv2.domain.project.service;
 
 import com.example.gifserverv2.domain.engagement.entity.ProjectViewCount;
+import com.example.gifserverv2.domain.engagement.repository.ProjectCommentRepository;
 import com.example.gifserverv2.domain.engagement.repository.ProjectLikeRepository;
 import com.example.gifserverv2.domain.engagement.repository.ProjectViewCountRepository;
 import com.example.gifserverv2.domain.project.dto.response.DetailProjectResponse;
 import com.example.gifserverv2.domain.project.dto.response.ListProjectResponse;
+import com.example.gifserverv2.domain.project.dto.response.PublicDetailProjectResponse;
 import com.example.gifserverv2.domain.project.dto.response.UserSearchResponse;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.entity.ProjectMember;
@@ -33,7 +35,8 @@ public class QueryProjectService {
     private final UserSearchRepository userSearchRepository;
     private final UserRepository userRepository;
     private final ProjectLikeRepository likeRepository;
-    private final ProjectViewCountRepository viewCountRepository; // 추가: 조회수 조회용
+    private final ProjectViewCountRepository viewCountRepository;
+    private final ProjectCommentRepository commentRepository; // 추가: 댓글 수 조회용
 
     @Transactional(readOnly = true)
     public List<UserSearchResponse> searchUsers(String keyword) {
@@ -65,30 +68,53 @@ public class QueryProjectService {
         return toListResponses(projects, userId);
     }
 
+    // userId 가 null 이면 비로그인 요청이다. (좋아요 여부는 항상 false)
     @Transactional(readOnly = true)
     public List<ListProjectResponse> getProjectsByGrade(Integer grade, Long userId) {
         if (grade == null) return getAllProjects(userId);
         return toListResponses(projectRepository.findByGrade(grade), userId);
     }
 
+    // 교내 사용자용 상세 (기존 응답 + commentCount)
     @Transactional(readOnly = true)
     public DetailProjectResponse getProject(Long projectId, Long userId) {
         Project project = getProjectOrThrow(projectId);
+        return DetailProjectResponse.from(
+                project,
+                findMemberUsers(project),
+                likeRepository.countByProjectId(projectId),
+                likeRepository.existsByProjectIdAndUserId(projectId, userId),
+                currentViews(projectId),
+                commentRepository.countByProjectId(projectId)
+        );
+    }
+
+    // 비로그인/외부 사용자용 상세. 학번, userId 를 응답에 담지 않는다.
+    @Transactional(readOnly = true)
+    public PublicDetailProjectResponse getPublicProject(Long projectId, Long userId) {
+        Project project = getProjectOrThrow(projectId);
+        boolean liked = userId != null && likeRepository.existsByProjectIdAndUserId(projectId, userId);
+        return PublicDetailProjectResponse.from(
+                project,
+                findMemberUsers(project),
+                likeRepository.countByProjectId(projectId),
+                liked,
+                currentViews(projectId),
+                commentRepository.countByProjectId(projectId)
+        );
+    }
+
+    private Map<Long, UserEntity> findMemberUsers(Project project) {
         List<Long> memberIds = project.getMembers().stream()
                 .map(ProjectMember::getUserId)
                 .toList();
-
-        Map<Long, UserEntity> userMap = userRepository.findAllById(memberIds).stream()
+        return userRepository.findAllById(memberIds).stream()
                 .collect(Collectors.toMap(UserEntity::getId, u -> u));
+    }
 
-        return DetailProjectResponse.from(
-                project,
-                userMap,
-                likeRepository.countByProjectId(projectId),
-                likeRepository.existsByProjectIdAndUserId(projectId, userId),
-                // 추가: 조회 기록이 아직 없는 프로젝트는 0으로 처리
-                viewCountRepository.findById(projectId).map(ProjectViewCount::getViews).orElse(0L)
-        );
+    // 조회 기록이 아직 없는 프로젝트는 0으로 처리
+    private long currentViews(Long projectId) {
+        return viewCountRepository.findById(projectId).map(ProjectViewCount::getViews).orElse(0L);
     }
 
     private List<ListProjectResponse> toListResponses(List<Project> projects, Long userId) {
@@ -100,17 +126,24 @@ public class QueryProjectService {
         Map<Long, Long> likeCounts = likeRepository.countByProjectIdIn(projectIds).stream()
                 .collect(Collectors.toMap(ProjectLikeRepository.ProjectLikeCount::getProjectId,
                         ProjectLikeRepository.ProjectLikeCount::getLikeCount));
-        Set<Long> likedProjectIds = new HashSet<>(likeRepository.findLikedProjectIds(userId, projectIds));
-        // 추가: 프로젝트마다 따로 조회하지 않고 쿼리 1번으로 전체 조회수를 가져온다 (N+1 방지)
+        // 비로그인이면 좋아요 여부 조회를 건너뛴다.
+        Set<Long> likedProjectIds = userId == null
+                ? Set.of()
+                : new HashSet<>(likeRepository.findLikedProjectIds(userId, projectIds));
+        // 프로젝트마다 따로 조회하지 않고 쿼리 1번으로 전체를 가져온다 (N+1 방지)
         Map<Long, Long> viewCounts = viewCountRepository.findAllById(projectIds).stream()
                 .collect(Collectors.toMap(ProjectViewCount::getProjectId, ProjectViewCount::getViews));
+        Map<Long, Long> commentCounts = commentRepository.countByProjectIdIn(projectIds).stream()
+                .collect(Collectors.toMap(ProjectCommentRepository.ProjectCommentCount::getProjectId,
+                        ProjectCommentRepository.ProjectCommentCount::getCommentCount));
 
         return projects.stream()
                 .map(p -> ListProjectResponse.from(
                         p,
                         likeCounts.getOrDefault(p.getId(), 0L),
                         likedProjectIds.contains(p.getId()),
-                        viewCounts.getOrDefault(p.getId(), 0L)))
+                        viewCounts.getOrDefault(p.getId(), 0L),
+                        commentCounts.getOrDefault(p.getId(), 0L)))
                 .toList();
     }
 
