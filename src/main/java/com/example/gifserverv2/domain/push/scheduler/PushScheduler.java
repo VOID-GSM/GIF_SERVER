@@ -10,6 +10,7 @@ import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
 import com.example.gifserverv2.domain.push.entity.PushMessageTemplate;
+import com.example.gifserverv2.domain.push.service.PushOptions;
 import com.example.gifserverv2.domain.push.service.PushSenderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -64,33 +65,15 @@ public class PushScheduler {
         for (Form form : activeForms) {
             long hoursLeft = Math.round(Duration.between(now, form.getDeadline()).toMinutes() / 60.0);
 
-            String title;
-            String body;
-            String targetUrl;
-
-            if (hoursLeft == 1) {
-                title = PushMessageTemplate.DEADLINE_1_HOUR.getTitle();
-                body = PushMessageTemplate.DEADLINE_1_HOUR.formatBody(form.getTitle());
-                targetUrl = PushMessageTemplate.DEADLINE_1_HOUR.formatTargetUrl(form.getId());
-            } else if (hoursLeft == 5) {
-                title = PushMessageTemplate.DEADLINE_5_HOURS.getTitle();
-                body = PushMessageTemplate.DEADLINE_5_HOURS.formatBody(form.getTitle());
-                targetUrl = PushMessageTemplate.DEADLINE_5_HOURS.formatTargetUrl(form.getId());
-            } else if (hoursLeft == 24) {
-                title = PushMessageTemplate.DEADLINE_1_DAY.getTitle();
-                body = PushMessageTemplate.DEADLINE_1_DAY.formatBody(form.getTitle());
-                targetUrl = PushMessageTemplate.DEADLINE_1_DAY.formatTargetUrl(form.getId());
-            } else if (hoursLeft == 72) {
-                title = PushMessageTemplate.DEADLINE_3_DAYS.getTitle();
-                body = PushMessageTemplate.DEADLINE_3_DAYS.formatBody(form.getTitle());
-                targetUrl = PushMessageTemplate.DEADLINE_3_DAYS.formatTargetUrl(form.getId());
-            } else if (hoursLeft == -1) {
-                title = PushMessageTemplate.DEADLINE_MISSED.getTitle();
-                body = PushMessageTemplate.DEADLINE_MISSED.formatBody(form.getTitle());
-                targetUrl = PushMessageTemplate.DEADLINE_MISSED.formatTargetUrl(form.getId());
-            } else {
+            PushMessageTemplate template = deadlineTemplate(hoursLeft);
+            if (template == null) {
                 continue;
             }
+
+            String title = template.getTitle();
+            String body = template.formatBody(form.getTitle());
+            String targetUrl = template.formatTargetUrl(form.getId());
+            PushOptions options = template.getPushOptions();
 
             List<Project> targetProjects = (form.getTargetGrade() == null)
                     ? allProjects
@@ -102,11 +85,22 @@ public class PushScheduler {
                 if (!submittedKeySet.contains(key)) {
                     List<Long> targetUserIds = projectUserIdsMap.getOrDefault(project.getId(), List.of());
                     if (!targetUserIds.isEmpty()) {
-                        pushSenderService.sendBulkNotifications(targetUserIds, title, body, targetUrl);
+                        pushSenderService.sendBulkNotifications(targetUserIds, title, body, targetUrl, options);
                     }
                 }
             }
         }
+    }
+
+    static PushMessageTemplate deadlineTemplate(long hoursLeft) {
+        return switch ((int) hoursLeft) {
+            case 72 -> PushMessageTemplate.DEADLINE_3_DAYS;
+            case 24 -> PushMessageTemplate.DEADLINE_1_DAY;
+            case 5 -> PushMessageTemplate.DEADLINE_5_HOURS;
+            case 1 -> PushMessageTemplate.DEADLINE_1_HOUR;
+            case -1 -> PushMessageTemplate.DEADLINE_MISSED;
+            default -> null;
+        };
     }
 
     @Scheduled(cron = "0 0 9 * * *")

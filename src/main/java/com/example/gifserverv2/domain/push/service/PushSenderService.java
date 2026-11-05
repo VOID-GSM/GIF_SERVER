@@ -42,11 +42,16 @@ public class PushSenderService {
         if (payload == null) return;
 
         for (PushSubscription sub : subscriptions) {
-            sendToSubscription(sub, payload);
+            sendToSubscription(sub, payload, PushOptions.DEFAULT);
         }
     }
 
     public void sendBulkNotifications(List<Long> userIds, String title, String body, String targetUrl) {
+        sendBulkNotifications(userIds, title, body, targetUrl, PushOptions.DEFAULT);
+    }
+
+    public void sendBulkNotifications(List<Long> userIds, String title, String body, String targetUrl,
+                                      PushOptions options) {
         if (userIds == null || userIds.isEmpty()) return;
 
         saveBulkNotificationHistory(userIds, title, body, targetUrl);
@@ -61,7 +66,7 @@ public class PushSenderService {
         if (payload == null) return;
 
         for (PushSubscription subscription : subscriptions) {
-            sendToSubscription(subscription, payload);
+            sendToSubscription(subscription, payload, options);
         }
     }
 
@@ -93,14 +98,18 @@ public class PushSenderService {
         notificationRepository.saveAll(notifications);
     }
 
-    private void sendToSubscription(PushSubscription sub, String payload) {
+    private void sendToSubscription(PushSubscription sub, String payload, PushOptions options) {
         try {
-            Notification notification = new nl.martijndwars.webpush.Notification(
-                    sub.getEndpoint(),
-                    sub.getP256dh(),
-                    sub.getAuth(),
-                    payload
-            );
+            Notification.NotificationBuilder builder = Notification.builder()
+                    .endpoint(sub.getEndpoint())
+                    .userPublicKey(sub.getP256dh())
+                    .userAuth(sub.getAuth())
+                    .payload(payload)
+                    .ttl(options.ttlSeconds());
+            if (options.urgency() != null) {
+                builder.urgency(options.urgency());
+            }
+            Notification notification = builder.build();
 
             HttpResponse response = pushService.send(notification);
             int statusCode = response.getStatusLine().getStatusCode();
