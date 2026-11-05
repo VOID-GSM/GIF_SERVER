@@ -1,7 +1,9 @@
 package com.example.gifserverv2.domain.student.service;
 
+import com.example.gifserverv2.domain.project.dto.request.TransferLeaderRequest;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.entity.ProjectMember;
+import com.example.gifserverv2.domain.project.service.CommandProjectService;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
@@ -14,6 +16,7 @@ import com.example.gifserverv2.domain.student.entity.TeamJoinRequest;
 import com.example.gifserverv2.domain.student.entity.TeamJoinRequest.Status;
 import com.example.gifserverv2.domain.student.exception.StudentException;
 import com.example.gifserverv2.domain.student.repository.TeamJoinRequestRepository;
+import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.ClientRole;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
@@ -38,6 +41,7 @@ public class AdminStudentService {
     private final ProjectMemberRepository projectMemberRepository;
     private final TeamJoinRequestRepository teamJoinRequestRepository;
     private final StudentNotifier notifier;
+    private final CommandProjectService commandProjectService;
 
     /**
      * 학생 목록. keyword 는 이름·학번 부분 일치, assigned 가 false 면 어느 팀에도 속하지 않은 학생만 준다.
@@ -169,36 +173,25 @@ public class AdminStudentService {
     }
 
     /**
-     * 팀 안에서 역할을 바꾼다. 팀장으로 지정하면 기존 팀장은 팀원이 된다.
+     * 팀 안에서 역할을 바꾼다. 팀장 지정은 기존 팀장 양도(CommandProjectService.transferLeader)를 그대로 써서
+     * 권한(Master 전용)·검증·알림(팀원·선생님)을 같은 기준으로 맞춘다. 기존 팀장은 팀원이 된다.
      * 팀에는 팀장이 항상 한 명 있어야 하므로, 현재 팀장을 팀원으로 바꾸려면 다른 팀원을 팀장으로 지정해야 한다.
      */
-    @Transactional
     public void changeRole(AuthenticatedUser caller, Long userId, Long projectId, ClientRole role) {
-        StudentManagerGuard.requireManager(caller);
+        if (caller == null || caller.adminRole() != AdminRole.MASTER) {
+            throw new StudentException(HttpStatus.FORBIDDEN, "팀장 양도 권한이 없습니다. (Master 선생님 전용)");
+        }
 
-        ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
-                .orElseThrow(ProjectException::notMember);
-        if (member.getRole() == role) {
+        if (role == ClientRole.MEMBER) {
+            ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+                    .orElseThrow(ProjectException::notMember);
+            if (member.getRole() == ClientRole.LEADER) {
+                throw new StudentException(HttpStatus.BAD_REQUEST, "팀장을 팀원으로 바꾸려면 다른 팀원을 팀장으로 지정해 주세요.");
+            }
             return;
         }
-        if (role == ClientRole.MEMBER) {
-            throw new StudentException(HttpStatus.BAD_REQUEST, "팀장을 팀원으로 바꾸려면 다른 팀원을 팀장으로 지정해 주세요.");
-        }
-        if (projectMemberRepository.existsByUserIdAndRole(userId, ClientRole.LEADER)) {
-            throw new StudentException(HttpStatus.CONFLICT, "이미 다른 프로젝트의 팀장으로 지정된 학생입니다.");
-        }
 
-        projectMemberRepository.findByProjectIdAndRole(projectId, ClientRole.LEADER)
-                .ifPresent(currentLeader -> currentLeader.changeRole(ClientRole.MEMBER));
-        member.changeRole(ClientRole.LEADER);
-
-        String projectName = member.getProject().getName();
-        String newLeaderName = userRepository.findById(userId).map(UserEntity::getName).orElse("학생");
-        notifier.sendAll(projectMemberRepository.findUserIdsByProjectId(projectId),
-                PushMessageTemplate.LEADER_TRANSFERRED_CLIENT,
-                PushMessageTemplate.LEADER_TRANSFERRED_CLIENT.formatBody(projectName, newLeaderName),
-                PushMessageTemplate.LEADER_TRANSFERRED_CLIENT.formatTargetUrl(projectId),
-                PushMessageTemplate.LEADER_TRANSFERRED_CLIENT.formatTag(projectId));
+        commandProjectService.transferLeader(projectId, caller.userId(), new TransferLeaderRequest(userId));
     }
 
     /** 같은 학생을 동시에 두 팀에 배정하지 않도록 학생 행을 잠근다. */

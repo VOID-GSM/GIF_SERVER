@@ -107,7 +107,7 @@ public class AdminStudentController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "팀 내 역할 변경 (Master·Void)", description = "LEADER 로 지정하면 기존 팀장은 팀원이 된다.")
+    @Operation(summary = "팀 내 역할 변경 (Master)", description = "LEADER 로 지정하면 기존 팀장은 팀원이 된다. 기존 팀장 양도와 같은 동작이다.")
     @PatchMapping("/{userId}/team-role")
     public ResponseEntity<Void> changeRole(
             @AuthenticationPrincipal AuthenticatedUser currentUser,
