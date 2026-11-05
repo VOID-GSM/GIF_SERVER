@@ -68,4 +68,14 @@ public enum PushMessageTemplate {
         }
         return String.format(this.targetUrlTemplate, args);
     }
+
+    public String formatTag(Object... ids) {
+        StringBuilder tag = new StringBuilder(name().toLowerCase().replace('_', '-'));
+        if (ids != null) {
+            for (Object id : ids) {
+                tag.append('-').append(id);
+            }
+        }
+        return tag.toString();
+    }
 }
