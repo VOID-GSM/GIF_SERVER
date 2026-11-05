@@ -49,6 +49,7 @@ public enum PushMessageTemplate {
             case DEADLINE_1_DAY -> new PushOptions(Duration.ofHours(19), Urgency.HIGH);   // 5시간 전 알림 전까지
             case DEADLINE_5_HOURS -> new PushOptions(Duration.ofHours(4), Urgency.HIGH);  // 1시간 전 알림 전까지
             case DEADLINE_1_HOUR -> new PushOptions(Duration.ofHours(1), Urgency.HIGH);   // 마감 시각까지
+            case DEADLINE_MISSED -> new PushOptions(Duration.ofHours(24), null);         // 미제출 팀이 바로 확인해야 의미가 있다
             default -> PushOptions.DEFAULT;
         };
     }
