@@ -27,7 +27,7 @@ public class DgOAuthFlowService {
         this.oauthStateStore = oauthStateStore;
     }
 
-    public URI createLoginRedirect(String redirectUri) {
+    public URI createLoginRedirect(String redirectUri, String returnTo) {
         authService.assertAllowedRedirectUri(redirectUri);
 
         String state = UUID.randomUUID().toString();
@@ -35,7 +35,8 @@ public class DgOAuthFlowService {
                 .state(state)
                 .enablePkce();
 
-        oauthStateStore.save(state, redirectUri, urlBuilder.getCodeVerifier(), STATE_TTL);
+        oauthStateStore.save(state, redirectUri, urlBuilder.getCodeVerifier(),
+                ReturnPathValidator.sanitize(returnTo), STATE_TTL);
         return URI.create(urlBuilder.build());
     }
 
@@ -47,6 +48,7 @@ public class DgOAuthFlowService {
         OAuthStateStore.LoginState loginState = oauthStateStore.consume(state)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "state가 유효하지 않거나 만료되었습니다."));
 
-        return authService.signIn(code, loginState.redirectUri(), loginState.codeVerifier());
+        return authService.signIn(code, loginState.redirectUri(), loginState.codeVerifier())
+                .withReturnTo(loginState.returnTo());
     }
 }

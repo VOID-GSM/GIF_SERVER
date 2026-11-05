@@ -20,11 +20,11 @@ public class InMemoryOAuthStateStore implements OAuthStateStore {
     private final DelayQueue<ExpiringState> expirationQueue = new DelayQueue<>();
 
     @Override
-    public void save(String state, String redirectUri, String codeVerifier, Duration ttl) {
+    public void save(String state, String redirectUri, String codeVerifier, String returnTo, Duration ttl) {
         cleanupExpiredStates();
 
         Instant expiresAt = Instant.now().plus(ttl);
-        stateStore.put(state, new StoredLoginState(redirectUri, codeVerifier, expiresAt));
+        stateStore.put(state, new StoredLoginState(redirectUri, codeVerifier, returnTo, expiresAt));
         expirationQueue.offer(new ExpiringState(state, expiresAt));
     }
 
@@ -37,7 +37,7 @@ public class InMemoryOAuthStateStore implements OAuthStateStore {
             return Optional.empty();
         }
 
-        return Optional.of(new LoginState(stored.redirectUri(), stored.codeVerifier()));
+        return Optional.of(new LoginState(stored.redirectUri(), stored.codeVerifier(), stored.returnTo()));
     }
 
     private void cleanupExpiredStates() {
@@ -51,7 +51,7 @@ public class InMemoryOAuthStateStore implements OAuthStateStore {
         }
     }
 
-    private record StoredLoginState(String redirectUri, String codeVerifier, Instant expiresAt) {
+    private record StoredLoginState(String redirectUri, String codeVerifier, String returnTo, Instant expiresAt) {
     }
 
     private record ExpiringState(String state, Instant expiresAt) implements Delayed {
