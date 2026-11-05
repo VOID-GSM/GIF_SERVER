@@ -155,12 +155,13 @@ public class AdminFormService {
         String title = PushMessageTemplate.FORM_ANNOUNCED.getTitle();
         String body = PushMessageTemplate.FORM_ANNOUNCED.formatBody(form.getTitle());
         String targetUrl = PushMessageTemplate.FORM_ANNOUNCED.formatTargetUrl(form.getId());
+        String tag = PushMessageTemplate.FORM_ANNOUNCED.formatTag(form.getId());
 
         List<Long> targetUserIds = (form.getTargetGrade() == null)
                 ? userRepository.findAllStudentIds()
                 : userRepository.findStudentIdsByGrade(String.valueOf(form.getTargetGrade()));
 
-        pushSenderService.sendBulkNotifications(targetUserIds, title, body, targetUrl);
+        pushSenderService.sendBulkNotifications(targetUserIds, title, body, targetUrl, tag);
     }
 
     @Transactional

@@ -73,6 +73,7 @@ public class PushScheduler {
             String title = template.getTitle();
             String body = template.formatBody(form.getTitle());
             String targetUrl = template.formatTargetUrl(form.getId());
+            String tag = template.formatTag(form.getId());
             PushOptions options = deadlineOptions(template, form.getId(), Duration.between(now, form.getDeadline()));
 
             List<Project> targetProjects = (form.getTargetGrade() == null)
@@ -85,7 +86,7 @@ public class PushScheduler {
                 if (!submittedKeySet.contains(key)) {
                     List<Long> targetUserIds = projectUserIdsMap.getOrDefault(project.getId(), List.of());
                     if (!targetUserIds.isEmpty()) {
-                        pushSenderService.sendBulkNotifications(targetUserIds, title, body, targetUrl, options);
+                        pushSenderService.sendBulkNotifications(targetUserIds, title, body, targetUrl, tag, options);
                     }
                 }
             }
@@ -159,7 +160,8 @@ public class PushScheduler {
                             startDateStr,
                             endDateStr
                     ),
-                    PushMessageTemplate.SCHEDULE_CURRENT_PERIOD.formatTargetUrl(projectId)
+                    PushMessageTemplate.SCHEDULE_CURRENT_PERIOD.formatTargetUrl(projectId),
+                    PushMessageTemplate.SCHEDULE_CURRENT_PERIOD.formatTag(event.getId(), today)
             );
         }
     }

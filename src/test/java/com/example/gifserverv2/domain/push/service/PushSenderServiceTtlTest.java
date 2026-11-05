@@ -71,7 +71,7 @@ class PushSenderServiceTtlTest {
         PushMessageTemplate template = PushMessageTemplate.DEADLINE_5_HOURS;
 
         senderService.sendBulkNotifications(List.of(1L), template.getTitle(), "본문", "/form/1/submit",
-                template.getPushOptions().withTopic("form-deadline-1"));
+                template.formatTag(1L), template.getPushOptions().withTopic("form-deadline-1"));
 
         Notification sent = captureSent();
         assertThat(sent.getTTL()).isEqualTo(4 * 60 * 60);
@@ -81,7 +81,7 @@ class PushSenderServiceTtlTest {
 
     @Test
     void 옵션_없이_보내면_기존과_같이_28일_TTL에_urgency_헤더_없음() throws Exception {
-        senderService.sendBulkNotifications(List.of(1L), "제목", "본문", "/projects/1");
+        senderService.sendBulkNotifications(List.of(1L), "제목", "본문", "/projects/1", "project-created-1");
 
         Notification sent = captureSent();
         assertThat(sent.getTTL()).isEqualTo(28 * 24 * 60 * 60);
