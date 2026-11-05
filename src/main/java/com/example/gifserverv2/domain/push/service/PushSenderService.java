@@ -110,6 +110,9 @@ public class PushSenderService {
             if (options.urgency() != null) {
                 builder.urgency(nl.martijndwars.webpush.Urgency.valueOf(options.urgency().name()));
             }
+            if (options.topic() != null) {
+                builder.topic(options.topic());
+            }
             Notification notification = builder.build();
 
             HttpResponse response = pushService.send(notification);

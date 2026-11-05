@@ -71,11 +71,12 @@ class PushSenderServiceTtlTest {
         PushMessageTemplate template = PushMessageTemplate.DEADLINE_5_HOURS;
 
         senderService.sendBulkNotifications(List.of(1L), template.getTitle(), "본문", "/form/1/submit",
-                template.getPushOptions());
+                template.getPushOptions().withTopic("form-deadline-1"));
 
         Notification sent = captureSent();
         assertThat(sent.getTTL()).isEqualTo(4 * 60 * 60);
         assertThat(sent.getUrgency()).isEqualTo(Urgency.HIGH);
+        assertThat(sent.getTopic()).isEqualTo("form-deadline-1");
     }
 
     @Test
@@ -85,6 +86,7 @@ class PushSenderServiceTtlTest {
         Notification sent = captureSent();
         assertThat(sent.getTTL()).isEqualTo(28 * 24 * 60 * 60);
         assertThat(sent.hasUrgency()).isFalse();
+        assertThat(sent.hasTopic()).isFalse();
     }
 
     private Notification captureSent() throws Exception {
