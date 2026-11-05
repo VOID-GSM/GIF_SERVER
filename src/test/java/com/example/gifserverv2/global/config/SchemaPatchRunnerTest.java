@@ -41,6 +41,18 @@ class SchemaPatchRunnerTest {
     }
 
     @Test
+    void 학생_관리_테이블이_없으면_만든다() {
+        runner.run(null);
+
+        jdbc.update("INSERT INTO student_roster (student_number, name, grade, class_no, student_no) VALUES ('1101', '김학생', 1, 1, 1)");
+        jdbc.update("INSERT INTO team_join_request (project_id, user_id, requested_by, status, created_at) "
+                + "VALUES (1, 2, 3, 'PENDING', CURRENT_TIMESTAMP)");
+
+        assertThat(jdbc.queryForObject("SELECT name FROM student_roster WHERE student_number = '1101'", String.class)).isEqualTo("김학생");
+        assertThat(jdbc.queryForObject("SELECT status FROM team_join_request", String.class)).isEqualTo("PENDING");
+    }
+
+    @Test
     void 여러_번_실행해도_기존_데이터를_유지한다() {
         runner.run(null);
         jdbc.update("INSERT INTO users (id, email) VALUES (1, 'a@gsm.hs.kr')");

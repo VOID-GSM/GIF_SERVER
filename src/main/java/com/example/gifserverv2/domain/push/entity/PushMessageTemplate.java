@@ -23,6 +23,8 @@ public enum PushMessageTemplate {
 
     TEAM_MEMBER_ADDED("🤝 새로운 프로젝트에 팀원으로 추가되었습니다!", "'%s' 프로젝트에 팀원으로 등록되었습니다. 확인해 보세요.", "/projects/%d"),
     TEAM_MEMBER_REMOVED("📌 프로젝트 팀원에서 제외되었습니다.", "'%s' 프로젝트 팀원 목록에서 제외되었습니다.", "/"),
+    TEAM_JOIN_REQUESTED("🙋 팀원 추가 요청", "'%s' 학생을 '%s' 프로젝트 팀원으로 추가해 달라는 요청이 있습니다. 수락 여부를 선택해 주세요.", "/projects/%d"),
+    TEAM_JOIN_REJECTED("🙅 팀원 추가 요청 거절", "'%s' 프로젝트 팀장이 '%s' 학생 추가 요청을 거절했습니다.", "/projects/%d"),
 
     FORM_SUBMITTED("📥 [제출 알림] 새로운 양식이 제출되었습니다.", "유저가 '%s' 양식을 제출했습니다. 확인해 보세요.", "/form/submissions/%d"),
     FORM_ANNOUNCED("📢 새로운 양식이 등록되었습니다.", "'%s' 양식이 등록되었습니다. 기간 내에 작성해 주세요.", "/form/%d/submit"),

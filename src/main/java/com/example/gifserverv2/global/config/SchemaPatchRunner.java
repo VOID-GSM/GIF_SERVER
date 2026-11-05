@@ -37,6 +37,29 @@ public class SchemaPatchRunner implements ApplicationRunner {
                             "url VARCHAR(500) NOT NULL, " +
                             "PRIMARY KEY (id))",
                     "CREATE INDEX idx_user_link_user_id ON user_link (user_id)")),
+            new TableSpec("student_roster", List.of(
+                    "CREATE TABLE IF NOT EXISTS student_roster (" +
+                            "id BIGINT NOT NULL AUTO_INCREMENT, " +
+                            "student_number VARCHAR(10) NOT NULL, " +
+                            "name VARCHAR(50) NOT NULL, " +
+                            "grade INT NOT NULL, " +
+                            "class_no INT NOT NULL, " +
+                            "student_no INT NOT NULL, " +
+                            "PRIMARY KEY (id), " +
+                            "CONSTRAINT uk_student_roster_student_number UNIQUE (student_number))")),
+            new TableSpec("team_join_request", List.of(
+                    "CREATE TABLE IF NOT EXISTS team_join_request (" +
+                            "id BIGINT NOT NULL AUTO_INCREMENT, " +
+                            "project_id BIGINT NOT NULL, " +
+                            "user_id BIGINT NOT NULL, " +
+                            "requested_by BIGINT NOT NULL, " +
+                            "status VARCHAR(20) NOT NULL, " +
+                            "reject_reason VARCHAR(200) NULL, " +
+                            "created_at DATETIME(6) NOT NULL, " +
+                            "responded_at DATETIME(6) NULL, " +
+                            "PRIMARY KEY (id))",
+                    "CREATE INDEX idx_team_join_request_user_status ON team_join_request (user_id, status)",
+                    "CREATE INDEX idx_team_join_request_project_status ON team_join_request (project_id, status)")),
     };
 
     private static final ColumnSpec[] REQUIRED_COLUMNS = {
