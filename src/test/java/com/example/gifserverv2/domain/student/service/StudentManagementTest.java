@@ -4,6 +4,10 @@ import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.project.service.CommandProjectService;
+import com.example.gifserverv2.domain.project.service.ProjectLogoStorageService;
+import com.example.gifserverv2.domain.project.service.ProjectWriterService;
+import com.example.gifserverv2.domain.project.service.QueryProjectService;
 import com.example.gifserverv2.domain.push.service.PushSenderService;
 import com.example.gifserverv2.domain.student.dto.response.RosterUploadResponse;
 import com.example.gifserverv2.domain.student.dto.response.StudentResponse;
@@ -47,12 +51,16 @@ import static org.mockito.Mockito.verify;
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect"
 })
-@Import({AdminStudentService.class, TeamJoinRequestService.class, StudentRosterService.class, StudentNotifier.class})
+@Import({AdminStudentService.class, TeamJoinRequestService.class, StudentRosterService.class, StudentNotifier.class,
+        CommandProjectService.class, ProjectWriterService.class})
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class StudentManagementTest {
 
     @Autowired AdminStudentService adminStudentService;
     @Autowired TeamJoinRequestService teamJoinRequestService;
+    @Autowired ProjectWriterService projectWriterService;
+    @MockitoBean QueryProjectService queryProjectService;
+    @MockitoBean ProjectLogoStorageService projectLogoStorageService;
     @Autowired StudentRosterService studentRosterService;
     @Autowired UserRepository userRepository;
     @Autowired ProjectRepository projectRepository;
@@ -171,6 +179,20 @@ class StudentManagementTest {
         addMember(projectB, loner, ClientRole.MEMBER);
 
         assertStatus(() -> teamJoinRequestService.respond(auth(leader, null), request.requestId(), true, null), HttpStatus.CONFLICT);
+
+        // 수락할 수 없는 요청이 대기 목록에 남지 않도록 취소로 닫힌다.
+        assertThat(teamJoinRequestRepository.findById(request.requestId()).orElseThrow().getStatus()).isEqualTo(Status.CANCELLED);
+        assertThat(teamJoinRequestService.getPendingRequests(auth(leader, null), projectA.getId())).isEmpty();
+    }
+
+    @Test
+    void 팀장이_직접_팀원으로_추가하면_대기_중인_배정_요청이_닫힌다() {
+        TeamJoinRequestResponse request = adminStudentService.requestAssign(master, loner.getId(), projectA.getId());
+
+        projectWriterService.reconcileMembers(projectB.getId(), List.of(loner.getId()), null);
+
+        assertThat(teamJoinRequestRepository.findById(request.requestId()).orElseThrow().getStatus()).isEqualTo(Status.CANCELLED);
+        assertThat(adminStudentService.getPendingRequests(master)).isEmpty();
     }
 
     @Test
@@ -212,6 +234,19 @@ class StudentManagementTest {
 
         assertThat(roleOf(projectA, member)).isEqualTo(ClientRole.LEADER);
         assertThat(roleOf(projectA, leader)).isEqualTo(ClientRole.MEMBER);
+        // 기존 팀장 양도와 같이 선생님들에게도 알린다.
+        verify(pushSenderService).sendBulkNotifications(eq(List.of(master.userId())), anyString(), anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void 팀장_지정은_기존_팀장_양도와_같이_Master만_할_수_있다() {
+        UserEntity voidUser = new UserEntity("void@gsm.hs.kr", "보이드", null, Role.ADMIN);
+        voidUser.updateAdminAdditionalInfo(AdminRole.VOID, "보이드", null, false);
+        AuthenticatedUser voidAuth = auth(userRepository.save(voidUser), AdminRole.VOID);
+
+        assertStatus(() -> adminStudentService.changeRole(voidAuth, member.getId(), projectA.getId(), ClientRole.LEADER),
+                HttpStatus.FORBIDDEN);
+        assertThat(roleOf(projectA, leader)).isEqualTo(ClientRole.LEADER);
     }
 
     @Test
@@ -248,6 +283,21 @@ class StudentManagementTest {
         assertThat(result.errors()).extracting(RosterUploadResponse.RowError::line).containsExactly(2, 3, 5);
         assertThat(studentRosterService.getUnregistered(master, null))
                 .extracting(UnregisteredStudentResponse::name).containsExactly("정바뀜", "중복");
+    }
+
+    @Test
+    void BOM_이_붙은_UTF8_명단도_헤더를_건너뛰고_읽는다() {
+        byte[] bom = {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
+        byte[] body = "학번,이름\n1301,정미가입\n".getBytes(StandardCharsets.UTF_8);
+        byte[] content = new byte[bom.length + body.length];
+        System.arraycopy(bom, 0, content, 0, bom.length);
+        System.arraycopy(body, 0, content, bom.length, body.length);
+
+        RosterUploadResponse result = studentRosterService.upload(master,
+                new MockMultipartFile("file", "bom.csv", "text/csv", content));
+
+        assertThat(result.created()).isEqualTo(1);
+        assertThat(result.errors()).isEmpty();
     }
 
     @Test
