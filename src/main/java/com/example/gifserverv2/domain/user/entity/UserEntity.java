@@ -2,6 +2,10 @@ package com.example.gifserverv2.domain.user.entity;
 
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 @Entity
 @Table(name = "users")
 public class UserEntity {
@@ -54,6 +58,19 @@ public class UserEntity {
 
     @Column(name = "coin_balance", nullable = false, columnDefinition = "int default 0")
     private int coinBalance = 0;
+
+    @Column(name = "major", length = 50)
+    private String major;
+
+    /** 직접 업로드한 프로필 이미지. 없으면 GitHub 아바타를 보여준다. */
+    @Column(name = "profile_image_url", length = 500)
+    private String profileImageUrl;
+
+    @ElementCollection
+    @CollectionTable(name = "user_tech_stack", joinColumns = @JoinColumn(name = "user_id"))
+    @OrderColumn(name = "sort_order")
+    @Column(name = "name", nullable = false, length = 30)
+    private List<String> techStacks = new ArrayList<>();
 
     protected UserEntity() {
     }
@@ -131,6 +148,36 @@ public class UserEntity {
 
     public int getCoinBalance() {
         return coinBalance;
+    }
+
+    public String getMajor() {
+        return major;
+    }
+
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+
+    /** 업로드한 이미지가 있으면 그것을, 없으면 GitHub 아바타를 반환한다. */
+    public String getDisplayProfileImageUrl() {
+        return profileImageUrl != null ? profileImageUrl : githubAvatarUrl;
+    }
+
+    public List<String> getTechStacks() {
+        return Collections.unmodifiableList(techStacks);
+    }
+
+    public void updateMajor(String major) {
+        this.major = major;
+    }
+
+    public void replaceTechStacks(List<String> techStacks) {
+        this.techStacks.clear();
+        this.techStacks.addAll(techStacks);
+    }
+
+    public void changeProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 
     public Role getEffectiveRole() {

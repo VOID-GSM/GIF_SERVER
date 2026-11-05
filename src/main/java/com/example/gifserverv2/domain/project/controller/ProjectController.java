@@ -39,8 +39,10 @@ public class ProjectController {
     }
     @GetMapping("/admin")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<ListProjectResponse>> getAllProjects() {
-        return ResponseEntity.ok(projectQueryService.getAllProjects());
+    public ResponseEntity<List<ListProjectResponse>> getAllProjects(
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return ResponseEntity.ok(projectQueryService.getAllProjects(user.userId()));
     }
 
     @GetMapping("/me")
@@ -51,15 +53,19 @@ public class ProjectController {
     }
 
     @GetMapping("/{projectId}")
-    public ResponseEntity<DetailProjectResponse> getProject(@PathVariable Long projectId) {
-        return ResponseEntity.ok(projectQueryService.getProject(projectId));
+    public ResponseEntity<DetailProjectResponse> getProject(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long projectId
+    ) {
+        return ResponseEntity.ok(projectQueryService.getProject(projectId, user.userId()));
     }
 
     @GetMapping("/filter")
     public ResponseEntity<List<ListProjectResponse>> filterProjects(
+            @AuthenticationPrincipal AuthenticatedUser user,
             @RequestParam(required = false) Integer grade
     ) {
-        return ResponseEntity.ok(projectQueryService.getProjectsByGrade(grade));
+        return ResponseEntity.ok(projectQueryService.getProjectsByGrade(grade, user.userId()));
     }
 
     @io.swagger.v3.oas.annotations.parameters.RequestBody(content = @Content(mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,

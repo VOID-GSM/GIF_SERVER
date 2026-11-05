@@ -1,22 +1,20 @@
 package com.example.gifserverv2.domain.push.service;
 
 import com.example.gifserverv2.domain.push.entity.NotificationHistory;
+import com.example.gifserverv2.domain.push.entity.PushOptions;
 import com.example.gifserverv2.domain.push.entity.PushSubscription;
 import com.example.gifserverv2.domain.push.repository.NotificationRepository;
 import com.example.gifserverv2.domain.push.repository.PushSubscriptionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.martijndwars.webpush.Notification;
 import nl.martijndwars.webpush.PushService;
 import org.apache.http.HttpResponse;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.GeneralSecurityException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,22 +27,7 @@ public class PushSenderService {
     private final PushSubscriptionRepository pushSubscriptionRepository;
     private final NotificationRepository notificationRepository;
     private final ObjectMapper objectMapper;
-
-    @Value("${vapid.public-key}")
-    private String publicKey;
-
-    @Value("${vapid.private-key}")
-    private String privateKey;
-
-    @Value("${vapid.subject}")
-    private String subject;
-
-    private PushService pushService;
-
-    @PostConstruct
-    public void init() throws GeneralSecurityException {
-        this.pushService = new PushService(publicKey, privateKey, subject);
-    }
+    private final PushService pushService;
 
     @Async
     public void sendNotification(Long targetUserId, String title, String body, String targetUrl) {
@@ -60,16 +43,16 @@ public class PushSenderService {
         if (payload == null) return;
 
         for (PushSubscription sub : subscriptions) {
-            sendToSubscription(sub, payload);
+            sendToSubscription(sub, payload, PushOptions.DEFAULT);
         }
     }
 
-    @Async
-    public void sendNotification(Long targetUserId, String title, String body) {
-        sendNotification(targetUserId, title, body, null);
+    public void sendBulkNotifications(List<Long> userIds, String title, String body, String targetUrl) {
+        sendBulkNotifications(userIds, title, body, targetUrl, PushOptions.DEFAULT);
     }
 
-    public void sendBulkNotifications(List<Long> userIds, String title, String body, String targetUrl) {
+    public void sendBulkNotifications(List<Long> userIds, String title, String body, String targetUrl,
+                                      PushOptions options) {
         if (userIds == null || userIds.isEmpty()) return;
 
         saveBulkNotificationHistory(userIds, title, body, targetUrl);
@@ -84,22 +67,13 @@ public class PushSenderService {
         if (payload == null) return;
 
         for (PushSubscription subscription : subscriptions) {
-            sendToSubscription(subscription, payload);
+            sendToSubscription(subscription, payload, options);
         }
     }
 
     @Async
     public void sendBulkNotificationsAsync(List<Long> userIds, String title, String body, String targetUrl) {
         sendBulkNotifications(userIds, title, body, targetUrl);
-    }
-
-    public void sendBulkNotifications(List<Long> userIds, String title, String body) {
-        sendBulkNotifications(userIds, title, body, null);
-    }
-
-    @Async
-    public void sendBulkNotificationsAsync(List<Long> userIds, String title, String body) {
-        sendBulkNotifications(userIds, title, body, null);
     }
 
     @Transactional
@@ -125,14 +99,21 @@ public class PushSenderService {
         notificationRepository.saveAll(notifications);
     }
 
-    private void sendToSubscription(PushSubscription sub, String payload) {
+    private void sendToSubscription(PushSubscription sub, String payload, PushOptions options) {
         try {
-            Notification notification = new nl.martijndwars.webpush.Notification(
-                    sub.getEndpoint(),
-                    sub.getP256dh(),
-                    sub.getAuth(),
-                    payload
-            );
+            Notification.NotificationBuilder builder = Notification.builder()
+                    .endpoint(sub.getEndpoint())
+                    .userPublicKey(sub.getP256dh())
+                    .userAuth(sub.getAuth())
+                    .payload(payload)
+                    .ttl(options.ttlSeconds());
+            if (options.urgency() != null) {
+                builder.urgency(nl.martijndwars.webpush.Urgency.valueOf(options.urgency().name()));
+            }
+            if (options.topic() != null) {
+                builder.topic(options.topic());
+            }
+            Notification notification = builder.build();
 
             HttpResponse response = pushService.send(notification);
             int statusCode = response.getStatusLine().getStatusCode();

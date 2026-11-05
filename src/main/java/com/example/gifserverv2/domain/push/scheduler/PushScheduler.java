@@ -10,6 +10,7 @@ import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
 import com.example.gifserverv2.domain.push.entity.PushMessageTemplate;
+import com.example.gifserverv2.domain.push.entity.PushOptions;
 import com.example.gifserverv2.domain.push.service.PushSenderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -64,27 +65,15 @@ public class PushScheduler {
         for (Form form : activeForms) {
             long hoursLeft = Math.round(Duration.between(now, form.getDeadline()).toMinutes() / 60.0);
 
-            String title;
-            String body;
-
-            if (hoursLeft == 1) {
-                title = PushMessageTemplate.DEADLINE_1_HOUR.getTitle();
-                body = PushMessageTemplate.DEADLINE_1_HOUR.formatBody(form.getTitle());
-            } else if (hoursLeft == 5) {
-                title = PushMessageTemplate.DEADLINE_5_HOURS.getTitle();
-                body = PushMessageTemplate.DEADLINE_5_HOURS.formatBody(form.getTitle());
-            } else if (hoursLeft == 24) {
-                title = PushMessageTemplate.DEADLINE_1_DAY.getTitle();
-                body = PushMessageTemplate.DEADLINE_1_DAY.formatBody(form.getTitle());
-            } else if (hoursLeft == 72) {
-                title = PushMessageTemplate.DEADLINE_3_DAYS.getTitle();
-                body = PushMessageTemplate.DEADLINE_3_DAYS.formatBody(form.getTitle());
-            } else if (hoursLeft == -1) {
-                title = PushMessageTemplate.DEADLINE_MISSED.getTitle();
-                body = PushMessageTemplate.DEADLINE_MISSED.formatBody(form.getTitle());
-            } else {
+            PushMessageTemplate template = deadlineTemplate(hoursLeft);
+            if (template == null) {
                 continue;
             }
+
+            String title = template.getTitle();
+            String body = template.formatBody(form.getTitle());
+            String targetUrl = template.formatTargetUrl(form.getId());
+            PushOptions options = deadlineOptions(template, form.getId(), Duration.between(now, form.getDeadline()));
 
             List<Project> targetProjects = (form.getTargetGrade() == null)
                     ? allProjects
@@ -96,11 +85,35 @@ public class PushScheduler {
                 if (!submittedKeySet.contains(key)) {
                     List<Long> targetUserIds = projectUserIdsMap.getOrDefault(project.getId(), List.of());
                     if (!targetUserIds.isEmpty()) {
-                        pushSenderService.sendBulkNotifications(targetUserIds, title, body);
+                        pushSenderService.sendBulkNotifications(targetUserIds, title, body, targetUrl, options);
                     }
                 }
             }
         }
+    }
+
+    static PushMessageTemplate deadlineTemplate(long hoursLeft) {
+        return switch ((int) hoursLeft) {
+            case 72 -> PushMessageTemplate.DEADLINE_3_DAYS;
+            case 24 -> PushMessageTemplate.DEADLINE_1_DAY;
+            case 5 -> PushMessageTemplate.DEADLINE_5_HOURS;
+            case 1 -> PushMessageTemplate.DEADLINE_1_HOUR;
+            case -1 -> PushMessageTemplate.DEADLINE_MISSED;
+            default -> null;
+        };
+    }
+
+    /**
+     * hoursLeft 는 반올림이라 "1시간 전" 알림이 마감 30분 전에 나갈 수도 있다.
+     * 마감 전 알림이 마감 이후에 도착하지 않도록 TTL 을 마감까지 남은 시간으로 제한한다.
+     * 같은 양식의 마감 알림은 topic 을 같게 두어, 오프라인이었다가 접속해도 마지막 단계 알림만 오게 한다.
+     */
+    static PushOptions deadlineOptions(PushMessageTemplate template, Long formId, Duration untilDeadline) {
+        PushOptions options = template.getPushOptions().withTopic("form-deadline-" + formId);
+        if (template == PushMessageTemplate.DEADLINE_MISSED) {
+            return options;
+        }
+        return options.withTtlAtMost(untilDeadline);
     }
 
     @Scheduled(cron = "0 0 9 * * *")
@@ -145,7 +158,8 @@ public class PushScheduler {
                             event.getEventName(),
                             startDateStr,
                             endDateStr
-                    )
+                    ),
+                    PushMessageTemplate.SCHEDULE_CURRENT_PERIOD.formatTargetUrl(projectId)
             );
         }
     }

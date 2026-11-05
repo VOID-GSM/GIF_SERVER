@@ -23,8 +23,9 @@ public class AuthController {
     private final GoogleOAuthFlowService googleOAuthFlowService;
 
     @GetMapping("/dg/start")
-    public ResponseEntity<Void> startDgLogin(@RequestParam String redirectUri) {
-        URI location = dgOAuthFlowService.createLoginRedirect(redirectUri);
+    public ResponseEntity<Void> startDgLogin(@RequestParam String redirectUri,
+                                             @RequestParam(required = false) String returnTo) {
+        URI location = dgOAuthFlowService.createLoginRedirect(redirectUri, returnTo);
         return ResponseEntity.status(HttpStatus.FOUND).location(location).build();
     }
 
@@ -34,8 +35,9 @@ public class AuthController {
     }
 
     @GetMapping("/google/start")
-    public ResponseEntity<Void> startGoogleLogin(@RequestParam String redirectUri) {
-        URI location = googleOAuthFlowService.createLoginRedirect(redirectUri);
+    public ResponseEntity<Void> startGoogleLogin(@RequestParam String redirectUri,
+                                                 @RequestParam(required = false) String returnTo) {
+        URI location = googleOAuthFlowService.createLoginRedirect(redirectUri, returnTo);
         return ResponseEntity.status(HttpStatus.FOUND).location(location).build();
     }
 

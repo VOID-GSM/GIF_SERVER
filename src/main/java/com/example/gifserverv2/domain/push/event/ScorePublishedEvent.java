@@ -5,5 +5,6 @@ import java.util.List;
 public record ScorePublishedEvent(
         List<Long> userIds,
         String title,
-        String body
+        String body,
+        String targetUrl
 ) {}

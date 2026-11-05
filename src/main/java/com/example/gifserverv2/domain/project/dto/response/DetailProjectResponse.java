@@ -1,5 +1,6 @@
 package com.example.gifserverv2.domain.project.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 
@@ -13,11 +14,15 @@ public record DetailProjectResponse(
         String description,
         String logo,
         Integer grade,
-        List<MemberInfo> members
+        List<MemberInfo> members,
+        long likeCount,
+        @JsonProperty("isLiked") boolean isLiked,
+        long viewCount
 ) {
     public record MemberInfo(Long userId, String name, String studentNumber, String role) {}
 
-    public static DetailProjectResponse from(Project project, Map<Long, UserEntity> userMap) {
+    public static DetailProjectResponse from(Project project, Map<Long, UserEntity> userMap,
+                                             long likeCount, boolean isLiked, long viewCount) {
         List<MemberInfo> memberInfos = project.getMembers().stream()
                 .map(m -> {
                     UserEntity user = userMap.get(m.getUserId());
@@ -34,7 +39,10 @@ public record DetailProjectResponse(
                 project.getDescription(),
                 project.getLogo(),
                 project.getGrade(),
-                memberInfos
+                memberInfos,
+                likeCount,
+                isLiked,
+                viewCount
         );
     }
 }

@@ -2,6 +2,7 @@ package com.example.gifserverv2.domain.auth.service;
 
 import com.example.gifserverv2.domain.auth.dto.request.OAuthSignInRequest;
 import com.example.gifserverv2.domain.auth.dto.response.OAuthSignInResponse;
+import com.example.gifserverv2.domain.user.entity.AccountType;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
@@ -17,7 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import team.themoment.datagsm.sdk.oauth.DataGsmOAuthClient;
 import team.themoment.datagsm.sdk.oauth.exception.DataGsmException;
+import team.themoment.datagsm.sdk.oauth.model.AccountObjectType;
+import team.themoment.datagsm.sdk.oauth.model.AccountStatus;
 import team.themoment.datagsm.sdk.oauth.model.Student;
+import team.themoment.datagsm.sdk.oauth.model.Teacher;
 import team.themoment.datagsm.sdk.oauth.model.TokenResponse;
 import team.themoment.datagsm.sdk.oauth.model.UserInfo;
 
@@ -63,23 +67,35 @@ public class AuthService {
                     codeVerifier);
             UserInfo userInfo = dataGsmOAuthClient.getUserInfo(tokenResponse.getAccessToken());
 
-            Student student = userInfo.getStudent();
             String email = userInfo.getEmail();
-            boolean isStudent = userInfo.isStudent();
+            AccountObjectType objectType = userInfo.getObjectType();
+
+            if (userInfo.getStatus() != AccountStatus.ACTIVE) {
+                log.warn("Inactive DataGSM account login blocked: email='{}', status={}", email, userInfo.getStatus());
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "승인이 완료되지 않은 계정입니다.");
+            }
 
             String name = null;
             String studentNumber = null;
             String grade = null;
             Role assignedRole = Role.USER;
 
-            if (!isStudent) {
-                assignedRole = Role.ADMIN;
-                if (email != null && !email.isBlank() && email.contains("@")) {
-                    name = email.split("@")[0];
-                } else {
-                    name = email;
+            if (objectType == AccountObjectType.TEACHER) {
+                Teacher teacher = userInfo.getTeacher();
+                if (teacher == null) {
+                    log.warn("Teacher info missing in UserInfo: email='{}'", email);
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "선생님 정보가 없습니다.");
                 }
-            } else {
+
+                name = teacher.getName();
+                if (email == null || email.isBlank() || name == null || name.isBlank()) {
+                    log.warn("Invalid teacher info: email='{}', name='{}'", email, name);
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "선생님 정보가 유효하지 않습니다.");
+                }
+
+                assignedRole = Role.ADMIN;
+            } else if (objectType == AccountObjectType.STUDENT) {
+                Student student = userInfo.getStudent();
                 if (student == null) {
                     log.warn("Student info missing in UserInfo: {}", userInfo);
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학생 정보가 없습니다.");
@@ -109,6 +125,9 @@ public class AuthService {
                     log.warn("Grade 3 student login blocked: email='{}', name='{}'", email, name);
                     throw new ResponseStatusException(HttpStatus.FORBIDDEN, "3학년은 로그인할 수 없습니다.");
                 }
+            } else {
+                log.warn("Unsupported DataGSM account type login blocked: email='{}', objectType={}", email, objectType);
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "로그인할 수 없는 계정 유형입니다.");
             }
 
             UserEntity user = findOrCreateUser(email, name, studentNumber, assignedRole, grade);
@@ -122,10 +141,12 @@ public class AuthService {
                     user.getStudentNumber(),
                     user.getGrade(),
                     user.getRole().name(),
+                    AccountType.of(user).name(),
                     user.getAdminRole() != null ? user.getAdminRole().name() : null,
                     user.getAdminTeam(),
                     user.isGradeHead(),
-                    user.getClientRole() != null ? user.getClientRole().name() : null);
+                    user.getClientRole() != null ? user.getClientRole().name() : null,
+                    null);
         } catch (DataGsmException e) {
             log.warn("DataGSM OAuth error: status={}, message={}", e.getStatusCode(), e.getMessage());
             throw new ResponseStatusException(resolveStatus(e.getStatusCode()), "OAuth 인증에 실패했습니다.", e);
@@ -141,9 +162,9 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Google 사용자 이메일을 가져오지 못했습니다.");
         }
 
-        Role assignedRole = Role.ADMIN;
+        String displayName = (name != null && !name.isBlank()) ? name : email.split("@")[0];
 
-        UserEntity user = findOrCreateUser(email, name, null, assignedRole, null);
+        UserEntity user = findOrCreateExternalUser(email, displayName);
         String token = jwtTokenProvider.createToken(user);
 
         return new OAuthSignInResponse(
@@ -154,10 +175,12 @@ public class AuthService {
                 user.getStudentNumber(),
                 user.getGrade(),
                 user.getRole().name(),
+                AccountType.of(user).name(),
                 user.getAdminRole() != null ? user.getAdminRole().name() : null,
                 user.getAdminTeam(),
                 user.isGradeHead(),
-                user.getClientRole() != null ? user.getClientRole().name() : null);
+                user.getClientRole() != null ? user.getClientRole().name() : null,
+                null);
     }
 
     @Transactional(readOnly = true)
@@ -186,6 +209,18 @@ public class AuthService {
     private HttpStatus resolveStatus(int statusCode) {
         HttpStatus resolved = HttpStatus.resolve(statusCode);
         return resolved != null ? resolved : HttpStatus.BAD_GATEWAY;
+    }
+
+    private UserEntity findOrCreateExternalUser(String email, String name) {
+        return userRepository.findByEmail(email)
+                .map(existing -> {
+                    if (existing.getEffectiveRole() != Role.EXTERNAL) {
+                        log.warn("Google login blocked for non-external account: email='{}'", email);
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "교내 계정은 DataGSM 로그인을 이용해주세요.");
+                    }
+                    return existing;
+                })
+                .orElseGet(() -> userRepository.save(new UserEntity(email, name, null, Role.EXTERNAL)));
     }
 
     private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role, String grade) {

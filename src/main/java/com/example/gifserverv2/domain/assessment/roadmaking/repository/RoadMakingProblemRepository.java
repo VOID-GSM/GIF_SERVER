@@ -9,5 +9,5 @@ public interface RoadMakingProblemRepository extends JpaRepository<RoadMakingPro
 
     Optional<RoadMakingProblem> findByIdAndRoundId(Long id, Long roundId);
 
-    Optional<RoadMakingProblem> findFirstByRoundIdAndSolvedFalseOrderBySequenceAsc(Long roundId);
+    Optional<RoadMakingProblem> findFirstByRoundIdOrderBySequenceDesc(Long roundId);
 }

@@ -19,4 +19,7 @@ public class RetrospectiveRelatedWork {
 
     @Column(name = "work_title", length = 200)
     private String title;
+
+    @Column(name = "work_url", length = 500)
+    private String url;
 }

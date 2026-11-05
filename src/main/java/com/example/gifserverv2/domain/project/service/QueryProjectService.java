@@ -1,5 +1,8 @@
 package com.example.gifserverv2.domain.project.service;
 
+import com.example.gifserverv2.domain.engagement.entity.ProjectViewCount;
+import com.example.gifserverv2.domain.engagement.repository.ProjectLikeRepository;
+import com.example.gifserverv2.domain.engagement.repository.ProjectViewCountRepository;
 import com.example.gifserverv2.domain.project.dto.response.DetailProjectResponse;
 import com.example.gifserverv2.domain.project.dto.response.ListProjectResponse;
 import com.example.gifserverv2.domain.project.dto.response.UserSearchResponse;
@@ -15,8 +18,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +32,8 @@ public class QueryProjectService {
     private final ProjectMemberRepository projectMemberRepository;
     private final UserSearchRepository userSearchRepository;
     private final UserRepository userRepository;
+    private final ProjectLikeRepository likeRepository;
+    private final ProjectViewCountRepository viewCountRepository; // 추가: 조회수 조회용
 
     @Transactional(readOnly = true)
     public List<UserSearchResponse> searchUsers(String keyword) {
@@ -36,7 +43,7 @@ public class QueryProjectService {
         }
 
         List<Long> userIds = users.stream().map(UserEntity::getId).toList();
-        java.util.Set<Long> userIdsWithTeam = projectMemberRepository.findAllByUserIdIn(userIds).stream()
+        Set<Long> userIdsWithTeam = projectMemberRepository.findAllByUserIdIn(userIds).stream()
                 .map(ProjectMember::getUserId)
                 .collect(Collectors.toSet());
 
@@ -46,29 +53,26 @@ public class QueryProjectService {
     }
 
     @Transactional(readOnly = true)
-    public List<ListProjectResponse> getAllProjects() {
-        return projectRepository.findAll().stream()
-                .map(ListProjectResponse::from)
-                .toList();
+    public List<ListProjectResponse> getAllProjects(Long userId) {
+        return toListResponses(projectRepository.findAll(), userId);
     }
 
     @Transactional(readOnly = true)
     public List<ListProjectResponse> getMyProjects(Long userId) {
-        return projectMemberRepository.findAllByUserId(userId).stream()
-                .map(m -> ListProjectResponse.from(m.getProject()))
+        List<Project> projects = projectMemberRepository.findAllByUserId(userId).stream()
+                .map(ProjectMember::getProject)
                 .toList();
+        return toListResponses(projects, userId);
     }
 
     @Transactional(readOnly = true)
-    public List<ListProjectResponse> getProjectsByGrade(Integer grade) {
-        if (grade == null) return getAllProjects();
-        return projectRepository.findByGrade(grade).stream()
-                .map(ListProjectResponse::from)
-                .toList();
+    public List<ListProjectResponse> getProjectsByGrade(Integer grade, Long userId) {
+        if (grade == null) return getAllProjects(userId);
+        return toListResponses(projectRepository.findByGrade(grade), userId);
     }
 
     @Transactional(readOnly = true)
-    public DetailProjectResponse getProject(Long projectId) {
+    public DetailProjectResponse getProject(Long projectId, Long userId) {
         Project project = getProjectOrThrow(projectId);
         List<Long> memberIds = project.getMembers().stream()
                 .map(ProjectMember::getUserId)
@@ -77,7 +81,37 @@ public class QueryProjectService {
         Map<Long, UserEntity> userMap = userRepository.findAllById(memberIds).stream()
                 .collect(Collectors.toMap(UserEntity::getId, u -> u));
 
-        return DetailProjectResponse.from(project, userMap);
+        return DetailProjectResponse.from(
+                project,
+                userMap,
+                likeRepository.countByProjectId(projectId),
+                likeRepository.existsByProjectIdAndUserId(projectId, userId),
+                // 추가: 조회 기록이 아직 없는 프로젝트는 0으로 처리
+                viewCountRepository.findById(projectId).map(ProjectViewCount::getViews).orElse(0L)
+        );
+    }
+
+    private List<ListProjectResponse> toListResponses(List<Project> projects, Long userId) {
+        if (projects.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> projectIds = projects.stream().map(Project::getId).toList();
+        Map<Long, Long> likeCounts = likeRepository.countByProjectIdIn(projectIds).stream()
+                .collect(Collectors.toMap(ProjectLikeRepository.ProjectLikeCount::getProjectId,
+                        ProjectLikeRepository.ProjectLikeCount::getLikeCount));
+        Set<Long> likedProjectIds = new HashSet<>(likeRepository.findLikedProjectIds(userId, projectIds));
+        // 추가: 프로젝트마다 따로 조회하지 않고 쿼리 1번으로 전체 조회수를 가져온다 (N+1 방지)
+        Map<Long, Long> viewCounts = viewCountRepository.findAllById(projectIds).stream()
+                .collect(Collectors.toMap(ProjectViewCount::getProjectId, ProjectViewCount::getViews));
+
+        return projects.stream()
+                .map(p -> ListProjectResponse.from(
+                        p,
+                        likeCounts.getOrDefault(p.getId(), 0L),
+                        likedProjectIds.contains(p.getId()),
+                        viewCounts.getOrDefault(p.getId(), 0L)))
+                .toList();
     }
 
     @Transactional(readOnly = true)

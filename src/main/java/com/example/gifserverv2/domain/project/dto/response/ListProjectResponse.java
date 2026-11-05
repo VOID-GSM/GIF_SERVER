@@ -1,5 +1,6 @@
 package com.example.gifserverv2.domain.project.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.example.gifserverv2.domain.project.entity.Project;
 
 public record ListProjectResponse(
@@ -7,15 +8,21 @@ public record ListProjectResponse(
         String name,
         String teamName,
         String logo,
-        Integer grade
+        Integer grade,
+        long likeCount,
+        @JsonProperty("isLiked") boolean isLiked,
+        long viewCount
 ) {
-    public static ListProjectResponse from(Project project) {
+    public static ListProjectResponse from(Project project, long likeCount, boolean isLiked, long viewCount) {
         return new ListProjectResponse(
                 project.getId(),
                 project.getName(),
                 project.getTeamName(),
                 project.getLogo(),
-                project.getGrade()
+                project.getGrade(),
+                likeCount,
+                isLiked,
+                viewCount
         );
     }
 }
