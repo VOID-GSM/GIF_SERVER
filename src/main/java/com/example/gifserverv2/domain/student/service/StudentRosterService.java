@@ -40,6 +40,8 @@ public class StudentRosterService {
     private static final int MAX_NAME_LENGTH = 50;
     /** 엑셀에서 CSV 로 저장하면 CP949 로 저장되는 경우가 많다. */
     private static final Charset EXCEL_KOREAN = Charset.forName("MS949");
+    /** UTF-8 with BOM 으로 저장된 파일 맨 앞의 BOM(U+FEFF). */
+    private static final char BOM = 0xFEFF;
 
     private final StudentRosterRepository studentRosterRepository;
     private final UserRepository userRepository;
@@ -146,7 +148,7 @@ public class StudentRosterService {
         } catch (CharacterCodingException e) {
             text = new String(bytes, EXCEL_KOREAN);
         }
-        return text.startsWith("﻿") ? text.substring(1) : text;
+        return (!text.isEmpty() && text.charAt(0) == BOM) ? text.substring(1) : text;
     }
 
     private static String cell(String[] cells, int index) {
