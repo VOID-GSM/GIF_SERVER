@@ -62,4 +62,23 @@ class SchemaPatchRunnerTest {
 
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM user_link", Integer.class)).isEqualTo(1);
     }
+
+    @Test
+    void 테이블이_이미_있어도_빠진_인덱스는_만든다() {
+        // ddl-auto 로 테이블만 만들어졌거나, 이전 실행에서 인덱스 생성만 실패한 상황
+        jdbc.execute("CREATE TABLE team_join_request (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, "
+                + "project_id BIGINT NOT NULL, user_id BIGINT NOT NULL, status VARCHAR(20) NOT NULL)");
+        jdbc.execute("CREATE INDEX idx_team_join_request_user_status ON team_join_request (user_id, status)");
+
+        runner.run(null);
+
+        assertThat(indexNames("TEAM_JOIN_REQUEST"))
+                .contains("IDX_TEAM_JOIN_REQUEST_USER_STATUS", "IDX_TEAM_JOIN_REQUEST_PROJECT_STATUS");
+        assertThatCode(() -> runner.run(null)).doesNotThrowAnyException();
+    }
+
+    private java.util.List<String> indexNames(String table) {
+        return jdbc.queryForList(
+                "SELECT UPPER(INDEX_NAME) FROM INFORMATION_SCHEMA.INDEXES WHERE UPPER(TABLE_NAME) = ?", String.class, table);
+    }
 }
