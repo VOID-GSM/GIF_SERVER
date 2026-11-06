@@ -20,6 +20,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,7 +48,7 @@ class ScoreCriteriaServiceConflictTest {
 
     @Test
     void 영역_생성_중_유니크_제약에_걸리면_409() {
-        given(areaRepository.existsByName("전공")).willReturn(false);
+        given(areaRepository.existsByNameAndDeletedAtIsNull("전공")).willReturn(false);
         given(areaRepository.saveAndFlush(any(ScoreArea.class))).willThrow(uniqueViolation);
 
         assertConflict(() -> service.createArea(master, new CreateScoreAreaRequest("전공", 0)));
@@ -55,8 +56,8 @@ class ScoreCriteriaServiceConflictTest {
 
     @Test
     void 영역_수정_중_유니크_제약에_걸리면_409() {
-        given(areaRepository.findById(1L)).willReturn(Optional.of(new ScoreArea("사회", 0)));
-        given(areaRepository.existsByNameAndIdNot("전공", 1L)).willReturn(false);
+        given(areaRepository.findByIdAndDeletedAtIsNull(1L)).willReturn(Optional.of(new ScoreArea("사회", 0)));
+        given(areaRepository.existsByNameAndDeletedAtIsNullAndIdNot("전공", 1L)).willReturn(false);
         given(areaRepository.saveAndFlush(any(ScoreArea.class))).willThrow(uniqueViolation);
 
         assertConflict(() -> service.updateArea(master, 1L, new PatchScoreAreaRequest("전공", null)));
@@ -64,11 +65,11 @@ class ScoreCriteriaServiceConflictTest {
 
     @Test
     void 항목_생성_중_유니크_제약에_걸리면_409() {
-        given(areaRepository.findById(1L)).willReturn(Optional.of(new ScoreArea("전공", 0)));
-        given(itemRepository.existsByAreaIdAndName(1L, "발표")).willReturn(false);
+        given(areaRepository.findByIdAndDeletedAtIsNull(1L)).willReturn(Optional.of(new ScoreArea("전공", 0)));
+        given(itemRepository.existsByAreaIdAndNameAndDeletedAtIsNull(1L, "발표")).willReturn(false);
         given(itemRepository.saveAndFlush(any(ScoreItem.class))).willThrow(uniqueViolation);
 
-        assertConflict(() -> service.createItem(master, 1L, new CreateScoreItemRequest("발표", null, 20, 0)));
+        assertConflict(() -> service.createItem(master, 1L, new CreateScoreItemRequest("발표", null, List.of(20), 0)));
     }
 
     @Test
@@ -76,11 +77,11 @@ class ScoreCriteriaServiceConflictTest {
         ScoreItem item = ScoreItem.builder()
                 .area(new ScoreArea("전공", 0))
                 .name("완성도")
-                .maxScore(40)
+                .options(List.of(40))
                 .displayOrder(0)
                 .build();
-        given(itemRepository.findByIdAndAreaId(2L, 1L)).willReturn(Optional.of(item));
-        given(itemRepository.existsByAreaIdAndNameAndIdNot(eq(1L), anyString(), anyLong())).willReturn(false);
+        given(itemRepository.findByIdAndAreaIdAndDeletedAtIsNull(2L, 1L)).willReturn(Optional.of(item));
+        given(itemRepository.existsByAreaIdAndNameAndDeletedAtIsNullAndIdNot(eq(1L), anyString(), anyLong())).willReturn(false);
         given(itemRepository.saveAndFlush(any(ScoreItem.class))).willThrow(uniqueViolation);
 
         assertConflict(() -> service.updateItem(master, 1L, 2L, new PatchScoreItemRequest("발표", null, null, null)));

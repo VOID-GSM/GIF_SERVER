@@ -6,5 +6,6 @@ public record ScorePublishedEvent(
         List<Long> userIds,
         String title,
         String body,
-        String targetUrl
+        String targetUrl,
+        String tag
 ) {}

@@ -21,7 +21,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.data.domain.Page;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -52,7 +56,7 @@ public class ProjectEngagementService {
         return new EngagementResponse(
                 currentViews(projectId),
                 likeRepository.countByProjectId(projectId),
-                commentRepository.countByProjectId(projectId),
+                commentRepository.countByProjectIdAndHiddenFalseAndDeletedAtIsNull(projectId),
                 likeRepository.existsByProjectIdAndUserId(projectId, userId)
         );
     }
@@ -116,36 +120,51 @@ public class ProjectEngagementService {
     }
 
     @Transactional(readOnly = true)
-    public CommentPageResponse getComments(Long projectId, int page, int size) {
+    public CommentPageResponse getComments(Long projectId, Long userId, int page, int size) {
         validateProject(projectId);
         int safePage = Math.max(page, 1) - 1;
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
-        return CommentPageResponse.from(commentRepository
-                .findByProjectIdOrderByCreatedAtDescIdDesc(projectId, PageRequest.of(safePage, safeSize))
-                .map(CommentResponse::from));
+        // 숨김·삭제된 댓글은 제외한다.
+        Page<ProjectComment> comments = commentRepository
+                .findByProjectIdAndHiddenFalseAndDeletedAtIsNullOrderByCreatedAtDescIdDesc(
+                        projectId, PageRequest.of(safePage, safeSize));
+
+        // 작성자 프로필을 한 번에 조회한다. (댓글마다 따로 조회하면 N+1)
+        Set<Long> authorIds = comments.getContent().stream()
+                .map(ProjectComment::getUserId)
+                .collect(Collectors.toSet());
+        Map<Long, UserEntity> authors = userRepository.findAllById(authorIds).stream()
+                .collect(Collectors.toMap(UserEntity::getId, u -> u));
+
+        return CommentPageResponse.from(comments.map(c -> {
+            UserEntity author = authors.get(c.getUserId());
+            String profileImage = author != null ? author.getDisplayProfileImageUrl() : null;
+            boolean mine = userId != null && c.isOwnedBy(userId); // 비로그인이면 항상 false
+            return CommentResponse.from(c, profileImage, mine);
+        }));
     }
 
     @Transactional
     public CommentResponse createComment(Long projectId, Long userId, CreateCommentRequest request) {
         validateProject(projectId);
         checkCommentRateLimit(userId);
-        String authorName = userRepository.findById(userId)
-                .map(UserEntity::getName)
+        UserEntity author = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용자를 찾을 수 없습니다."));
         ProjectComment saved = commentRepository.save(
-                new ProjectComment(projectId, userId, authorName, request.content().trim()));
-        return CommentResponse.from(saved);
+                new ProjectComment(projectId, userId, author.getName(), request.content().trim()));
+        // 방금 작성한 댓글이라 본인 댓글이다.
+        return CommentResponse.from(saved, author.getDisplayProfileImageUrl(), true);
     }
 
     @Transactional
     public void deleteComment(Long projectId, Long commentId, Long userId, boolean isAdmin) {
         ProjectComment comment = commentRepository.findById(commentId)
-                .filter(c -> c.getProjectId().equals(projectId))
+                .filter(c -> c.getProjectId().equals(projectId) && !c.isDeleted())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."));
         if (!isAdmin && !comment.isOwnedBy(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "댓글을 삭제할 권한이 없습니다.");
         }
-        commentRepository.delete(comment);
+        comment.softDelete(); // 행을 지우지 않고 삭제 시각만 기록 (트랜잭션 종료 시 자동 저장)
     }
 
     private void checkCommentRateLimit(Long userId) {

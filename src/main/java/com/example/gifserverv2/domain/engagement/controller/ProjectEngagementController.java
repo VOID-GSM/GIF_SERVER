@@ -33,11 +33,14 @@ public class ProjectEngagementController {
 
     @GetMapping("/comments")
     public ResponseEntity<CommentPageResponse> getComments(
+            @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable Long projectId,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return ResponseEntity.ok(engagementService.getComments(projectId, page, size));
+        // 비로그인이면 user 가 null
+        Long userId = user == null ? null : user.userId();
+        return ResponseEntity.ok(engagementService.getComments(projectId, userId, page, size));
     }
 
     @PostMapping("/comments")

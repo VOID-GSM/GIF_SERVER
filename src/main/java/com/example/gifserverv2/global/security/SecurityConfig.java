@@ -61,6 +61,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
                         // 비로그인 방문자도 조회수를 올릴 수 있다. 아래 POST 인증 규칙보다 반드시 먼저 와야 한다.
                         .requestMatchers(HttpMethod.POST, "/api/project/*/view").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/project/filter").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/project/{projectId:\\d+}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/project/{projectId:\\d+}/comments").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
                         // 외부 사용자(EXTERNAL)는 아래 조회·참여 API만 사용할 수 있다.
                         .requestMatchers(HttpMethod.GET, "/api/project/me", "/api/project/admin").hasAnyRole(SCHOOL_ROLES)

@@ -44,7 +44,7 @@ public class ScoreCriteriaService {
         requireMaster(user);
 
         String name = request.name().trim();
-        if (areaRepository.existsByName(name)) {
+        if (areaRepository.existsByNameAndDeletedAtIsNull(name)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, DUPLICATE_AREA_NAME);
         }
 
@@ -59,7 +59,7 @@ public class ScoreCriteriaService {
 
         ScoreArea area = getAreaOrThrow(areaId);
         String name = request.name() != null ? request.name().trim() : null;
-        if (name != null && areaRepository.existsByNameAndIdNot(name, areaId)) {
+        if (name != null && areaRepository.existsByNameAndDeletedAtIsNullAndIdNot(name, areaId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, DUPLICATE_AREA_NAME);
         }
 
@@ -71,7 +71,8 @@ public class ScoreCriteriaService {
     @Transactional
     public void deleteArea(AuthenticatedUser user, Long areaId) {
         requireMaster(user);
-        areaRepository.delete(getAreaOrThrow(areaId));
+        // 행을 지우지 않는다. 하위 항목도 함께 삭제 처리되고, 기존 채점 기록은 그대로 남는다.
+        getAreaOrThrow(areaId).softDelete();
     }
 
     @Transactional
@@ -80,7 +81,7 @@ public class ScoreCriteriaService {
 
         ScoreArea area = getAreaOrThrow(areaId);
         String name = request.name().trim();
-        if (itemRepository.existsByAreaIdAndName(areaId, name)) {
+        if (itemRepository.existsByAreaIdAndNameAndDeletedAtIsNull(areaId, name)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, DUPLICATE_ITEM_NAME);
         }
 
@@ -89,7 +90,7 @@ public class ScoreCriteriaService {
                 .area(area)
                 .name(name)
                 .criteria(normalizeCriteria(request.criteria()))
-                .maxScore(request.maxScore())
+                .options(validateOptions(request.options()))
                 .displayOrder(displayOrder)
                 .build();
         return ScoreItemResponse.from(saveOrConflict(() -> itemRepository.saveAndFlush(item), DUPLICATE_ITEM_NAME));
@@ -101,11 +102,13 @@ public class ScoreCriteriaService {
 
         ScoreItem item = getItemOrThrow(areaId, itemId);
         String name = request.name() != null ? request.name().trim() : null;
-        if (name != null && itemRepository.existsByAreaIdAndNameAndIdNot(areaId, name, itemId)) {
+        if (name != null && itemRepository.existsByAreaIdAndNameAndDeletedAtIsNullAndIdNot(areaId, name, itemId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, DUPLICATE_ITEM_NAME);
         }
 
-        item.update(name, request.maxScore(), request.displayOrder());
+        // 선택지가 바뀌어도 이미 기록된 점수는 바꾸지 않는다.
+        List<Integer> options = request.options() != null ? validateOptions(request.options()) : null;
+        item.update(name, options, request.displayOrder());
         if (request.criteria() != null) {
             item.updateCriteria(normalizeCriteria(request.criteria()));
         }
@@ -116,16 +119,16 @@ public class ScoreCriteriaService {
     @Transactional
     public void deleteItem(AuthenticatedUser user, Long areaId, Long itemId) {
         requireMaster(user);
-        itemRepository.delete(getItemOrThrow(areaId, itemId));
+        getItemOrThrow(areaId, itemId).softDelete();
     }
 
     private ScoreArea getAreaOrThrow(Long areaId) {
-        return areaRepository.findById(areaId)
+        return areaRepository.findByIdAndDeletedAtIsNull(areaId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "점수 영역을 찾을 수 없습니다."));
     }
 
     private ScoreItem getItemOrThrow(Long areaId, Long itemId) {
-        return itemRepository.findByIdAndAreaId(itemId, areaId)
+        return itemRepository.findByIdAndAreaIdAndDeletedAtIsNull(itemId, areaId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "평가 항목을 찾을 수 없습니다."));
     }
 
@@ -138,6 +141,16 @@ public class ScoreCriteriaService {
         } catch (DataIntegrityViolationException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, conflictMessage, e);
         }
+    }
+
+    private List<Integer> validateOptions(List<Integer> options) {
+        if (options.stream().distinct().count() != options.size()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "선택지 점수가 중복되었습니다.");
+        }
+        if (options.stream().noneMatch(score -> score > 0)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "선택지 중 하나는 1점 이상이어야 합니다.");
+        }
+        return options;
     }
 
     private String normalizeCriteria(String criteria) {

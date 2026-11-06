@@ -20,7 +20,8 @@ public class PushNotificationEventListener {
                 event.userIds(),
                 event.title(),
                 event.body(),
-                event.targetUrl()
+                event.targetUrl(),
+                event.tag()
         );
     }
 }
