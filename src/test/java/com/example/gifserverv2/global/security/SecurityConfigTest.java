@@ -64,11 +64,20 @@ class SecurityConfigTest {
         mockMvc.perform(get("/api/project/me")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/project/admin")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/api/project/stats")).andExpect(status().isUnauthorized());
-        mockMvc.perform(get("/api/project/1/comments")).andExpect(status().isUnauthorized());
     }
 
     @Test
     void 비로그인_프로젝트_수정은_401을_반환한다() throws Exception {
         mockMvc.perform(put("/api/project/1/update")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void 비로그인_댓글_목록_조회는_허용된다() throws Exception {
+        mockMvc.perform(get("/api/project/1/comments")).andExpect(status().isOk());
+    }
+
+    @Test
+    void 비로그인_댓글_작성은_401을_반환한다() throws Exception {
+        mockMvc.perform(post("/api/project/1/comments")).andExpect(status().isUnauthorized());
     }
 }

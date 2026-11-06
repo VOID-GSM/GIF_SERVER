@@ -22,7 +22,8 @@ public interface ProjectStatsRepository extends JpaRepository<Project, Long> {
             LEFT JOIN (SELECT project_id, COUNT(*) AS cnt FROM project_like
                        GROUP BY project_id) l ON l.project_id = p.id
             LEFT JOIN (SELECT project_id, COUNT(*) AS cnt FROM project_comment
-                       GROUP BY project_id) c ON c.project_id = p.id
+                                   WHERE hidden = 0 AND deleted_at IS NULL
+                                   GROUP BY project_id) c ON c.project_id = p.id
             LEFT JOIN (SELECT pm.project_id,
                               MIN(CAST(SUBSTRING(u.student_number, 1, 1) AS UNSIGNED)) AS grade,
                               MIN(CAST(SUBSTRING(u.student_number, 2, 1) AS UNSIGNED)) AS class_no

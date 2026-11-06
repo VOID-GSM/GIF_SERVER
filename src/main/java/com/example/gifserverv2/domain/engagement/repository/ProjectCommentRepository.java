@@ -12,17 +12,37 @@ import java.util.Collection;
 import java.util.List;
 
 public interface ProjectCommentRepository extends JpaRepository<ProjectComment, Long> {
+
+    // 일반 사용자 목록: 숨김·삭제된 댓글은 제외
+    Page<ProjectComment> findByProjectIdAndHiddenFalseAndDeletedAtIsNullOrderByCreatedAtDescIdDesc(
+            Long projectId, Pageable pageable);
+
+    // 기존 메서드는 유지한다. (기존 테스트 등이 쓸 수 있음)
     Page<ProjectComment> findByProjectIdOrderByCreatedAtDescIdDesc(Long projectId, Pageable pageable);
     long countByProjectId(Long projectId);
+
+    // 화면에 보이는 댓글 수: 숨김·삭제 제외
+    long countByProjectIdAndHiddenFalseAndDeletedAtIsNull(Long projectId);
+
+    // 도배 방지는 삭제·숨김 댓글도 포함해서 센다. (지우고 다시 쓰는 방식으로 제한을 피하지 못하게)
     long countByUserIdAndCreatedAtAfter(Long userId, Instant since);
 
-    // 목록용: 프로젝트마다 따로 세지 않고 한 번에 센다 (N+1 방지). 댓글이 없는 프로젝트는 결과에 없다.
+    // 목록용: 프로젝트 id 묶음을 한 번에 집계 (N+1 방지), 숨김·삭제 제외. 댓글이 없는 프로젝트는 결과에 없다.
     @Query("SELECT c.projectId AS projectId, COUNT(c) AS commentCount FROM ProjectComment c " +
-            "WHERE c.projectId IN :projectIds GROUP BY c.projectId")
+            "WHERE c.projectId IN :projectIds AND c.hidden = false AND c.deletedAt IS NULL " +
+            "GROUP BY c.projectId")
     List<ProjectCommentCount> countByProjectIdIn(@Param("projectIds") Collection<Long> projectIds);
 
     interface ProjectCommentCount {
         Long getProjectId();
         long getCommentCount();
     }
+
+    // 관리자 목록: 숨김 댓글 포함, 삭제된 댓글 제외. 프로젝트·작성자 필터는 값이 없으면 무시한다.
+    @Query("SELECT c FROM ProjectComment c WHERE c.deletedAt IS NULL " +
+            "AND (:projectId IS NULL OR c.projectId = :projectId) " +
+            "AND (:userId IS NULL OR c.userId = :userId)")
+    Page<ProjectComment> findForAdmin(@Param("projectId") Long projectId,
+                                      @Param("userId") Long userId,
+                                      Pageable pageable);
 }
