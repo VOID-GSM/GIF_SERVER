@@ -5,16 +5,20 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface ScoreItemRepository extends JpaRepository<ScoreItem, Long> {
 
-    Optional<ScoreItem> findByIdAndAreaId(Long id, Long areaId);
+    Optional<ScoreItem> findByIdAndAreaIdAndDeletedAtIsNull(Long id, Long areaId);
 
-    boolean existsByAreaIdAndName(Long areaId, String name);
+    List<ScoreItem> findByIdInAndDeletedAtIsNull(Collection<Long> ids);
 
-    boolean existsByAreaIdAndNameAndIdNot(Long areaId, String name, Long id);
+    boolean existsByAreaIdAndNameAndDeletedAtIsNull(Long areaId, String name);
 
-    @Query("SELECT COALESCE(MAX(i.displayOrder), -1) + 1 FROM ScoreItem i WHERE i.area.id = :areaId")
+    boolean existsByAreaIdAndNameAndDeletedAtIsNullAndIdNot(Long areaId, String name, Long id);
+
+    @Query("SELECT COALESCE(MAX(i.displayOrder), -1) + 1 FROM ScoreItem i WHERE i.area.id = :areaId AND i.deletedAt IS NULL")
     int findNextDisplayOrder(@Param("areaId") Long areaId);
 }
