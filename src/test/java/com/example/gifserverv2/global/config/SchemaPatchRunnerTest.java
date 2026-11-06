@@ -41,6 +41,18 @@ class SchemaPatchRunnerTest {
     }
 
     @Test
+    void 학생_관리_테이블이_없으면_만든다() {
+        runner.run(null);
+
+        jdbc.update("INSERT INTO student_roster (student_number, name, grade, class_no, student_no) VALUES ('1101', '김학생', 1, 1, 1)");
+        jdbc.update("INSERT INTO team_join_request (project_id, user_id, requested_by, status, created_at) "
+                + "VALUES (1, 2, 3, 'PENDING', CURRENT_TIMESTAMP)");
+
+        assertThat(jdbc.queryForObject("SELECT name FROM student_roster WHERE student_number = '1101'", String.class)).isEqualTo("김학생");
+        assertThat(jdbc.queryForObject("SELECT status FROM team_join_request", String.class)).isEqualTo("PENDING");
+    }
+
+    @Test
     void 여러_번_실행해도_기존_데이터를_유지한다() {
         runner.run(null);
         jdbc.update("INSERT INTO users (id, email) VALUES (1, 'a@gsm.hs.kr')");
@@ -49,5 +61,24 @@ class SchemaPatchRunnerTest {
         assertThatCode(() -> runner.run(null)).doesNotThrowAnyException();
 
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM user_link", Integer.class)).isEqualTo(1);
+    }
+
+    @Test
+    void 테이블이_이미_있어도_빠진_인덱스는_만든다() {
+        // ddl-auto 로 테이블만 만들어졌거나, 이전 실행에서 인덱스 생성만 실패한 상황
+        jdbc.execute("CREATE TABLE team_join_request (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, "
+                + "project_id BIGINT NOT NULL, user_id BIGINT NOT NULL, status VARCHAR(20) NOT NULL)");
+        jdbc.execute("CREATE INDEX idx_team_join_request_user_status ON team_join_request (user_id, status)");
+
+        runner.run(null);
+
+        assertThat(indexNames("TEAM_JOIN_REQUEST"))
+                .contains("IDX_TEAM_JOIN_REQUEST_USER_STATUS", "IDX_TEAM_JOIN_REQUEST_PROJECT_STATUS");
+        assertThatCode(() -> runner.run(null)).doesNotThrowAnyException();
+    }
+
+    private java.util.List<String> indexNames(String table) {
+        return jdbc.queryForList(
+                "SELECT UPPER(INDEX_NAME) FROM INFORMATION_SCHEMA.INDEXES WHERE UPPER(TABLE_NAME) = ?", String.class, table);
     }
 }
