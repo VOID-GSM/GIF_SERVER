@@ -72,17 +72,17 @@ public class ItemScoreService {
         Map<Long, ProjectItemScore> existing = itemScoreRepository.findByProjectIdAndEvaluatorId(projectId, evaluatorId).stream()
                 .collect(Collectors.toMap(s -> s.getItem().getId(), Function.identity()));
 
-        for (SaveItemScoresRequest.ItemScore entry : request.scores()) {
-            ProjectItemScore score = existing.get(entry.itemId());
-            if (score != null) {
-                score.changeScore(entry.score());
-            } else {
-                itemScoreRepository.save(new ProjectItemScore(project, evaluatorId, items.get(entry.itemId()), entry.score()));
-            }
-        }
-
         // 같은 선생님이 같은 항목을 동시에 처음 채점하면 유니크 제약(uk_project_item_score)에서 막힌다.
+        // IDENTITY 전략이라 INSERT 는 save 시점에 바로 실행되므로 save 까지 try 안에 둔다.
         try {
+            for (SaveItemScoresRequest.ItemScore entry : request.scores()) {
+                ProjectItemScore score = existing.get(entry.itemId());
+                if (score != null) {
+                    score.changeScore(entry.score());
+                } else {
+                    itemScoreRepository.save(new ProjectItemScore(project, evaluatorId, items.get(entry.itemId()), entry.score()));
+                }
+            }
             itemScoreRepository.flush();
         } catch (DataIntegrityViolationException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "동시에 채점 요청이 들어왔습니다. 다시 시도해 주세요.", e);
