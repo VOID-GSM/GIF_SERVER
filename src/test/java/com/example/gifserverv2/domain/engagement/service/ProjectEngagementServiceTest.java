@@ -133,13 +133,14 @@ class ProjectEngagementServiceTest {
         service.createComment(projectId, otherUserId, new CreateCommentRequest("두 번째"));
 
         assertThat(created.content()).isEqualTo("멋진 프로젝트네요!");
-        assertThat(created.author()).isEqualTo(new CommentResponse.Author(userId, "홍길동"));
+        assertThat(created.author()).isEqualTo(new CommentResponse.Author(userId, "홍길동", null));
+        assertThat(created.isMine()).isTrue(); // 방금 작성한 댓글은 본인 댓글
 
-        CommentPageResponse firstPage = service.getComments(projectId, 1, 1);
+        CommentPageResponse firstPage = service.getComments(projectId, userId, 1, 1);
         assertThat(firstPage.totalElements()).isEqualTo(2);
         assertThat(firstPage.hasNext()).isTrue();
         assertThat(firstPage.content()).extracting(CommentResponse::content).containsExactly("두 번째");
-        assertThat(service.getComments(projectId, 2, 1).hasNext()).isFalse();
+        assertThat(service.getComments(projectId, userId, 2, 1).hasNext()).isFalse();
 
         EngagementResponse engagement = service.getEngagement(projectId, userId);
         assertThat(engagement.commentsCount()).isEqualTo(2);

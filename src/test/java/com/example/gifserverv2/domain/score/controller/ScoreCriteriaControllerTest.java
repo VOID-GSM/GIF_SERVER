@@ -18,6 +18,9 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
+import java.util.Arrays;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -70,14 +73,18 @@ class ScoreCriteriaControllerTest {
 
     @Test
     void 항목_요청_값을_검증한다() {
-        assertThat(VALIDATOR.validate(new CreateScoreItemRequest("발표", null, 20, null))).isEmpty();
+        assertThat(VALIDATOR.validate(new CreateScoreItemRequest("발표", null, List.of(40, 32, 24), null))).isEmpty();
         assertThat(VALIDATOR.validate(new CreateScoreItemRequest("발표", null, null, null))).isNotEmpty();
-        assertThat(VALIDATOR.validate(new CreateScoreItemRequest("발표", null, 0, null))).isNotEmpty();
-        assertThat(VALIDATOR.validate(new CreateScoreItemRequest("발표", null, 1001, null))).isNotEmpty();
-        assertThat(VALIDATOR.validate(new CreateScoreItemRequest("발표", "a".repeat(1001), 20, null))).isNotEmpty();
+        assertThat(VALIDATOR.validate(new CreateScoreItemRequest("발표", null, List.of(-1), null))).isNotEmpty();
+        assertThat(VALIDATOR.validate(new CreateScoreItemRequest("발표", null, List.of(1001), null))).isNotEmpty();
+        assertThat(VALIDATOR.validate(new CreateScoreItemRequest("발표", "a".repeat(1001), List.of(20), null))).isNotEmpty();
+
+        assertThat(VALIDATOR.validate(new CreateScoreItemRequest("발표", null, List.of(), null))).isNotEmpty();
+        assertThat(VALIDATOR.validate(new CreateScoreItemRequest("발표", null, Arrays.asList(10, null), null))).isNotEmpty();
+        assertThat(VALIDATOR.validate(new CreateScoreItemRequest("발표", null, List.of(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), null))).isNotEmpty();
 
         assertThat(VALIDATOR.validate(new PatchScoreItemRequest(null, null, null, null))).isEmpty();
         assertThat(VALIDATOR.validate(new PatchScoreItemRequest(" ", null, null, null))).isNotEmpty();
-        assertThat(VALIDATOR.validate(new PatchScoreItemRequest(null, null, 0, null))).isNotEmpty();
+        assertThat(VALIDATOR.validate(new PatchScoreItemRequest(null, null, List.of(), null))).isNotEmpty();
     }
 }

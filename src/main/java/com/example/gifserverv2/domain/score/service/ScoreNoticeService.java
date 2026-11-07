@@ -69,7 +69,7 @@ public class ScoreNoticeService {
         try {
             String snapshot = objectMapper.writeValueAsString(summaries);
             ScoreNotice notice = new ScoreNotice(true, Instant.now(), snapshot, caller.userId());
-            scoreNoticeRepository.save(notice);
+            ScoreNotice savedNotice = scoreNoticeRepository.save(notice);
 
             List<Long> allUserIds = userRepository.findAllUserIds();
 
@@ -77,7 +77,8 @@ public class ScoreNoticeService {
                     allUserIds,
                     PushMessageTemplate.SCORE_PUBLISHED.getTitle(),
                     PushMessageTemplate.SCORE_PUBLISHED.formatBody(),
-                    PushMessageTemplate.SCORE_PUBLISHED.formatTargetUrl()
+                    PushMessageTemplate.SCORE_PUBLISHED.formatTargetUrl(),
+                    PushMessageTemplate.SCORE_PUBLISHED.formatTag(savedNotice.getId())
             ));
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "공지 저장 중 오류가 발생했습니다.", e);

@@ -40,7 +40,8 @@ class AdminFormServiceAnnounceTest {
                 List.of(1L, 2L),
                 "📢 새로운 양식이 등록되었습니다.",
                 "'1학기 중간 회고' 양식이 등록되었습니다. 기간 내에 작성해 주세요.",
-                "/form/7/submit"
+                "/form/7/submit",
+                "form-announced-7"
         );
     }
 }

@@ -42,8 +42,8 @@ class ScoreCriteriaServiceTest {
     void 영역과_항목을_표시_순서대로_조회한다() {
         ScoreAreaResponse second = service.createArea(master, new CreateScoreAreaRequest("사회 중심 영역", 5));
         ScoreAreaResponse first = service.createArea(master, new CreateScoreAreaRequest("전공 중심 영역", 1));
-        service.createItem(master, first.id(), new CreateScoreItemRequest("발표", null, 20, 2));
-        service.createItem(master, first.id(), new CreateScoreItemRequest("완성도", "동작 여부 기준", 40, 1));
+        service.createItem(master, first.id(), new CreateScoreItemRequest("발표", null, List.of(20), 2));
+        service.createItem(master, first.id(), new CreateScoreItemRequest("완성도", "동작 여부 기준", List.of(40), 1));
         clearContext();
 
         List<ScoreAreaResponse> areas = service.getAreas();
@@ -59,8 +59,8 @@ class ScoreCriteriaServiceTest {
     void 표시_순서를_생략하면_마지막_다음_순서가_된다() {
         ScoreAreaResponse first = service.createArea(master, new CreateScoreAreaRequest("전공", null));
         ScoreAreaResponse second = service.createArea(master, new CreateScoreAreaRequest("사회", null));
-        ScoreItemResponse itemFirst = service.createItem(master, first.id(), new CreateScoreItemRequest("발표", null, 20, null));
-        ScoreItemResponse itemSecond = service.createItem(master, first.id(), new CreateScoreItemRequest("완성도", null, 40, null));
+        ScoreItemResponse itemFirst = service.createItem(master, first.id(), new CreateScoreItemRequest("발표", null, List.of(20), null));
+        ScoreItemResponse itemSecond = service.createItem(master, first.id(), new CreateScoreItemRequest("완성도", null, List.of(40), null));
 
         assertThat(first.displayOrder()).isZero();
         assertThat(second.displayOrder()).isEqualTo(1);
@@ -72,7 +72,7 @@ class ScoreCriteriaServiceTest {
     void 이름은_앞뒤_공백을_제거해_저장하고_중복이면_409() {
         service.createArea(master, new CreateScoreAreaRequest("  전공  ", null));
 
-        assertThat(areaRepository.existsByName("전공")).isTrue();
+        assertThat(areaRepository.existsByNameAndDeletedAtIsNull("전공")).isTrue();
         assertStatus(HttpStatus.CONFLICT, () -> service.createArea(master, new CreateScoreAreaRequest("전공", null)));
     }
 
@@ -90,24 +90,73 @@ class ScoreCriteriaServiceTest {
     }
 
     @Test
-    void 영역을_삭제하면_항목도_함께_삭제된다() {
+    void 영역을_삭제하면_행은_남고_항목과_함께_목록에서_빠진다() {
         ScoreAreaResponse area = service.createArea(master, new CreateScoreAreaRequest("전공", null));
-        service.createItem(master, area.id(), new CreateScoreItemRequest("발표", null, 20, null));
+        ScoreItemResponse item = service.createItem(master, area.id(), new CreateScoreItemRequest("발표", null, List.of(20), null));
         clearContext();
 
         service.deleteArea(master, area.id());
         clearContext();
 
-        assertThat(areaRepository.findById(area.id())).isEmpty();
-        assertThat(itemRepository.count()).isZero();
+        assertThat(service.getAreas()).isEmpty();
+        assertThat(areaRepository.findById(area.id()).orElseThrow().getDeletedAt()).isNotNull();
+        assertThat(itemRepository.findById(item.id()).orElseThrow().getDeletedAt()).isNotNull();
+        assertStatus(HttpStatus.NOT_FOUND, () -> service.updateArea(master, area.id(), new PatchScoreAreaRequest("변경", null)));
+        assertStatus(HttpStatus.NOT_FOUND, () -> service.deleteArea(master, area.id()));
+    }
+
+    @Test
+    void 삭제된_영역과_항목의_이름은_다시_쓸_수_있다() {
+        ScoreAreaResponse area = service.createArea(master, new CreateScoreAreaRequest("전공", null));
+        ScoreItemResponse item = service.createItem(master, area.id(), new CreateScoreItemRequest("발표", null, List.of(20), null));
+        service.deleteItem(master, area.id(), item.id());
+        clearContext();
+
+        ScoreItemResponse recreatedItem = service.createItem(master, area.id(), new CreateScoreItemRequest("발표", null, List.of(30), null));
+        service.deleteArea(master, area.id());
+        clearContext();
+
+        ScoreAreaResponse recreatedArea = service.createArea(master, new CreateScoreAreaRequest("전공", null));
+
+        assertThat(recreatedItem.id()).isNotEqualTo(item.id());
+        assertThat(recreatedArea.id()).isNotEqualTo(area.id());
+        assertThat(recreatedArea.displayOrder()).isZero();
+    }
+
+    @Test
+    void 선택지는_높은_점수부터_저장되고_최대_배점은_가장_높은_선택지다() {
+        ScoreAreaResponse area = service.createArea(master, new CreateScoreAreaRequest("전공", null));
+
+        ScoreItemResponse created = service.createItem(master, area.id(), new CreateScoreItemRequest("완성도", null, List.of(24, 40, 32), null));
+        ScoreItemResponse changed = service.updateItem(master, area.id(), created.id(), new PatchScoreItemRequest(null, null, List.of(10, 50, 0), null));
+        ScoreItemResponse kept = service.updateItem(master, area.id(), created.id(), new PatchScoreItemRequest("완성", null, null, null));
+
+        assertThat(created.options()).containsExactly(40, 32, 24);
+        assertThat(created.maxScore()).isEqualTo(40);
+        assertThat(changed.options()).containsExactly(50, 10, 0);
+        assertThat(changed.maxScore()).isEqualTo(50);
+        assertThat(kept.options()).containsExactly(50, 10, 0);
+    }
+
+    @Test
+    void 선택지가_중복되거나_모두_0점이면_400() {
+        ScoreAreaResponse area = service.createArea(master, new CreateScoreAreaRequest("전공", null));
+        ScoreItemResponse item = service.createItem(master, area.id(), new CreateScoreItemRequest("완성도", null, List.of(40), null));
+
+        assertStatus(HttpStatus.BAD_REQUEST,
+                () -> service.createItem(master, area.id(), new CreateScoreItemRequest("발표", null, List.of(20, 20), null)));
+        assertStatus(HttpStatus.BAD_REQUEST,
+                () -> service.createItem(master, area.id(), new CreateScoreItemRequest("발표", null, List.of(0), null)));
+        assertStatus(HttpStatus.BAD_REQUEST,
+                () -> service.updateItem(master, area.id(), item.id(), new PatchScoreItemRequest(null, null, List.of(10, 10), null)));
     }
 
     @Test
     void 항목의_기준과_배점을_수정한다() {
         ScoreAreaResponse area = service.createArea(master, new CreateScoreAreaRequest("전공", null));
-        ScoreItemResponse item = service.createItem(master, area.id(), new CreateScoreItemRequest("발표", "기존 기준", 20, null));
+        ScoreItemResponse item = service.createItem(master, area.id(), new CreateScoreItemRequest("발표", "기존 기준", List.of(20), null));
 
-        ScoreItemResponse changed = service.updateItem(master, area.id(), item.id(), new PatchScoreItemRequest(null, "새 기준", 30, null));
+        ScoreItemResponse changed = service.updateItem(master, area.id(), item.id(), new PatchScoreItemRequest(null, "새 기준", List.of(30), null));
         ScoreItemResponse kept = service.updateItem(master, area.id(), item.id(), new PatchScoreItemRequest("프레젠테이션", null, null, null));
         ScoreItemResponse cleared = service.updateItem(master, area.id(), item.id(), new PatchScoreItemRequest(null, " ", null, null));
 
@@ -122,20 +171,20 @@ class ScoreCriteriaServiceTest {
     void 같은_이름의_항목은_같은_영역에서만_막는다() {
         ScoreAreaResponse major = service.createArea(master, new CreateScoreAreaRequest("전공", null));
         ScoreAreaResponse social = service.createArea(master, new CreateScoreAreaRequest("사회", null));
-        service.createItem(master, major.id(), new CreateScoreItemRequest("발표", null, 20, null));
+        service.createItem(master, major.id(), new CreateScoreItemRequest("발표", null, List.of(20), null));
 
-        ScoreItemResponse other = service.createItem(master, social.id(), new CreateScoreItemRequest("발표", null, 10, null));
+        ScoreItemResponse other = service.createItem(master, social.id(), new CreateScoreItemRequest("발표", null, List.of(10), null));
 
         assertThat(other.areaId()).isEqualTo(social.id());
         assertStatus(HttpStatus.CONFLICT,
-                () -> service.createItem(master, major.id(), new CreateScoreItemRequest("발표", null, 20, null)));
+                () -> service.createItem(master, major.id(), new CreateScoreItemRequest("발표", null, List.of(20), null)));
     }
 
     @Test
     void 항목을_삭제하면_목록과_총점에서_빠진다() {
         ScoreAreaResponse area = service.createArea(master, new CreateScoreAreaRequest("전공", null));
-        ScoreItemResponse removed = service.createItem(master, area.id(), new CreateScoreItemRequest("발표", null, 20, null));
-        service.createItem(master, area.id(), new CreateScoreItemRequest("완성도", null, 40, null));
+        ScoreItemResponse removed = service.createItem(master, area.id(), new CreateScoreItemRequest("발표", null, List.of(20), null));
+        service.createItem(master, area.id(), new CreateScoreItemRequest("완성도", null, List.of(40), null));
         clearContext();
 
         service.deleteItem(master, area.id(), removed.id());
@@ -150,25 +199,25 @@ class ScoreCriteriaServiceTest {
     void 다른_영역의_항목이나_없는_대상은_404() {
         ScoreAreaResponse major = service.createArea(master, new CreateScoreAreaRequest("전공", null));
         ScoreAreaResponse social = service.createArea(master, new CreateScoreAreaRequest("사회", null));
-        ScoreItemResponse item = service.createItem(master, major.id(), new CreateScoreItemRequest("발표", null, 20, null));
+        ScoreItemResponse item = service.createItem(master, major.id(), new CreateScoreItemRequest("발표", null, List.of(20), null));
 
         assertStatus(HttpStatus.NOT_FOUND, () -> service.deleteItem(master, social.id(), item.id()));
         assertStatus(HttpStatus.NOT_FOUND, () -> service.deleteArea(master, 9999L));
         assertStatus(HttpStatus.NOT_FOUND,
-                () -> service.createItem(master, 9999L, new CreateScoreItemRequest("발표", null, 20, null)));
+                () -> service.createItem(master, 9999L, new CreateScoreItemRequest("발표", null, List.of(20), null)));
     }
 
     @Test
     void Master가_아니면_변경할_수_없고_데이터가_유지된다() {
         ScoreAreaResponse area = service.createArea(master, new CreateScoreAreaRequest("전공", null));
-        ScoreItemResponse item = service.createItem(master, area.id(), new CreateScoreItemRequest("발표", null, 20, null));
+        ScoreItemResponse item = service.createItem(master, area.id(), new CreateScoreItemRequest("발표", null, List.of(20), null));
 
         for (AuthenticatedUser user : List.of(admin(AdminRole.MAJOR_TEACHER), admin(AdminRole.GENERAL_TEACHER), admin(AdminRole.VOID), admin(null))) {
             assertStatus(HttpStatus.FORBIDDEN, () -> service.createArea(user, new CreateScoreAreaRequest("새 영역", null)));
             assertStatus(HttpStatus.FORBIDDEN, () -> service.updateArea(user, area.id(), new PatchScoreAreaRequest("변경", null)));
             assertStatus(HttpStatus.FORBIDDEN, () -> service.deleteArea(user, area.id()));
-            assertStatus(HttpStatus.FORBIDDEN, () -> service.createItem(user, area.id(), new CreateScoreItemRequest("새 항목", null, 10, null)));
-            assertStatus(HttpStatus.FORBIDDEN, () -> service.updateItem(user, area.id(), item.id(), new PatchScoreItemRequest(null, null, 99, null)));
+            assertStatus(HttpStatus.FORBIDDEN, () -> service.createItem(user, area.id(), new CreateScoreItemRequest("새 항목", null, List.of(10), null)));
+            assertStatus(HttpStatus.FORBIDDEN, () -> service.updateItem(user, area.id(), item.id(), new PatchScoreItemRequest(null, null, List.of(99), null)));
             assertStatus(HttpStatus.FORBIDDEN, () -> service.deleteItem(user, area.id(), item.id()));
         }
 

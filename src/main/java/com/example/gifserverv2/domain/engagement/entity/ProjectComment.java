@@ -33,6 +33,14 @@ public class ProjectComment {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    /** 관리자가 숨긴 댓글 여부 */
+    @Column(name = "hidden", nullable = false)
+    private boolean hidden = false;
+
+    /** 삭제된 시각. null 이면 삭제되지 않은 댓글 */
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
     public ProjectComment(Long projectId, Long userId, String authorName, String content) {
         this.projectId = projectId;
         this.userId = userId;
@@ -44,4 +52,9 @@ public class ProjectComment {
     public boolean isOwnedBy(Long userId) {
         return this.userId.equals(userId);
     }
+
+    public void hide() { this.hidden = true; }
+    public void unhide() { this.hidden = false; }
+    public void softDelete() { this.deletedAt = Instant.now(); }
+    public boolean isDeleted() { return this.deletedAt != null; }
 }

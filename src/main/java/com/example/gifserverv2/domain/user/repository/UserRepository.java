@@ -33,6 +33,11 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     List<UserEntity> findAllByAdminRoleIsNotNull();
 
+    /** 학생 계정(선생님·외부 사용자 제외)을 학번 순으로 가져온다. */
+    @Query("SELECT u FROM UserEntity u WHERE u.adminRole IS NULL "
+            + "AND u.role = com.example.gifserverv2.domain.user.entity.Role.USER ORDER BY u.studentNumber")
+    List<UserEntity> findAllStudents();
+
     @Query("SELECT u.id FROM UserEntity u WHERE u.adminRole = :adminRole")
     List<Long> findUserIdsByAdminRole(@Param("adminRole") AdminRole adminRole);
 

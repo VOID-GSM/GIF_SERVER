@@ -75,7 +75,8 @@ public class AdminInquiryService {
                 inquiry.getCreatedByUserId(),
                 PushMessageTemplate.INQUIRY_ANSWERED.getTitle(),
                 PushMessageTemplate.INQUIRY_ANSWERED.getBodyTemplate(),
-                PushMessageTemplate.INQUIRY_ANSWERED.formatTargetUrl(inquiry.getId())
+                PushMessageTemplate.INQUIRY_ANSWERED.formatTargetUrl(inquiry.getId()),
+                PushMessageTemplate.INQUIRY_ANSWERED.formatTag(inquiry.getId())
         );
     }
 

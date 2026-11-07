@@ -8,6 +8,7 @@ import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.student.repository.TeamJoinRequestRepository;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
 import com.example.gifserverv2.domain.user.entity.ClientRole;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
@@ -30,6 +31,7 @@ public class ProjectWriterService {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final UserRepository userRepository;
+    private final TeamJoinRequestRepository teamJoinRequestRepository;
 
     public record CreatedProject(Long projectId, String projectName) {}
 
@@ -91,6 +93,12 @@ public class ProjectWriterService {
                 projectMemberRepository.saveAll(members);
             }
         }
+
+        // 관리자 팀 배정 요청을 기다리던 학생이 이 경로로 팀에 들어가면 그 요청은 더는 수락할 수 없다. (#136)
+        List<Long> joinedUserIds = new ArrayList<>();
+        joinedUserIds.add(userId);
+        if (request.memberIds() != null) joinedUserIds.addAll(request.memberIds());
+        teamJoinRequestRepository.cancelPendingByUserIds(joinedUserIds);
 
         return new CreatedProject(savedProject.getId(), savedProject.getName());
     }
@@ -183,6 +191,9 @@ public class ProjectWriterService {
                 removedIds.add(memberId);
             }
         }
+
+        // 관리자 팀 배정 요청을 기다리던 학생이 이 경로로 팀에 들어가면 그 요청은 더는 수락할 수 없다. (#136)
+        teamJoinRequestRepository.cancelPendingByUserIds(addedIds);
 
         return new MemberReconciliation(addedIds, removedIds);
     }

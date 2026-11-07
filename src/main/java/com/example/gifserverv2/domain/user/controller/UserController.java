@@ -4,6 +4,7 @@ import com.example.gifserverv2.domain.auth.dto.request.GithubConnectRequest;
 import com.example.gifserverv2.domain.auth.dto.request.UpdateCurrentUserRequest;
 import com.example.gifserverv2.domain.auth.dto.response.CurrentUserResponse;
 import com.example.gifserverv2.domain.coin.service.CoinSyncService;
+import com.example.gifserverv2.domain.user.dto.response.GithubSyncResponse;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.service.UserService;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
@@ -62,14 +63,14 @@ public class UserController {
     }
 
     @PostMapping("/me/github/sync")
-    public CurrentUserResponse syncGithubCoins(@AuthenticationPrincipal AuthenticatedUser currentUser) {
+    public GithubSyncResponse syncGithubCoins(@AuthenticationPrincipal AuthenticatedUser currentUser) {
         if (currentUser == null || currentUser.userId() == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "인증 정보가 필요합니다.");
         }
 
-        coinSyncService.syncCommitCoins(currentUser.userId());
+        int earnedCoin = coinSyncService.syncCommitCoins(currentUser.userId());
 
         UserEntity user = userService.requireUser(currentUser.userId());
-        return userService.buildCurrentUserResponse(user);
+        return new GithubSyncResponse(userService.buildCurrentUserResponse(user), earnedCoin);
     }
 }

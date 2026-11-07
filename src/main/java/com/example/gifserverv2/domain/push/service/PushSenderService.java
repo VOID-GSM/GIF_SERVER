@@ -30,7 +30,7 @@ public class PushSenderService {
     private final PushService pushService;
 
     @Async
-    public void sendNotification(Long targetUserId, String title, String body, String targetUrl) {
+    public void sendNotification(Long targetUserId, String title, String body, String targetUrl, String tag) {
         saveNotificationHistory(targetUserId, title, body, targetUrl);
 
         List<PushSubscription> subscriptions = pushSubscriptionRepository.findAllByUserId(targetUserId);
@@ -39,7 +39,7 @@ public class PushSenderService {
             return;
         }
 
-        String payload = createPayload(title, body, targetUrl);
+        String payload = createPayload(title, body, targetUrl, tag);
         if (payload == null) return;
 
         for (PushSubscription sub : subscriptions) {
@@ -47,11 +47,11 @@ public class PushSenderService {
         }
     }
 
-    public void sendBulkNotifications(List<Long> userIds, String title, String body, String targetUrl) {
-        sendBulkNotifications(userIds, title, body, targetUrl, PushOptions.DEFAULT);
+    public void sendBulkNotifications(List<Long> userIds, String title, String body, String targetUrl, String tag) {
+        sendBulkNotifications(userIds, title, body, targetUrl, tag, PushOptions.DEFAULT);
     }
 
-    public void sendBulkNotifications(List<Long> userIds, String title, String body, String targetUrl,
+    public void sendBulkNotifications(List<Long> userIds, String title, String body, String targetUrl, String tag,
                                       PushOptions options) {
         if (userIds == null || userIds.isEmpty()) return;
 
@@ -63,7 +63,7 @@ public class PushSenderService {
             return;
         }
 
-        String payload = createPayload(title, body, targetUrl);
+        String payload = createPayload(title, body, targetUrl, tag);
         if (payload == null) return;
 
         for (PushSubscription subscription : subscriptions) {
@@ -72,8 +72,9 @@ public class PushSenderService {
     }
 
     @Async
-    public void sendBulkNotificationsAsync(List<Long> userIds, String title, String body, String targetUrl) {
-        sendBulkNotifications(userIds, title, body, targetUrl);
+    public void sendBulkNotificationsAsync(List<Long> userIds, String title, String body, String targetUrl,
+                                           String tag) {
+        sendBulkNotifications(userIds, title, body, targetUrl, tag);
     }
 
     @Transactional
@@ -133,7 +134,7 @@ public class PushSenderService {
         pushSubscriptionRepository.delete(sub);
     }
 
-    private String createPayload(String title, String body, String targetUrl) {
+    String createPayload(String title, String body, String targetUrl, String tag) {
         try {
             Map<String, String> payloadMap = new HashMap<>();
             payloadMap.put("title", title);
@@ -141,6 +142,9 @@ public class PushSenderService {
             if (targetUrl != null) {
                 payloadMap.put("targetUrl", targetUrl);
                 payloadMap.put("url", targetUrl);
+            }
+            if (tag != null) {
+                payloadMap.put("tag", tag);
             }
             return objectMapper.writeValueAsString(payloadMap);
         } catch (Exception e) {
