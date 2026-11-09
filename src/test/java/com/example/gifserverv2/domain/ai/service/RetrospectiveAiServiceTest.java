@@ -110,6 +110,16 @@ class RetrospectiveAiServiceTest {
     }
 
     @Test
+    void 구조_추천_목차가_모두_비어_있으면_502() {
+        given(openAiService.isConfigured()).willReturn(true);
+        given(openAiService.generate(anyString(), anyString(), anyInt(), eq(true)))
+                .willReturn(new ChatResult("{\"sections\": [null, \" \"], \"content\": \"## 문제 상황\"}", false));
+
+        assertThatThrownBy(() -> service.recommendStructure(1L, request(CONTENT)))
+                .satisfies(e -> assertThat(statusOf(e)).isEqualTo(HttpStatus.BAD_GATEWAY));
+    }
+
+    @Test
     void OpenAI_호출이_실패하면_502이고_사용_횟수를_돌려준다() {
         given(openAiService.isConfigured()).willReturn(true);
         given(openAiService.generate(anyString(), anyString(), anyInt(), anyBoolean()))

@@ -122,15 +122,14 @@ public class RetrospectiveAiService {
             log.warn("회고록 구조 추천 응답을 해석하지 못했습니다: {}", json, e);
             throw aiFailed();
         }
-        if (result.sections() == null || result.sections().isEmpty()
-                || result.content() == null || result.content().isBlank()) {
-            log.warn("회고록 구조 추천 응답에 목차나 초안이 없습니다: {}", json);
-            throw aiFailed();
-        }
-        List<String> sections = result.sections().stream()
+        List<String> sections = result.sections() == null ? List.of() : result.sections().stream()
                 .filter(section -> section != null && !section.isBlank())
                 .map(String::strip)
                 .toList();
+        if (sections.isEmpty() || result.content() == null || result.content().isBlank()) {
+            log.warn("회고록 구조 추천 응답에 목차나 초안이 없습니다: {}", json);
+            throw aiFailed();
+        }
         return new StructureResult(sections, result.content().strip());
     }
 
