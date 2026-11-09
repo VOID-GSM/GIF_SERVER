@@ -91,6 +91,17 @@ public class SchemaPatchRunner implements ApplicationRunner {
             new ColumnSpec("users", "profile_image_url", "VARCHAR(500) NULL"),
     };
 
+    /**
+     * Hibernate 6 는 MySQL 에서 EnumType.STRING 컬럼을 enum('A','B') 타입으로 만든다.
+     * 이후 Java enum 에 값이 추가되면(예: Role.EXTERNAL) ddl-auto=update 가 컬럼을 바꾸지 않아 저장 시
+     * "Data truncated for column" 오류가 난다. enum 타입으로 남아 있는 컬럼을 VARCHAR 로 바꾼다.
+     */
+    private static final ColumnTypeSpec[] ENUM_COLUMNS_TO_VARCHAR = {
+            new ColumnTypeSpec("users", "role", "VARCHAR(20) NOT NULL"),
+            new ColumnTypeSpec("users", "admin_role", "VARCHAR(20) NULL"),
+            new ColumnTypeSpec("users", "client_role", "VARCHAR(20) NULL"),
+    };
+
     @Override
     public void run(ApplicationArguments args) {
         try (Connection connection = dataSource.getConnection()) {
@@ -99,6 +110,9 @@ public class SchemaPatchRunner implements ApplicationRunner {
             }
             for (ColumnSpec spec : REQUIRED_COLUMNS) {
                 ensureColumn(connection, spec);
+            }
+            for (ColumnTypeSpec spec : ENUM_COLUMNS_TO_VARCHAR) {
+                convertEnumColumn(connection, spec);
             }
         } catch (Exception e) {
             log.error("[SchemaPatch] 스키마 점검 중 DB 연결에 실패했습니다.", e);
@@ -175,6 +189,33 @@ public class SchemaPatchRunner implements ApplicationRunner {
         }
     }
 
+    private void convertEnumColumn(Connection connection, ColumnTypeSpec spec) {
+        try {
+            String typeName = columnTypeName(connection, spec.table(), spec.column());
+            if (!"ENUM".equalsIgnoreCase(typeName)) {
+                return;
+            }
+            execute(connection, "ALTER TABLE " + spec.table() + " MODIFY COLUMN " + spec.column() + " " + spec.definition());
+            log.warn("[SchemaPatch] {}.{} 컬럼을 enum 에서 {} 로 변경했습니다.", spec.table(), spec.column(), spec.definition());
+        } catch (Exception e) {
+            log.error("[SchemaPatch] {}.{} 컬럼 타입 확인/변경 중 오류가 발생했습니다.", spec.table(), spec.column(), e);
+        }
+    }
+
+    /** 컬럼이 없으면 null */
+    private String columnTypeName(Connection connection, String table, String column) throws Exception {
+        DatabaseMetaData metaData = connection.getMetaData();
+        // DB 마다 식별자 대소문자 처리가 달라 소문자·대문자 모두 확인한다.
+        for (String[] name : List.of(new String[]{table, column}, new String[]{table.toUpperCase(), column.toUpperCase()})) {
+            try (ResultSet resultSet = metaData.getColumns(connection.getCatalog(), null, name[0], name[1])) {
+                if (resultSet.next()) {
+                    return resultSet.getString("TYPE_NAME");
+                }
+            }
+        }
+        return null;
+    }
+
     private void backfill(Connection connection, ColumnSpec spec) {
         try (Statement statement = connection.createStatement()) {
             int updated = statement.executeUpdate(spec.backfillSql());
@@ -213,6 +254,9 @@ public class SchemaPatchRunner implements ApplicationRunner {
     }
 
     private record IndexSpec(String name, String columns) {
+    }
+
+    private record ColumnTypeSpec(String table, String column, String definition) {
     }
 
     private record ColumnSpec(String table, String column, String definition, String backfillSql) {

@@ -1,6 +1,8 @@
 package com.example.gifserverv2.domain.user.entity;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,12 +28,15 @@ public class UserEntity {
     @Column(name = "student_grade")
     private String grade;
 
+    // MySQL 에서 EnumType.STRING 은 기본으로 enum(...) 컬럼이 되어 enum 값을 추가하면 저장이 실패한다. VARCHAR 로 고정한다.
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 20)
     private Role role;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "admin_role")
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "admin_role", length = 20)
     private AdminRole adminRole;
 
     @Column(name = "admin_team")
@@ -41,7 +46,8 @@ public class UserEntity {
     private boolean gradeHead = false;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "client_role")
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "client_role", length = 20)
     private ClientRole clientRole;
 
     @Column(name = "github_username", nullable = true)
