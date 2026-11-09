@@ -19,7 +19,6 @@ public class OpenAiService {
 
     private static final int CONNECT_TIMEOUT_MS = 3_000;
     private static final int READ_TIMEOUT_MS = 10_000;
-    /** 회고록 다듬기처럼 긴 글을 새로 쓰는 요청은 응답까지 오래 걸린다. */
     private static final int GENERATE_READ_TIMEOUT_MS = 90_000;
 
     @Value("${openai.api-key}")
@@ -28,10 +27,6 @@ public class OpenAiService {
     private final RestClient restClient = createRestClient(READ_TIMEOUT_MS);
     private final RestClient generateRestClient = createRestClient(GENERATE_READ_TIMEOUT_MS);
 
-    /**
-     * @param content   모델이 만든 글
-     * @param truncated max_tokens 에 걸려 글이 중간에 끊겼으면 true
-     */
     public record ChatResult(String content, boolean truncated) {}
 
     private static RestClient createRestClient(int readTimeoutMs) {
@@ -51,9 +46,7 @@ public class OpenAiService {
         return request(restClient, SUMMARY_SYSTEM_PROMPT, prompt, 300, false).content();
     }
 
-    /**
-     * 긴 글 생성용. jsonResponse 가 true 면 JSON 객체만 응답하도록 강제한다. (프롬프트에 "JSON" 이 들어 있어야 한다)
-     */
+    // jsonResponse 를 쓰려면 프롬프트에 "JSON" 이 들어 있어야 한다. (OpenAI response_format 제약)
     public ChatResult generate(String systemPrompt, String userPrompt, int maxTokens, boolean jsonResponse) {
         return request(generateRestClient, systemPrompt, userPrompt, maxTokens, jsonResponse);
     }

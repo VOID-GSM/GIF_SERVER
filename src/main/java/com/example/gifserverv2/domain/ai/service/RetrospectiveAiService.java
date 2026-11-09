@@ -17,20 +17,14 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * 회고록 작성 화면의 AI 도움받기 (내용 다듬기 / 구조 추천 / 포트폴리오 변환). (#231)
- * 결과는 저장하지 않고 돌려주기만 한다. 적용 여부는 프론트에서 사용자가 고른다.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class RetrospectiveAiService {
 
-    /** 다듬기·포트폴리오 변환에 필요한 최소 본문 길이 (앞뒤 공백 제외). */
     public static final int MIN_CONTENT_LENGTH = 20;
     private static final int MAX_OUTPUT_TOKENS = 6_000;
 
-    /** 모델이 결과 전체를 ```markdown ... ``` 으로 감싸서 주는 경우를 벗겨낸다. */
     private static final Pattern WRAPPING_CODE_FENCE =
             Pattern.compile("\\A```[a-zA-Z]*\\R(.*)\\R```\\z", Pattern.DOTALL);
 

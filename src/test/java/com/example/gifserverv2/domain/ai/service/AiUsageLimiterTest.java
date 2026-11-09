@@ -16,7 +16,6 @@ class AiUsageLimiterTest {
 
     private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
-    /** 테스트 중에 시간을 옮길 수 있는 Clock. */
     private static class MutableClock extends Clock {
         private Instant now;
 
