@@ -26,6 +26,7 @@ import team.themoment.datagsm.sdk.oauth.model.TokenResponse;
 import team.themoment.datagsm.sdk.oauth.model.UserInfo;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -40,6 +41,10 @@ public class AuthService {
 
     @Value("${app.void-emails:}")
     private List<String> voidEmails;
+
+    // 관리자 화면 테스트용(APP_ADMIN_EMAILS). 이 이메일의 학생 계정은 선생님(ADMIN)으로 로그인시킨다.
+    @Value("${app.admin-emails:}")
+    private List<String> adminEmails;
 
     public AuthService(DataGsmOAuthClient dataGsmOAuthClient,
                        UserRepository userRepository,
@@ -79,8 +84,18 @@ public class AuthService {
             String studentNumber = null;
             String grade = null;
             Role assignedRole = Role.USER;
+            boolean adminTestAccount = isAdminTestEmail(email);
 
-            if (objectType == AccountObjectType.TEACHER) {
+            if (adminTestAccount && objectType == AccountObjectType.STUDENT && userInfo.getStudent() != null) {
+                // 학생 계정이지만 학번·학년 검사(3학년 차단 포함) 없이 선생님으로 처리한다
+                name = userInfo.getStudent().getName();
+                if (name == null || name.isBlank()) {
+                    log.warn("Invalid admin test account info: email='{}'", email);
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "학생 정보가 유효하지 않습니다.");
+                }
+                log.warn("[AdminTest] APP_ADMIN_EMAILS 에 등록된 학생 계정을 선생님(ADMIN)으로 로그인시킵니다: email='{}'", email);
+                assignedRole = Role.ADMIN;
+            } else if (objectType == AccountObjectType.TEACHER) {
                 Teacher teacher = userInfo.getTeacher();
                 if (teacher == null) {
                     log.warn("Teacher info missing in UserInfo: email='{}'", email);
@@ -130,7 +145,7 @@ public class AuthService {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "로그인할 수 없는 계정 유형입니다.");
             }
 
-            UserEntity user = findOrCreateUser(email, name, studentNumber, assignedRole, grade);
+            UserEntity user = findOrCreateUser(email, name, studentNumber, assignedRole, grade, adminTestAccount);
             String accessToken = jwtTokenProvider.createToken(user);
 
             return new OAuthSignInResponse(
@@ -223,13 +238,30 @@ public class AuthService {
                 .orElseGet(() -> userRepository.save(new UserEntity(email, name, null, Role.EXTERNAL)));
     }
 
-    private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role, String grade) {
+    private boolean isAdminTestEmail(String email) {
+        if (email == null || adminEmails == null) {
+            return false;
+        }
+        String normalized = email.trim().toLowerCase(Locale.ROOT);
+        return adminEmails.stream()
+                .filter(adminEmail -> adminEmail != null && !adminEmail.isBlank())
+                .anyMatch(adminEmail -> adminEmail.trim().toLowerCase(Locale.ROOT).equals(normalized));
+    }
+
+    private UserEntity findOrCreateUser(String email, String name, String studentNumber, Role role, String grade,
+                                        boolean adminTestAccount) {
         boolean isVoidUser = email != null && voidEmails != null && voidEmails.contains(email);
 
         return userRepository.findByEmail(email)
                 .map(existing -> {
                     existing.updateProfile(name, studentNumber, grade);
                     if (existing.getRole() != role) {
+                        existing.setRole(role);
+                    }
+                    // 학생으로 쓰던 계정은 clientRole 이 남아 있으면 USER 로 판단되므로 지운다
+                    // (updateClientAdditionalInfo 가 role 을 USER 로 되돌리므로 다시 ADMIN 으로 맞춘다)
+                    if (adminTestAccount && existing.getClientRole() != null) {
+                        existing.updateClientAdditionalInfo(null);
                         existing.setRole(role);
                     }
                     if (isVoidUser) {
