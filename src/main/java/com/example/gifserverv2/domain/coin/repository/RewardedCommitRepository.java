@@ -10,7 +10,6 @@ import java.util.List;
 
 public interface RewardedCommitRepository extends JpaRepository<RewardedCommit, Long> {
 
-    // SHA 나 fingerprint 중 하나라도 같으면 이미 지급한 커밋이다
     @Query("SELECT r FROM RewardedCommit r WHERE r.userId = :userId " +
             "AND (r.sha IN :shas OR r.fingerprint IN :fingerprints)")
     List<RewardedCommit> findAlreadyRewarded(@Param("userId") Long userId,

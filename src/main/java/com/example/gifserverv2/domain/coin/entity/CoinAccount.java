@@ -28,7 +28,6 @@ public class CoinAccount {
     @Column(nullable = false)
     private int balance;
 
-    /** 마지막으로 커밋 코인을 동기화한 시각. 동기화한 적이 없으면 null */
     @Column(name = "last_commit_synced_at")
     private Instant lastCommitSyncedAt;
 

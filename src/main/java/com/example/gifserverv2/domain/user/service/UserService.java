@@ -123,7 +123,6 @@ public class UserService {
                     }
                 });
 
-        // 연동한 시각 이후에 푸시한 커밋만 코인으로 지급한다
         user.connectGithub(githubUser.login(), githubUser.avatarUrl(), githubAccessToken, Instant.now());
 
         return buildCurrentUserResponse(user);

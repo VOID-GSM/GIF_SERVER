@@ -67,7 +67,6 @@ class SchemaPatchRunnerTest {
         // 엔티티에서 빠진 커밋 수 컬럼 없이도 계정을 만들 수 있다
         jdbc.update("INSERT INTO coin_account (user_id, balance, last_commit_synced_at) VALUES (1, 0, NULL)");
         jdbc.update("INSERT INTO rewarded_commit (user_id, sha, fingerprint, created_at) VALUES (1, 'abc', 'fp', CURRENT_TIMESTAMP)");
-        // 같은 사용자에게 같은 SHA 는 한 번만 기록된다
         assertThatThrownBy(() -> jdbc.update("INSERT INTO rewarded_commit (user_id, sha, fingerprint, created_at) "
                 + "VALUES (1, 'abc', 'fp2', CURRENT_TIMESTAMP)")).isInstanceOf(Exception.class);
     }

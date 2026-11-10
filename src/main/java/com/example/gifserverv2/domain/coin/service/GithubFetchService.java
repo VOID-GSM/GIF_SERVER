@@ -44,17 +44,9 @@ public class GithubFetchService {
 
     private final RestTemplate restTemplate;
 
-    /**
-     * @param sha         커밋 SHA
-     * @param fingerprint 작성 시각 + 메시지 해시. 리베이스·체리픽으로 SHA 가 바뀌어도 같은 값이라 중복 지급을 막는 데 쓴다
-     */
     public record PushedCommit(String sha, String fingerprint) {
     }
 
-    /**
-     * since 이후에 푸시된 커밋 중, 본인이 작성하고 since 이후에 커밋된 커밋을 중복 없이 돌려준다. 머지 커밋은 제외한다.
-     * GitHub API 호출에 실패하면 502 ResponseStatusException 을 던진다.
-     */
     public List<PushedCommit> fetchPushedCommits(String githubUsername, String accessToken, Instant since) {
         Map<String, PushedCommit> commits = new LinkedHashMap<>();
         Map<String, String> defaultBranches = new HashMap<>();
@@ -141,7 +133,6 @@ public class GithubFetchService {
         if (authorLogin == null || !authorLogin.equalsIgnoreCase(githubUsername)) {
             return false;
         }
-        // 머지 커밋은 다른 커밋을 합친 것이라 지급하지 않는다
         if (commit.path("parents").size() > 1) {
             return false;
         }

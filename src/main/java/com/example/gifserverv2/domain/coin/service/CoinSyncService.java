@@ -31,10 +31,6 @@ public class CoinSyncService {
     // Events API 는 푸시가 몇 분~몇 시간 늦게 보이기도 해서, 마지막 동기화보다 조금 앞부터 다시 본다. 이미 지급한 커밋은 건너뛴다
     private static final Duration EVENT_DELAY_MARGIN = Duration.ofHours(6);
 
-    /**
-     * GitHub 연동 이후 모든 브랜치에 푸시한 본인 커밋 중 아직 지급하지 않은 커밋마다 10코인을 지급한다. (#250)
-     * GitHub API 호출에 실패하면 0을 돌려주지 않고 502 를 던진다.
-     */
     @Transactional
     public int syncCommitCoins(Long userId) {
         UserEntity user = userRepository.findById(userId)
@@ -80,7 +76,6 @@ public class CoinSyncService {
         return withMargin.isAfter(connectedAt) ? withMargin : connectedAt;
     }
 
-    /** 이미 지급한 커밋(SHA 또는 fingerprint 가 같은 커밋)과, 이번 목록 안에서 리베이스로 겹친 커밋을 뺀다 */
     private List<PushedCommit> excludeRewarded(Long userId, List<PushedCommit> pushed) {
         if (pushed.isEmpty()) {
             return List.of();

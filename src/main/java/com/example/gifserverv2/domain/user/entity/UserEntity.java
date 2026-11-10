@@ -60,7 +60,6 @@ public class UserEntity {
     @Column(name = "github_access_token")
     private String githubAccessToken;
 
-    /** GitHub 을 연동한 시각. 이 시각 이후의 푸시·커밋만 코인으로 지급한다 */
     @Column(name = "github_connected_at")
     private Instant githubConnectedAt;
 
