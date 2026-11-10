@@ -99,6 +99,10 @@ public class SchemaPatchRunner implements ApplicationRunner {
             new ColumnSpec("project_comment", "deleted_at", "DATETIME(6) NULL"),
             new ColumnSpec("users", "major", "VARCHAR(50) NULL"),
             new ColumnSpec("users", "profile_image_url", "VARCHAR(500) NULL"),
+            // 프로젝트 소개·AI 요약 일본어 번역 (#257)
+            new ColumnSpec("project", "description_ja", "VARCHAR(2000) NULL"),
+            new ColumnSpec("project", "description_ja_source_hash", "VARCHAR(64) NULL"),
+            new ColumnSpec("project", "ai_summary_ja", "VARCHAR(1000) NULL"),
     };
 
     /**
