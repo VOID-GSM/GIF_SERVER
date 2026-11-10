@@ -78,6 +78,8 @@ public class SecurityConfig {
                                 "/api/users/me/links", "/api/users/me/links/*").authenticated()
                         // Thyn 꾸미기(아이템)
                         .requestMatchers("/api/items/**").authenticated()
+                        // 역량검사: 외부 사용자(EXTERNAL) 포함 로그인한 모든 사용자
+                        .requestMatchers("/api/assessment/**").authenticated()
                         .requestMatchers("/api/notifications/**", "/api/push/**").authenticated()
                         .anyRequest().hasAnyRole(SCHOOL_ROLES))
                 .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
