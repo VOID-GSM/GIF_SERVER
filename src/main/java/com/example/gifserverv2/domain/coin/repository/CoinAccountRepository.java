@@ -15,7 +15,6 @@ public interface CoinAccountRepository extends JpaRepository<CoinAccount, Long> 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<CoinAccount> findByUserId(Long userId);
 
-    boolean existsByUserId(Long userId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select a from CoinAccount a where a.userId = :userId")
