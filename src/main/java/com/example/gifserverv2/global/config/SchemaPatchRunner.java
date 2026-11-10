@@ -100,6 +100,17 @@ public class SchemaPatchRunner implements ApplicationRunner {
             new ColumnTypeSpec("users", "role", "VARCHAR(20) NOT NULL"),
             new ColumnTypeSpec("users", "admin_role", "VARCHAR(20) NULL"),
             new ColumnTypeSpec("users", "client_role", "VARCHAR(20) NULL"),
+            new ColumnTypeSpec("cat_chase_judgment", "judgment", "VARCHAR(20) NOT NULL"),
+            new ColumnTypeSpec("cat_chase_judgment", "confidence", "VARCHAR(20) NULL"),
+    };
+
+    /**
+     * ddl-auto=update 는 NOT NULL 컬럼을 NULL 허용으로 바꾸지 않는다. NOT NULL 로 남아 있는 컬럼을 NULL 허용으로 바꾼다.
+     * enum 변환보다 뒤에 실행된다.
+     */
+    private static final ColumnTypeSpec[] COLUMNS_TO_NULLABLE = {
+            // 고양이 술래잡기 TIMEOUT 판단은 확신도가 없다
+            new ColumnTypeSpec("cat_chase_judgment", "confidence", "VARCHAR(20) NULL"),
     };
 
     @Override
@@ -113,6 +124,9 @@ public class SchemaPatchRunner implements ApplicationRunner {
             }
             for (ColumnTypeSpec spec : ENUM_COLUMNS_TO_VARCHAR) {
                 convertEnumColumn(connection, spec);
+            }
+            for (ColumnTypeSpec spec : COLUMNS_TO_NULLABLE) {
+                makeColumnNullable(connection, spec);
             }
         } catch (Exception e) {
             log.error("[SchemaPatch] 스키마 점검 중 DB 연결에 실패했습니다.", e);
@@ -192,7 +206,8 @@ public class SchemaPatchRunner implements ApplicationRunner {
     private void convertEnumColumn(Connection connection, ColumnTypeSpec spec) {
         try {
             String typeName = columnTypeName(connection, spec.table(), spec.column());
-            if (!"ENUM".equalsIgnoreCase(typeName)) {
+            // MySQL 은 ENUM, H2 는 ENUM(...) 형태로 알려준다
+            if (typeName == null || !typeName.toUpperCase().startsWith("ENUM")) {
                 return;
             }
             execute(connection, "ALTER TABLE " + spec.table() + " MODIFY COLUMN " + spec.column() + " " + spec.definition());
@@ -200,6 +215,32 @@ public class SchemaPatchRunner implements ApplicationRunner {
         } catch (Exception e) {
             log.error("[SchemaPatch] {}.{} 컬럼 타입 확인/변경 중 오류가 발생했습니다.", spec.table(), spec.column(), e);
         }
+    }
+
+    private void makeColumnNullable(Connection connection, ColumnTypeSpec spec) {
+        try {
+            if (!"NO".equalsIgnoreCase(columnNullable(connection, spec.table(), spec.column()))) {
+                return;
+            }
+            execute(connection, "ALTER TABLE " + spec.table() + " MODIFY COLUMN " + spec.column() + " " + spec.definition());
+            log.warn("[SchemaPatch] {}.{} 컬럼을 NULL 허용({})으로 변경했습니다.", spec.table(), spec.column(), spec.definition());
+        } catch (Exception e) {
+            log.error("[SchemaPatch] {}.{} 컬럼 NULL 허용 확인/변경 중 오류가 발생했습니다.", spec.table(), spec.column(), e);
+        }
+    }
+
+    /** IS_NULLABLE 값(YES/NO). 컬럼이 없으면 null */
+    private String columnNullable(Connection connection, String table, String column) throws Exception {
+        DatabaseMetaData metaData = connection.getMetaData();
+        // DB 마다 식별자 대소문자 처리가 달라 소문자·대문자 모두 확인한다.
+        for (String[] name : List.of(new String[]{table, column}, new String[]{table.toUpperCase(), column.toUpperCase()})) {
+            try (ResultSet resultSet = metaData.getColumns(connection.getCatalog(), null, name[0], name[1])) {
+                if (resultSet.next()) {
+                    return resultSet.getString("IS_NULLABLE");
+                }
+            }
+        }
+        return null;
     }
 
     /** 컬럼이 없으면 null */

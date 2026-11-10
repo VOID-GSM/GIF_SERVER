@@ -26,7 +26,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @Tag(name = "역량검사 - 고양이 술래잡기", description = """
-        36칸 격자에 쥐와 고양이 위치가 주어지면, 고양이 칸마다 쥐가 있었는지(FOUND/MISSED)와 확신도를 판단해 제출한다.
+        36칸 격자에 쥐(1~13마리)와 고양이(빨강·파랑 2마리) 위치가 주어지면, 고양이 칸마다 쥐가 있었는지(FOUND/MISSED)와 확신도를 판단해 제출한다.
+        응답 시간을 넘긴 고양이는 TIMEOUT 으로 보내며 오답으로 처리된다.
         문항에 응답하면 다음 문항이 바로 발급된다. 학생(`role=USER`)만 호출할 수 있다. 끝까지 진행하고 1문항 이상 맞히면 20코인 + 맞힌 문항당 10코인을 받는다. 중간에 종료하거나 모두 틀리면 0코인이다.""")
 @RestController
 @RequestMapping("/api/assessment/cat-chase")
@@ -66,7 +67,8 @@ public class CatChaseController {
     }
 
     @Operation(summary = "판단 제출", description = """
-            문항의 고양이 칸마다 정확히 한 번씩 판단을 보낸다. 모든 판단이 맞아야 정답이다.
+            문항의 고양이 칸(2개)마다 정확히 한 번씩 판단을 보낸다. 모든 판단이 맞아야 정답이다.
+            응답 시간을 넘긴 칸은 `judgment: TIMEOUT`, `confidence: null` 로 보내며, 쥐 유무와 관계없이 오답이다.
             남은 문항이 있으면 `nextQuestion`이, 마지막 문항이었으면 `result`(지급 코인 포함)가 채워진다.""")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "제출 성공"),

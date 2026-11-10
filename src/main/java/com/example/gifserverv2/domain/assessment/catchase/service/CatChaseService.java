@@ -10,6 +10,7 @@ import com.example.gifserverv2.domain.assessment.catchase.dto.response.SubmitCat
 import com.example.gifserverv2.domain.assessment.catchase.entity.CatChaseJudgment;
 import com.example.gifserverv2.domain.assessment.catchase.entity.CatChaseQuestion;
 import com.example.gifserverv2.domain.assessment.catchase.entity.CatChaseRound;
+import com.example.gifserverv2.domain.assessment.catchase.entity.Judgment;
 import com.example.gifserverv2.domain.assessment.catchase.exception.CatChaseException;
 import com.example.gifserverv2.domain.assessment.catchase.repository.CatChaseJudgmentRepository;
 import com.example.gifserverv2.domain.assessment.catchase.repository.CatChaseQuestionRepository;
@@ -38,8 +39,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CatChaseService {
 
-    private static final int MIN_COUNT = 1;
-    private static final int MAX_COUNT = 13;
+    private static final int MIN_MOUSE_COUNT = 1;
+    private static final int MAX_MOUSE_COUNT = 13;
+    // catPositions[0] = 빨간 고양이, catPositions[1] = 파란 고양이
+    private static final int CAT_COUNT = 2;
 
     private final CatChaseRoundRepository roundRepository;
     private final CatChaseQuestionRepository questionRepository;
@@ -97,7 +100,7 @@ public class CatChaseService {
                         .questionId(questionId)
                         .position(item.position())
                         .judgment(item.judgment())
-                        .confidence(item.confidence())
+                        .confidence(item.judgment() == Judgment.TIMEOUT ? null : item.confidence())
                         .hadMouse(question.hasMouseAt(item.position()))
                         .build())
                 .toList();
@@ -189,16 +192,17 @@ public class CatChaseService {
     }
 
     private CatChaseQuestion issueQuestion(CatChaseRound round) {
+        List<Integer> mousePositions = randomMousePositions();
         return questionRepository.save(CatChaseQuestion.issue(
                 round.getId(),
                 round.getAnsweredCount() + 1,
-                randomPositions(),
-                randomPositions()
+                mousePositions,
+                randomCatPositions(mousePositions)
         ));
     }
 
-    private List<Integer> randomPositions() {
-        int count = ThreadLocalRandom.current().nextInt(MIN_COUNT, MAX_COUNT + 1);
+    private List<Integer> randomMousePositions() {
+        int count = ThreadLocalRandom.current().nextInt(MIN_MOUSE_COUNT, MAX_MOUSE_COUNT + 1);
 
         List<Integer> allPositions = new ArrayList<>(CatChaseRound.GRID_SIZE);
         for (int i = 0; i < CatChaseRound.GRID_SIZE; i++) {
@@ -207,5 +211,30 @@ public class CatChaseService {
         Collections.shuffle(allPositions);
 
         return allPositions.subList(0, count).stream().sorted().toList();
+    }
+
+    /**
+     * 고양이마다 50% 확률로 쥐 칸에 놓는다. 무작위 칸에 놓으면 쥐와 겹치는 경우가 적어 MISSED 만 골라도 대부분 맞힌다.
+     * 순서가 곧 고양이 색이므로 정렬하지 않는다.
+     */
+    private List<Integer> randomCatPositions(List<Integer> mousePositions) {
+        List<Integer> mouseCells = new ArrayList<>(mousePositions);
+        List<Integer> emptyCells = new ArrayList<>(CatChaseRound.GRID_SIZE);
+        for (int i = 0; i < CatChaseRound.GRID_SIZE; i++) {
+            if (!mousePositions.contains(i)) {
+                emptyCells.add(i);
+            }
+        }
+        Collections.shuffle(mouseCells);
+        Collections.shuffle(emptyCells);
+
+        // 쥐는 최대 13마리라 빈 칸은 항상 고양이 수보다 많다. 쥐 칸이 모자라면 빈 칸에 놓는다
+        List<Integer> catPositions = new ArrayList<>(CAT_COUNT);
+        for (int i = 0; i < CAT_COUNT; i++) {
+            boolean onMouse = ThreadLocalRandom.current().nextBoolean() && !mouseCells.isEmpty();
+            List<Integer> cells = onMouse ? mouseCells : emptyCells;
+            catPositions.add(cells.remove(cells.size() - 1));
+        }
+        return catPositions;
     }
 }

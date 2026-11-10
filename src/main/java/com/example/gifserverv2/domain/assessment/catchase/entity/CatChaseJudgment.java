@@ -2,6 +2,8 @@ package com.example.gifserverv2.domain.assessment.catchase.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -27,12 +29,16 @@ public class CatChaseJudgment {
     @Column(nullable = false)
     private int position;
 
+    // MySQL enum(...) 컬럼이 되면 enum 값 추가 시 저장이 실패하므로 VARCHAR 로 고정한다
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(nullable = false, length = 20)
     private Judgment judgment;
 
+    // TIMEOUT 판단은 null
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(length = 20)
     private ConfidenceLevel confidence;
 
     @Column(name = "had_mouse", nullable = false)
@@ -46,8 +52,11 @@ public class CatChaseJudgment {
         this.createdAt = LocalDateTime.now();
     }
 
-    /** 쥐가 있었으면 FOUND, 없었으면 MISSED 가 정답 */
+    /** 쥐가 있었으면 FOUND, 없었으면 MISSED 가 정답. TIMEOUT 은 항상 오답 */
     public boolean isCorrect() {
+        if (judgment == Judgment.TIMEOUT) {
+            return false;
+        }
         return (judgment == Judgment.FOUND) == hadMouse;
     }
 }
