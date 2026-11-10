@@ -57,6 +57,25 @@ public class AiSummaryPersistenceService {
         projectRepository.save(project);
     }
 
+    public record JapaneseSummaryContext(String cachedSummaryJa, String projectName, String teamName) {}
+
+    @Transactional(readOnly = true)
+    public JapaneseSummaryContext loadProjectJapaneseSummaryContext(Long projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(ProjectException::notFound);
+        return new JapaneseSummaryContext(project.getAiSummaryJa(), project.getName(), project.getTeamName());
+    }
+
+    // 번역하는 사이 한국어 요약이 바뀌었으면 옛 요약의 번역이므로 저장하지 않는다.
+    @Transactional
+    public void saveProjectSummaryJa(Long projectId, String sourceSummary, String summaryJa) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(ProjectException::notFound);
+        if (sourceSummary.equals(project.getAiSummary())) {
+            project.updateAiSummaryJa(summaryJa);
+        }
+    }
+
     @Transactional(readOnly = true)
     public SummaryContext loadFormSubmitContext(Long submitId) {
         FormSubmit submit = formSubmitRepository.findByIdWithAnswersAndFields(submitId)

@@ -16,8 +16,10 @@ public record DetailProjectResponse(
         String name,
         @Schema(description = "팀 이름", example = "VOID")
         String teamName,
-        @Schema(description = "프로젝트 설명", example = "아이디어 페스티벌 운영 플랫폼")
+        @Schema(description = "프로젝트 설명. `lang=ja`이고 일본어 번역이 있으면 일본어, 없으면 한국어 원문", example = "아이디어 페스티벌 운영 플랫폼")
         String description,
+        @Schema(description = "description 이 AI 번역문인지. 한국어 원문이면 false", example = "false")
+        boolean descriptionTranslated,
         @Schema(description = "로고 이미지 URL. 없으면 null", example = "/files/project-logos/abc.png")
         String logo,
         @Schema(description = "학년", example = "2")
@@ -45,7 +47,7 @@ public record DetailProjectResponse(
             String role
     ) {}
 
-    public static DetailProjectResponse from(Project project, Map<Long, UserEntity> userMap,
+    public static DetailProjectResponse from(Project project, LocalizedText description, Map<Long, UserEntity> userMap,
                                              long likeCount, boolean isLiked,
                                              long viewCount, long commentCount) {
         List<MemberInfo> memberInfos = project.getMembers().stream()
@@ -59,7 +61,7 @@ public record DetailProjectResponse(
 
         return new DetailProjectResponse(
                 project.getId(), project.getName(), project.getTeamName(),
-                project.getDescription(), project.getLogo(), project.getGrade(),
+                description.text(), description.translated(), project.getLogo(), project.getGrade(),
                 memberInfos, likeCount, isLiked, viewCount, commentCount
         );
     }

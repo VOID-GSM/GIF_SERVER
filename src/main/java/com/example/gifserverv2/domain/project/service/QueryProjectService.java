@@ -6,17 +6,21 @@ import com.example.gifserverv2.domain.engagement.repository.ProjectLikeRepositor
 import com.example.gifserverv2.domain.engagement.repository.ProjectViewCountRepository;
 import com.example.gifserverv2.domain.project.dto.response.DetailProjectResponse;
 import com.example.gifserverv2.domain.project.dto.response.ListProjectResponse;
+import com.example.gifserverv2.domain.project.dto.response.LocalizedText;
 import com.example.gifserverv2.domain.project.dto.response.PublicDetailProjectResponse;
 import com.example.gifserverv2.domain.project.dto.response.UserSearchResponse;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.entity.ProjectMember;
+import com.example.gifserverv2.domain.project.event.ProjectTranslationRequestedEvent;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
 import com.example.gifserverv2.domain.project.repository.UserSearchRepository;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
+import com.example.gifserverv2.global.i18n.Language;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +41,7 @@ public class QueryProjectService {
     private final ProjectLikeRepository likeRepository;
     private final ProjectViewCountRepository viewCountRepository;
     private final ProjectCommentRepository commentRepository; // 추가: 댓글 수 조회용
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public List<UserSearchResponse> searchUsers(String keyword) {
@@ -77,10 +82,11 @@ public class QueryProjectService {
 
     // 교내 사용자용 상세 (기존 응답 + commentCount)
     @Transactional(readOnly = true)
-    public DetailProjectResponse getProject(Long projectId, Long userId) {
+    public DetailProjectResponse getProject(Long projectId, Long userId, Language lang) {
         Project project = getProjectOrThrow(projectId);
         return DetailProjectResponse.from(
                 project,
+                localizedDescription(project, lang),
                 findMemberUsers(project),
                 likeRepository.countByProjectId(projectId),
                 likeRepository.existsByProjectIdAndUserId(projectId, userId),
@@ -91,17 +97,32 @@ public class QueryProjectService {
 
     // 비로그인/외부 사용자용 상세. 학번, userId 를 응답에 담지 않는다.
     @Transactional(readOnly = true)
-    public PublicDetailProjectResponse getPublicProject(Long projectId, Long userId) {
+    public PublicDetailProjectResponse getPublicProject(Long projectId, Long userId, Language lang) {
         Project project = getProjectOrThrow(projectId);
         boolean liked = userId != null && likeRepository.existsByProjectIdAndUserId(projectId, userId);
         return PublicDetailProjectResponse.from(
                 project,
+                localizedDescription(project, lang),
                 findMemberUsers(project),
                 likeRepository.countByProjectId(projectId),
                 liked,
                 currentViews(projectId),
                 commentRepository.countByProjectIdAndHiddenFalseAndDeletedAtIsNull(projectId)
         );
+    }
+
+    // 일본어 번역이 아직 없으면(기존 프로젝트·번역 실패) 원문을 주고, 번역은 뒤에서 만들어 둔다.
+    private LocalizedText localizedDescription(Project project, Language lang) {
+        String description = project.getDescription();
+        if (lang != Language.JA || description == null || description.isBlank()) {
+            return LocalizedText.original(description);
+        }
+        String translated = project.currentDescriptionJa();
+        if (translated != null) {
+            return LocalizedText.translated(translated);
+        }
+        eventPublisher.publishEvent(new ProjectTranslationRequestedEvent(project.getId()));
+        return LocalizedText.original(description);
     }
 
     private Map<Long, UserEntity> findMemberUsers(Project project) {

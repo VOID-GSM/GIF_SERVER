@@ -5,6 +5,7 @@ import com.example.gifserverv2.domain.project.dto.request.TransferLeaderRequest;
 import com.example.gifserverv2.domain.project.dto.request.UpdateProjectRequest;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.entity.ProjectMember;
+import com.example.gifserverv2.domain.project.event.ProjectTranslationRequestedEvent;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
@@ -14,6 +15,7 @@ import com.example.gifserverv2.domain.user.entity.ClientRole;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,7 @@ public class ProjectWriterService {
     private final ProjectMemberRepository projectMemberRepository;
     private final UserRepository userRepository;
     private final TeamJoinRequestRepository teamJoinRequestRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public record CreatedProject(Long projectId, String projectName) {}
 
@@ -100,6 +103,7 @@ public class ProjectWriterService {
         if (request.memberIds() != null) joinedUserIds.addAll(request.memberIds());
         teamJoinRequestRepository.cancelPendingByUserIds(joinedUserIds);
 
+        requestTranslationIfDescribed(savedProject);
         return new CreatedProject(savedProject.getId(), savedProject.getName());
     }
 
@@ -139,6 +143,7 @@ public class ProjectWriterService {
         if (request.getDescription() != null) {
             project.updateDescription(request.getDescription());
             summaryAffected = true;
+            requestTranslationIfDescribed(project);
         }
         if (request.getGrade() != null) {
             project.updateGrade(request.getGrade());
@@ -149,6 +154,13 @@ public class ProjectWriterService {
         }
 
         return new ProjectMutationResult(project.getName());
+    }
+
+    // 커밋된 뒤 소개의 일본어 번역을 만든다. (ProjectTranslationService)
+    private void requestTranslationIfDescribed(Project project) {
+        if (project.getDescription() != null && !project.getDescription().isBlank()) {
+            eventPublisher.publishEvent(new ProjectTranslationRequestedEvent(project.getId()));
+        }
     }
 
     @Transactional
