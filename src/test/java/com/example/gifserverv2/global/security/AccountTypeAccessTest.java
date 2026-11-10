@@ -169,6 +169,13 @@ class AccountTypeAccessTest {
     }
 
     @Test
+    void 외부_사용자는_내_꾸미기_내역을_조회할_수_있다() throws Exception {
+        mockMvc.perform(get("/api/users/me/items").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/users/me/items").with(as(Role.USER))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/users/me/items")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void 재학생은_팀_관리_API를_사용할_수_있다() throws Exception {
         mockMvc.perform(get("/api/project/me").with(as(Role.USER))).andExpect(status().isOk());
         mockMvc.perform(post("/api/form/submit").with(as(Role.USER))

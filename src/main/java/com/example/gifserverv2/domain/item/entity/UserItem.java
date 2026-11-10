@@ -6,6 +6,8 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
+
 
 @Entity
 @Table(name = "user_item")
@@ -34,6 +36,10 @@ public class UserItem {
         this.item = item;
         this.isEquipped = isEquipped;
     }
+
+    // 필드 추가 (기존 데이터는 null)
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
     public void equip() {
         this.isEquipped = true;

@@ -20,6 +20,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import com.example.gifserverv2.domain.item.dto.response.MyItemResponse;
+import com.example.gifserverv2.domain.item.dto.response.MyItemsResponse;
 
 @Service
 @RequiredArgsConstructor
@@ -82,6 +84,16 @@ public class ItemService {
                 true,
                 false
         );
+    }
+
+    @Transactional(readOnly = true)
+    public MyItemsResponse getMyItems(Long userId) {
+        List<MyItemResponse> items = userItemRepository.findAllByUserIdWithItemRecentFirst(userId).stream()
+                .map(MyItemResponse::from)
+                .toList();
+        Map<ItemCategory, MyItemResponse> equipped = new EnumMap<>(ItemCategory.class);
+        items.stream().filter(MyItemResponse::equipped).forEach(item -> equipped.put(item.category(), item));
+        return new MyItemsResponse(items, equipped);
     }
 
     @Transactional
