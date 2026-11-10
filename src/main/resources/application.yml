@@ -60,6 +60,8 @@ app:
   oauth-state:
     store: ${OAUTH_STATE_STORE:memory}
   void-email: ${APP_VOID_EMAILS}
+  # 관리자 화면 테스트용. 여기 적은 이메일의 DataGSM 학생 계정은 선생님(ADMIN)으로 로그인된다. 운영 환경에서는 비워 둔다.
+  admin-emails: ${APP_ADMIN_EMAILS:}
   discord:
     bot-token: ${DISCORD_BOT_TOKEN:}
     notice-channel-id: ${DISCORD_NOTICE_CHANNEL_ID:}
