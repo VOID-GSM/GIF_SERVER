@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
+import jakarta.persistence.PrePersist;
 
 
 @Entity
@@ -41,6 +42,13 @@ public class UserItem {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    @PrePersist
+    void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+
     public void equip() {
         this.isEquipped = true;
     }
@@ -48,4 +56,5 @@ public class UserItem {
     public void unequip() {
         this.isEquipped = false;
     }
+
 }
