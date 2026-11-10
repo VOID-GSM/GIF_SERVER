@@ -17,6 +17,16 @@ public interface ProjectCommentRepository extends JpaRepository<ProjectComment, 
     Page<ProjectComment> findByProjectIdAndHiddenFalseAndDeletedAtIsNullOrderByCreatedAtDescIdDesc(
             Long projectId, Pageable pageable);
 
+    // 커서 목록: (createdAt, id) 가 커서 댓글보다 앞서는(더 오래된) 댓글을 최신순으로. 숨김·삭제 제외
+    @Query("SELECT c FROM ProjectComment c WHERE c.projectId = :projectId " +
+            "AND c.hidden = false AND c.deletedAt IS NULL " +
+            "AND (c.createdAt < :createdAt OR (c.createdAt = :createdAt AND c.id < :id)) " +
+            "ORDER BY c.createdAt DESC, c.id DESC")
+    List<ProjectComment> findVisibleBefore(@Param("projectId") Long projectId,
+                                           @Param("createdAt") Instant createdAt,
+                                           @Param("id") Long id,
+                                           Pageable pageable);
+
     // 기존 메서드는 유지한다. (기존 테스트 등이 쓸 수 있음)
     Page<ProjectComment> findByProjectIdOrderByCreatedAtDescIdDesc(Long projectId, Pageable pageable);
     long countByProjectId(Long projectId);
