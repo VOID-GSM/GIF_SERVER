@@ -10,6 +10,7 @@ import com.example.gifserverv2.domain.assessment.catchase.dto.response.SubmitCat
 import com.example.gifserverv2.domain.assessment.catchase.entity.CatChaseJudgment;
 import com.example.gifserverv2.domain.assessment.catchase.entity.CatChaseQuestion;
 import com.example.gifserverv2.domain.assessment.catchase.entity.CatChaseRound;
+import com.example.gifserverv2.domain.assessment.catchase.entity.Judgment;
 import com.example.gifserverv2.domain.assessment.catchase.exception.CatChaseException;
 import com.example.gifserverv2.domain.assessment.catchase.repository.CatChaseJudgmentRepository;
 import com.example.gifserverv2.domain.assessment.catchase.repository.CatChaseQuestionRepository;
@@ -38,8 +39,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CatChaseService {
 
-    private static final int MIN_COUNT = 1;
-    private static final int MAX_COUNT = 13;
+    private static final int MIN_MOUSE_COUNT = 1;
+    private static final int MAX_MOUSE_COUNT = 13;
+    // catPositions[0] = 빨간 고양이, catPositions[1] = 파란 고양이
+    private static final int CAT_COUNT = 2;
+    // 고양이 1마리당 10초. 네트워크 지연을 고려해 여유 시간을 더한다
+    private static final Duration TIME_LIMIT = Duration.ofSeconds(10L * CAT_COUNT);
+    private static final Duration GRACE = Duration.ofSeconds(2);
 
     private final CatChaseRoundRepository roundRepository;
     private final CatChaseQuestionRepository questionRepository;
@@ -91,19 +97,24 @@ public class CatChaseService {
             throw CatChaseException.judgmentCountMismatch();
         }
 
+        LocalDateTime now = LocalDateTime.now();
+        // 클라이언트가 보낸 판단과 관계없이, 제한 시간을 넘긴 제출은 모두 TIMEOUT 으로 기록한다
+        boolean timedOut = question.isTimedOut(now, TIME_LIMIT.plus(GRACE));
         List<CatChaseJudgment> judgments = items.stream()
-                .map(item -> CatChaseJudgment.builder()
-                        .roundId(roundId)
-                        .questionId(questionId)
-                        .position(item.position())
-                        .judgment(item.judgment())
-                        .confidence(item.confidence())
-                        .hadMouse(question.hasMouseAt(item.position()))
-                        .build())
+                .map(item -> {
+                    Judgment judgment = timedOut ? Judgment.TIMEOUT : item.judgment();
+                    return CatChaseJudgment.builder()
+                            .roundId(roundId)
+                            .questionId(questionId)
+                            .position(item.position())
+                            .judgment(judgment)
+                            .confidence(judgment == Judgment.TIMEOUT ? null : item.confidence())
+                            .hadMouse(question.hasMouseAt(item.position()))
+                            .build();
+                })
                 .toList();
         judgmentRepository.saveAll(judgments);
 
-        LocalDateTime now = LocalDateTime.now();
         boolean correct = judgments.stream().allMatch(CatChaseJudgment::isCorrect);
         question.answer(correct, now);
         round.recordAnswer(correct);
@@ -189,16 +200,17 @@ public class CatChaseService {
     }
 
     private CatChaseQuestion issueQuestion(CatChaseRound round) {
+        List<Integer> mousePositions = randomMousePositions();
         return questionRepository.save(CatChaseQuestion.issue(
                 round.getId(),
                 round.getAnsweredCount() + 1,
-                randomPositions(),
-                randomPositions()
+                mousePositions,
+                randomCatPositions(mousePositions)
         ));
     }
 
-    private List<Integer> randomPositions() {
-        int count = ThreadLocalRandom.current().nextInt(MIN_COUNT, MAX_COUNT + 1);
+    private List<Integer> randomMousePositions() {
+        int count = ThreadLocalRandom.current().nextInt(MIN_MOUSE_COUNT, MAX_MOUSE_COUNT + 1);
 
         List<Integer> allPositions = new ArrayList<>(CatChaseRound.GRID_SIZE);
         for (int i = 0; i < CatChaseRound.GRID_SIZE; i++) {
@@ -207,5 +219,36 @@ public class CatChaseService {
         Collections.shuffle(allPositions);
 
         return allPositions.subList(0, count).stream().sorted().toList();
+    }
+
+    /**
+     * 고양이마다 50% 확률로 쥐 칸에 놓는다. 무작위 칸에 놓으면 쥐와 겹치는 경우가 적어 MISSED 만 골라도 대부분 맞힌다.
+     * 쥐 칸에 놓을 고양이 수를 먼저 정하고 마지막에 순서를 섞어서, 특정 색 고양이만 빈 칸에 놓이는 규칙이 생기지 않게 한다.
+     */
+    static List<Integer> randomCatPositions(List<Integer> mousePositions) {
+        List<Integer> mouseCells = new ArrayList<>(mousePositions);
+        List<Integer> emptyCells = new ArrayList<>(CatChaseRound.GRID_SIZE);
+        for (int i = 0; i < CatChaseRound.GRID_SIZE; i++) {
+            if (!mousePositions.contains(i)) {
+                emptyCells.add(i);
+            }
+        }
+        Collections.shuffle(mouseCells);
+        Collections.shuffle(emptyCells);
+
+        int onMouseCount = 0;
+        for (int i = 0; i < CAT_COUNT; i++) {
+            if (ThreadLocalRandom.current().nextBoolean()) {
+                onMouseCount++;
+            }
+        }
+        // 쥐 칸이 모자라면 빈 칸에 놓는다. 쥐는 최대 13마리라 빈 칸은 항상 고양이 수보다 많다
+        onMouseCount = Math.min(onMouseCount, mouseCells.size());
+
+        List<Integer> catPositions = new ArrayList<>(mouseCells.subList(0, onMouseCount));
+        catPositions.addAll(emptyCells.subList(0, CAT_COUNT - onMouseCount));
+        // 순서가 곧 고양이 색(빨강, 파랑)이므로 정렬하지 않고 섞는다
+        Collections.shuffle(catPositions);
+        return catPositions;
     }
 }

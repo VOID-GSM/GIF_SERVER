@@ -40,7 +40,7 @@ public record CatChaseRoundDetailResponse(
             int sequence,
             @Schema(description = "쥐 칸 번호", example = "[3, 14, 20]")
             List<Integer> mousePositions,
-            @Schema(description = "고양이 칸 번호", example = "[5, 14, 30]")
+            @Schema(description = "고양이 칸 번호. [0] = 빨간 고양이, [1] = 파란 고양이", example = "[14, 30]")
             List<Integer> catPositions,
             @Schema(description = "응답 여부", example = "true")
             boolean answered,
@@ -66,9 +66,9 @@ public record CatChaseRoundDetailResponse(
     public record JudgmentResult(
             @Schema(description = "고양이 칸 번호", example = "14")
             int position,
-            @Schema(description = "내 판단. FOUND / MISSED", example = "FOUND")
+            @Schema(description = "내 판단. FOUND / MISSED / TIMEOUT(응답 시간 초과)", example = "FOUND")
             Judgment judgment,
-            @Schema(description = "확신도", example = "CONFIDENT")
+            @Schema(description = "확신도. TIMEOUT 이면 null", example = "CONFIDENT", nullable = true)
             ConfidenceLevel confidence,
             @Schema(description = "실제로 쥐가 있었는지", example = "true")
             boolean hadMouse,
