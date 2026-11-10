@@ -43,6 +43,9 @@ public class CatChaseService {
     private static final int MAX_MOUSE_COUNT = 13;
     // catPositions[0] = 빨간 고양이, catPositions[1] = 파란 고양이
     private static final int CAT_COUNT = 2;
+    // 고양이 1마리당 10초. 네트워크 지연을 고려해 여유 시간을 더한다
+    private static final Duration TIME_LIMIT = Duration.ofSeconds(10L * CAT_COUNT);
+    private static final Duration GRACE = Duration.ofSeconds(2);
 
     private final CatChaseRoundRepository roundRepository;
     private final CatChaseQuestionRepository questionRepository;
@@ -94,19 +97,24 @@ public class CatChaseService {
             throw CatChaseException.judgmentCountMismatch();
         }
 
+        LocalDateTime now = LocalDateTime.now();
+        // 클라이언트가 보낸 판단과 관계없이, 제한 시간을 넘긴 제출은 모두 TIMEOUT 으로 기록한다
+        boolean timedOut = question.isTimedOut(now, TIME_LIMIT.plus(GRACE));
         List<CatChaseJudgment> judgments = items.stream()
-                .map(item -> CatChaseJudgment.builder()
-                        .roundId(roundId)
-                        .questionId(questionId)
-                        .position(item.position())
-                        .judgment(item.judgment())
-                        .confidence(item.judgment() == Judgment.TIMEOUT ? null : item.confidence())
-                        .hadMouse(question.hasMouseAt(item.position()))
-                        .build())
+                .map(item -> {
+                    Judgment judgment = timedOut ? Judgment.TIMEOUT : item.judgment();
+                    return CatChaseJudgment.builder()
+                            .roundId(roundId)
+                            .questionId(questionId)
+                            .position(item.position())
+                            .judgment(judgment)
+                            .confidence(judgment == Judgment.TIMEOUT ? null : item.confidence())
+                            .hadMouse(question.hasMouseAt(item.position()))
+                            .build();
+                })
                 .toList();
         judgmentRepository.saveAll(judgments);
 
-        LocalDateTime now = LocalDateTime.now();
         boolean correct = judgments.stream().allMatch(CatChaseJudgment::isCorrect);
         question.answer(correct, now);
         round.recordAnswer(correct);

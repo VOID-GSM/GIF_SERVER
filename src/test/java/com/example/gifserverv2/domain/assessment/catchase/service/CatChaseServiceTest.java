@@ -26,8 +26,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,6 +46,7 @@ class CatChaseServiceTest {
     @Autowired UserRepository userRepository;
     @Autowired CoinAccountRepository coinAccountRepository;
     @Autowired CatChaseRoundRepository roundRepository;
+    @Autowired TestEntityManager em;
 
     Long userId;
     Long otherUserId;
@@ -145,6 +148,30 @@ class CatChaseServiceTest {
         assertThat(timeout.judgment()).isEqualTo(Judgment.TIMEOUT);
         assertThat(timeout.confidence()).isNull();
         assertThat(timeout.correct()).isFalse();
+    }
+
+    @Test
+    void 제한_시간을_넘겨_제출하면_보낸_판단과_관계없이_TIMEOUT으로_기록한다() {
+        var start = service.startRound(userId, new StartAssessmentRoundRequest(3));
+        CatChaseQuestionResponse question = start.question();
+        // 고양이 2마리 x 10초 + 여유 2초를 넘긴 상태로 만든다
+        em.flush();
+        em.getEntityManager()
+                .createNativeQuery("update cat_chase_question set created_at = ? where id = ?")
+                .setParameter(1, LocalDateTime.now().minusSeconds(23))
+                .setParameter(2, question.questionId())
+                .executeUpdate();
+        em.clear();
+
+        SubmitCatChaseJudgmentsResponse response =
+                service.submitJudgments(userId, start.roundId(), question.questionId(), answer(question, true));
+
+        assertThat(response.correct()).isFalse();
+        assertThat(service.getRound(userId, start.roundId()).questions().get(0).responses())
+                .allSatisfy(r -> {
+                    assertThat(r.judgment()).isEqualTo(Judgment.TIMEOUT);
+                    assertThat(r.confidence()).isNull();
+                });
     }
 
     @Test

@@ -69,6 +69,7 @@ public class CatChaseController {
     @Operation(summary = "판단 제출", description = """
             문항의 고양이 칸(2개)마다 정확히 한 번씩 판단을 보낸다. 모든 판단이 맞아야 정답이다.
             응답 시간을 넘긴 칸은 `judgment: TIMEOUT`, `confidence: null` 로 보내며, 쥐 유무와 관계없이 오답이다.
+            문항 발급 후 제한 시간(고양이 1마리당 10초)을 넘겨 제출하면 보낸 값과 관계없이 모든 판단을 TIMEOUT 으로 기록한다.
             남은 문항이 있으면 `nextQuestion`이, 마지막 문항이었으면 `result`(지급 코인 포함)가 채워진다.""")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "제출 성공"),
