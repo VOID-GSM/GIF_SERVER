@@ -10,6 +10,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "coin_account")
 @Getter
@@ -26,13 +28,13 @@ public class CoinAccount {
     @Column(nullable = false)
     private int balance;
 
-    @Column(name = "last_synced_commit_count", nullable = false)
-    private int lastSyncedCommitCount = 0;
+    /** 마지막으로 커밋 코인을 동기화한 시각. 동기화한 적이 없으면 null */
+    @Column(name = "last_commit_synced_at")
+    private Instant lastCommitSyncedAt;
 
     private CoinAccount(Long userId) {
         this.userId = userId;
         this.balance = 0;
-        this.lastSyncedCommitCount = 0;
     }
 
     public static CoinAccount open(Long userId) {
@@ -59,14 +61,11 @@ public class CoinAccount {
         this.balance -= amount;
     }
 
-    public void syncCommits(int totalCommits, int coinReward) {
-        if (totalCommits < this.lastSyncedCommitCount) {
-            throw new IllegalArgumentException("동기화할 커밋 수가 이전 커밋 수보다 적을 수 없습니다.");
-        }
+    public void syncCommits(int coinReward, Instant syncedAt) {
         if (coinReward < 0) {
             throw new IllegalArgumentException("지급할 보상 코인은 양수여야 합니다.");
         }
-        this.lastSyncedCommitCount = totalCommits;
+        this.lastCommitSyncedAt = syncedAt;
         this.balance += coinReward;
     }
 }
