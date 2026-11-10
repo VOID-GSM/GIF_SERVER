@@ -97,6 +97,24 @@ class MypageServiceTest {
     }
 
     @Test
+    void 외부_사용자는_학번_정보가_null이고_팀은_빈_배열이다() {
+        Long externalId = userRepository.save(new UserEntity("visitor@gmail.com", "방문객", null, Role.EXTERNAL)).getId();
+        Project project = projectRepository.save(Project.builder().name("GIF").teamName("더모먼트").build());
+        memberRepository.save(ProjectMember.builder().project(project).userId(externalId).role(ClientRole.MEMBER).part("디자인").build());
+
+        MypageResponse mypage = service.updateMypage(externalId, new UpdateMypageRequest("디자인", List.of("Figma")));
+
+        assertThat(mypage.name()).isEqualTo("방문객");
+        assertThat(mypage.studentNumber()).isNull();
+        assertThat(mypage.grade()).isNull();
+        assertThat(mypage.classNo()).isNull();
+        assertThat(mypage.teams()).isEmpty();
+        assertThat(mypage.profileImageUrl()).isNull();
+        assertThat(mypage.major()).isEqualTo("디자인");
+        assertThat(mypage.techStacks()).containsExactly("Figma");
+    }
+
+    @Test
     void 전공과_기술_스택을_수정한다() {
         MypageResponse updated = service.updateMypage(userId,
                 new UpdateMypageRequest("  백엔드  ", List.of(" Spring ", "React", "spring", "MySQL")));

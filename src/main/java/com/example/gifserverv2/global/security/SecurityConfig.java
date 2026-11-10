@@ -73,6 +73,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/project/*/comments/*", "/api/project/*/like").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/users/me").authenticated()
+                        // 마이페이지. GitHub 연동(/api/users/me/github/**)은 재학생 전용이라 열지 않는다.
+                        .requestMatchers("/api/users/me/mypage", "/api/users/me/profile-image",
+                                "/api/users/me/links", "/api/users/me/links/*").authenticated()
+                        // Thyn 꾸미기(아이템)
+                        .requestMatchers("/api/items/**").authenticated()
                         .requestMatchers("/api/notifications/**", "/api/push/**").authenticated()
                         .anyRequest().hasAnyRole(SCHOOL_ROLES))
                 .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

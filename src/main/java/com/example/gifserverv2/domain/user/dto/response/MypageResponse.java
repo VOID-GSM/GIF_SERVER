@@ -20,21 +20,21 @@ public record MypageResponse(
         String name,
         @Schema(description = "이메일", example = "s24001@gsm.hs.kr")
         String email,
-        @Schema(description = "프로필 이미지 URL. 업로드한 이미지 > GitHub 아바타 > null 순")
+        @Schema(description = "프로필 이미지 URL. 업로드한 이미지 > GitHub 아바타 > null 순. 외부 사용자는 GitHub 아바타가 없어 업로드 이미지가 없으면 null")
         String profileImageUrl,
         @Schema(description = "직접 업로드한 이미지인지 (삭제 버튼 노출용)", example = "false")
         boolean customProfileImage,
-        @Schema(description = "학번", example = "2101")
+        @Schema(description = "학번. 외부 사용자는 null", example = "2101")
         String studentNumber,
-        @Schema(description = "학년 (학번 첫째 자리)", example = "2")
+        @Schema(description = "학년 (학번 첫째 자리). 외부 사용자는 null", example = "2")
         Integer grade,
-        @Schema(description = "반 (학번 둘째 자리)", example = "1")
+        @Schema(description = "반 (학번 둘째 자리). 외부 사용자는 null", example = "1")
         Integer classNo,
         @Schema(description = "전공", example = "백엔드")
         String major,
         @Schema(description = "기술 스택", example = "[\"Spring\", \"React\"]")
         List<String> techStacks,
-        @Schema(description = "소속 팀 목록 (팀장인 팀이 먼저)")
+        @Schema(description = "소속 팀 목록 (팀장인 팀이 먼저). 외부 사용자는 빈 배열")
         List<TeamInfo> teams,
         @Schema(description = "개인 링크 목록")
         List<UserLinkResponse> links

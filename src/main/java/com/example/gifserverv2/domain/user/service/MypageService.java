@@ -7,6 +7,7 @@ import com.example.gifserverv2.domain.user.dto.request.UserLinkRequest;
 import com.example.gifserverv2.domain.user.dto.response.MypageResponse;
 import com.example.gifserverv2.domain.user.dto.response.UserLinkResponse;
 import com.example.gifserverv2.domain.user.entity.ClientRole;
+import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.entity.UserLink;
 import com.example.gifserverv2.domain.user.repository.UserLinkRepository;
@@ -145,6 +146,11 @@ public class MypageService {
     }
 
     private MypageResponse buildMypage(UserEntity user) {
+        // 외부 사용자는 학번이 없고 팀에 소속될 수 없다
+        if (user.getEffectiveRole() == Role.EXTERNAL) {
+            return toResponse(user, null, null, null, List.of());
+        }
+
         String studentNumber = user.getStudentNumber();
         boolean validStudentNumber = studentNumber != null && studentNumber.matches("\\d{4}");
         Integer grade = validStudentNumber ? Character.getNumericValue(studentNumber.charAt(0)) : parseIntOrNull(user.getGrade());
@@ -161,6 +167,11 @@ public class MypageService {
                         m.getPart()))
                 .toList();
 
+        return toResponse(user, studentNumber, grade, classNo, teams);
+    }
+
+    private MypageResponse toResponse(UserEntity user, String studentNumber, Integer grade, Integer classNo,
+                                      List<MypageResponse.TeamInfo> teams) {
         return new MypageResponse(
                 user.getId(),
                 user.getName(),
