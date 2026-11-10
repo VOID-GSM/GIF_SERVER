@@ -44,20 +44,32 @@ public class ProjectEngagementController {
         return ResponseEntity.ok(engagementService.getEngagement(projectId, user.userId()));
     }
 
-    @Operation(summary = "댓글 목록", description = "로그인 없이 호출할 수 있다(토큰은 선택). 최신순이며 숨김·삭제된 댓글은 제외된다. 비로그인이면 `isMine`은 항상 false다.")
+    @Operation(summary = "댓글 목록", description = """
+            로그인 없이 호출할 수 있다(토큰은 선택). 최신순(작성 시각 → ID 역순)이며 숨김·삭제된 댓글은 제외된다. 비로그인이면 `isMine`은 항상 false다.
+
+            **커서 방식(권장):** 첫 요청은 `lastId` 없이 보내고, 이후에는 직전 응답의 `nextCursor`를 `lastId`로 보낸다.
+            `lastId` 댓글보다 오래된 댓글 `size`개를 주므로 "더보기" 사이에 댓글이 등록·삭제돼도 중복·누락이 없다. `nextCursor`가 null이면 끝이다.
+
+            `lastId`를 보내면 `page`는 무시된다. `lastId` 없이 `page`를 보내는 기존 페이지 번호 방식도 그대로 동작한다.
+            `totalElements`는 두 방식 모두 현재 보이는 전체 댓글 수다.""")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "400", description = "`lastId`가 없는 댓글이거나 다른 프로젝트의 댓글"),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 프로젝트")
     })
     @GetMapping("/comments")
     public ResponseEntity<CommentPageResponse> getComments(
             @AuthenticationPrincipal AuthenticatedUser user,
             @Parameter(description = "프로젝트 ID", example = "1") @PathVariable Long projectId,
-            @Parameter(description = "페이지 번호 (1부터). 1보다 작으면 1로 처리", example = "1") @RequestParam(defaultValue = "1") int page,
-            @Parameter(description = "페이지 크기 (1~50, 기본 20). 범위를 벗어나면 가까운 값으로 보정", example = "20") @RequestParam(defaultValue = "20") int size
+            @Parameter(description = "커서. 직전 응답의 `nextCursor`. 없으면 최신 댓글부터", example = "31") @RequestParam(required = false) Long lastId,
+            @Parameter(description = "페이지 번호 (1부터, 기존 방식). 1보다 작으면 1로 처리. `lastId`가 있으면 무시", example = "1") @RequestParam(defaultValue = "1") int page,
+            @Parameter(description = "가져올 개수 (1~50, 기본 20). 범위를 벗어나면 가까운 값으로 보정", example = "20") @RequestParam(defaultValue = "20") int size
     ) {
         // 비로그인이면 user 가 null
         Long userId = user == null ? null : user.userId();
+        if (lastId != null) {
+            return ResponseEntity.ok(engagementService.getCommentsAfter(projectId, userId, lastId, size));
+        }
         return ResponseEntity.ok(engagementService.getComments(projectId, userId, page, size));
     }
 

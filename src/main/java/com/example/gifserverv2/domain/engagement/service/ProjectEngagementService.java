@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.data.domain.Page;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -142,6 +143,42 @@ public class ProjectEngagementService {
             boolean mine = userId != null && c.isOwnedBy(userId); // 비로그인이면 항상 false
             return CommentResponse.from(c, profileImage, mine);
         }));
+    }
+
+    /**
+     * 커서 기반 목록. lastId 댓글보다 오래된 댓글 size 개를 최신순(createdAt DESC, id DESC)으로 준다.
+     * 페이지 번호 방식과 달리 사이에 댓글이 등록·삭제돼도 중복·누락이 없다.
+     * 커서 댓글이 그사이 숨김·삭제됐어도 그 위치를 기준으로 이어서 조회한다.
+     */
+    @Transactional(readOnly = true)
+    public CommentPageResponse getCommentsAfter(Long projectId, Long userId, Long lastId, int size) {
+        validateProject(projectId);
+        int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        ProjectComment cursor = commentRepository.findById(lastId)
+                .filter(c -> c.getProjectId().equals(projectId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "잘못된 커서(lastId)입니다."));
+
+        // 하나 더 읽어서 다음 페이지가 있는지 판단한다.
+        List<ProjectComment> fetched = commentRepository.findVisibleBefore(
+                projectId, cursor.getCreatedAt(), cursor.getId(), PageRequest.of(0, safeSize + 1));
+        boolean hasNext = fetched.size() > safeSize;
+        List<ProjectComment> comments = hasNext ? fetched.subList(0, safeSize) : fetched;
+
+        // 작성자 프로필을 한 번에 조회한다. (댓글마다 따로 조회하면 N+1)
+        Set<Long> authorIds = comments.stream()
+                .map(ProjectComment::getUserId)
+                .collect(Collectors.toSet());
+        Map<Long, UserEntity> authors = userRepository.findAllById(authorIds).stream()
+                .collect(Collectors.toMap(UserEntity::getId, u -> u));
+        List<CommentResponse> content = comments.stream()
+                .map(c -> {
+                    UserEntity author = authors.get(c.getUserId());
+                    String profileImage = author != null ? author.getDisplayProfileImageUrl() : null;
+                    return CommentResponse.from(c, profileImage, userId != null && c.isOwnedBy(userId));
+                })
+                .toList();
+        long total = commentRepository.countByProjectIdAndHiddenFalseAndDeletedAtIsNull(projectId);
+        return CommentPageResponse.of(content, total, hasNext);
     }
 
     @Transactional
