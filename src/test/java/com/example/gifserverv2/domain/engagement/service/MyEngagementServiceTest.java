@@ -106,7 +106,8 @@ class MyEngagementServiceTest {
         assertThat(gifLike.logo()).isEqualTo("/files/project-logos/gif.png");
         // 다른 사용자의 좋아요까지 포함한 프로젝트 전체 좋아요 수
         assertThat(gifLike.likeCount()).isEqualTo(2);
-        assertThat(gifLike.likedAt()).isEqualTo(base);
+        // 한국 시간 09:00 은 UTC 00:00 이다
+        assertThat(gifLike.likedAt()).isEqualTo(Instant.parse("2026-11-10T00:00:00Z"));
         assertThat(page.content().get(0).likeCount()).isEqualTo(1);
     }
 
