@@ -8,7 +8,10 @@ import lombok.NoArgsConstructor;
 import java.time.Instant;
 
 @Entity
-@Table(name = "project_comment", indexes = @Index(name = "idx_project_comment_project", columnList = "project_id, created_at"))
+@Table(name = "project_comment", indexes = {
+        @Index(name = "idx_project_comment_project", columnList = "project_id, created_at"),
+        @Index(name = "idx_project_comment_user", columnList = "user_id, created_at")
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ProjectComment {
