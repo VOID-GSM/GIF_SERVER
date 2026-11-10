@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/assessment/road-making")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('USER')")
+@PreAuthorize("isAuthenticated()")
 public class RoadMakingController {
     private final RoadMakingService roadMakingService;
 

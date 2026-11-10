@@ -31,7 +31,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/assessment/cat-chase")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('USER')")
+@PreAuthorize("isAuthenticated()")
 public class CatChaseController {
 
     private final CatChaseService catChaseService;
