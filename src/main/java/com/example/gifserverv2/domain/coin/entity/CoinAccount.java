@@ -69,8 +69,4 @@ public class CoinAccount {
         this.lastSyncedCommitCount = totalCommits;
         this.balance += coinReward;
     }
-    public static CoinAccount create(Long userId) {
-        return new CoinAccount(userId);
-    }
-
 }

@@ -23,7 +23,7 @@ public class AssessmentCoinRewarder {
             return;
         }
         CoinAccount account = coinAccountRepository.findByUserId(userId)
-                .orElseGet(() -> coinAccountRepository.save(CoinAccount.create(userId)));
+                .orElseGet(() -> coinAccountRepository.save(CoinAccount.open(userId)));
         account.addCoin(amount);
         userRepository.findById(userId)
                 .ifPresent(user -> user.updateCoinBalance(account.getBalance()));
