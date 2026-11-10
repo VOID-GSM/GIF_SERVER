@@ -10,7 +10,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
         name = "project_like",
-        uniqueConstraints = @UniqueConstraint(name = "uk_project_like_project_user", columnNames = {"project_id", "user_id"})
+        uniqueConstraints = @UniqueConstraint(name = "uk_project_like_project_user", columnNames = {"project_id", "user_id"}),
+        indexes = @Index(name = "idx_project_like_user", columnList = "user_id, created_at")
 )
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

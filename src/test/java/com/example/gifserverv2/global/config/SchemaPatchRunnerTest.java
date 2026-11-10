@@ -78,6 +78,20 @@ class SchemaPatchRunnerTest {
     }
 
     @Test
+    void 이미_있는_댓글_좋아요_테이블에_사용자별_조회_인덱스를_추가한다() {
+        jdbc.execute("CREATE TABLE project_comment (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, "
+                + "project_id BIGINT NOT NULL, user_id BIGINT NOT NULL, created_at DATETIME(6) NOT NULL)");
+        jdbc.execute("CREATE TABLE project_like (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, "
+                + "project_id BIGINT NOT NULL, user_id BIGINT NOT NULL, created_at DATETIME(6) NOT NULL)");
+
+        runner.run(null);
+
+        assertThat(indexNames("PROJECT_COMMENT")).contains("IDX_PROJECT_COMMENT_USER");
+        assertThat(indexNames("PROJECT_LIKE")).contains("IDX_PROJECT_LIKE_USER");
+        assertThatCode(() -> runner.run(null)).doesNotThrowAnyException();
+    }
+
+    @Test
     void 고양이_술래잡기_판단_컬럼을_VARCHAR로_바꾸고_확신도를_NULL_허용으로_바꾼다() {
         // Hibernate 6 가 MySQL 에 만든 enum NOT NULL 컬럼
         jdbc.execute("CREATE TABLE cat_chase_judgment (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, "

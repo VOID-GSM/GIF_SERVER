@@ -45,9 +45,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import com.example.gifserverv2.domain.engagement.service.AnonymousViewService;
+import com.example.gifserverv2.domain.engagement.controller.MyEngagementController;
+import com.example.gifserverv2.domain.engagement.service.MyEngagementService;
 
 @WebMvcTest({ProjectController.class, ProjectEngagementController.class, FormController.class, MypageController.class,
-        ItemController.class, UserController.class, UserProfileController.class})
+        ItemController.class, UserController.class, UserProfileController.class, MyEngagementController.class})
 @Import({SecurityConfig.class, TokenAuthenticationFilter.class})
 class AccountTypeAccessTest {
 
@@ -65,6 +67,7 @@ class AccountTypeAccessTest {
     @MockitoBean ClientFormService clientFormService;
     @MockitoBean FormFileService formFileService;
     @MockitoBean MypageService mypageService;
+    @MockitoBean MyEngagementService myEngagementService;
     @MockitoBean ItemService itemService;
     @MockitoBean UserService userService;
     @MockitoBean CoinSyncService coinSyncService;
@@ -87,6 +90,14 @@ class AccountTypeAccessTest {
                         .contentType(MediaType.APPLICATION_JSON).content("{\"url\":\"https://blog.example.com\"}"))
                 .andExpect(status().isOk());
         mockMvc.perform(delete("/api/users/me/links/1").with(as(Role.EXTERNAL))).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void 외부_사용자도_내가_쓴_댓글과_좋아요한_프로젝트를_조회할_수_있다() throws Exception {
+        mockMvc.perform(get("/api/users/me/comments").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/users/me/likes").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/users/me/comments")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/users/me/likes")).andExpect(status().isUnauthorized());
     }
 
     @Test
