@@ -6,6 +6,7 @@ import com.example.gifserverv2.domain.project.service.CommandProjectService;
 import com.example.gifserverv2.domain.project.service.ProjectLinkService;
 import com.example.gifserverv2.domain.project.service.ProjectNoteService;
 import com.example.gifserverv2.domain.project.service.QueryProjectService;
+import com.example.gifserverv2.global.i18n.Language;
 import com.example.gifserverv2.global.security.AuthenticatedUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -88,7 +89,11 @@ public class ProjectController {
             - 비로그인·외부 사용자: `PublicDetailProjectResponse` (팀원 이름·역할만)
 
             조회만으로는 조회수가 늘지 않는다. 조회수 증가는 `POST /api/project/{projectId}/view`를 따로 호출한다.
-            비로그인이면 `isLiked`는 항상 false다.""")
+            비로그인이면 `isLiked`는 항상 false다.
+
+            `lang=ja`면 `description`을 일본어 AI 번역으로 준다(`descriptionTranslated=true`).
+            번역이 아직 없거나 실패했으면 한국어 원문을 주고(`descriptionTranslated=false`), 번역은 뒤에서 만들어 다음 조회부터 반영된다.
+            프로젝트명·팀명·팀원 이름은 번역하지 않는다. `lang`이 없거나 `ko`(또는 모르는 값)면 기존과 같다.""")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "404", description = "존재하지 않는 프로젝트")
@@ -96,14 +101,16 @@ public class ProjectController {
     @GetMapping("/{projectId}")
     public ResponseEntity<ProjectDetailResponse> getProject(
             @AuthenticationPrincipal AuthenticatedUser user,
-            @Parameter(description = "프로젝트 ID", example = "1") @PathVariable Long projectId
+            @Parameter(description = "프로젝트 ID", example = "1") @PathVariable Long projectId,
+            @Parameter(description = "응답 언어. ko(기본) / ja", example = "ja") @RequestParam(required = false) String lang
     ) {
+        Language language = Language.from(lang);
         // 비로그인·외부 사용자는 공개용 응답, 교내 사용자는 기존 응답
         if (user == null || user.role() == Role.EXTERNAL) {
             Long userId = user == null ? null : user.userId();
-            return ResponseEntity.ok(projectQueryService.getPublicProject(projectId, userId));
+            return ResponseEntity.ok(projectQueryService.getPublicProject(projectId, userId, language));
         }
-        return ResponseEntity.ok(projectQueryService.getProject(projectId, user.userId()));
+        return ResponseEntity.ok(projectQueryService.getProject(projectId, user.userId(), language));
     }
 
     @Operation(summary = "학년별 프로젝트 목록", description = "로그인 없이 호출할 수 있다(토큰은 선택). `grade`를 생략하면 전체 프로젝트를 반환한다. 비로그인이면 `isLiked`는 항상 false다.")
@@ -127,7 +134,7 @@ public class ProjectController {
             - `removeMemberIds`: 제외할 팀원 userId 목록. 팀장은 제외할 수 없으며, 제외된 학생에게 알림이 발송된다.
             - `logo`: 새 로고 파일(png/jpg/jpeg/webp, 최대 10MB). 보내면 기존 로고 파일은 삭제된다.
 
-            이름·팀명·설명이 바뀌면 저장된 AI 요약이 초기화된다.""")
+            이름·팀명·설명이 바뀌면 저장된 AI 요약이 초기화된다. 설명이 바뀌면 일본어 번역을 뒤에서 새로 만든다.""")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "수정 성공"),
             @ApiResponse(responseCode = "400", description = "학년 범위 오류, 팀장 제외 시도, 로고 형식·크기 오류"),
@@ -147,7 +154,7 @@ public class ProjectController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "프로젝트 설명 수정 (팀원)", description = "팀원이면 누구나 설명을 수정할 수 있다. `description`이 null이면 아무것도 바뀌지 않는다. 수정하면 저장된 AI 요약이 초기화된다.")
+    @Operation(summary = "프로젝트 설명 수정 (팀원)", description = "팀원이면 누구나 설명을 수정할 수 있다. `description`이 null이면 아무것도 바뀌지 않는다. 수정하면 저장된 AI 요약이 초기화되고, 일본어 번역을 뒤에서 새로 만든다.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "수정 성공"),
             @ApiResponse(responseCode = "400", description = "500자 초과"),
@@ -193,8 +200,9 @@ public class ProjectController {
     }
 
     //    @GetMapping("/{projectId}/summary")
-//    public ResponseEntity<String> summarizeProject(@PathVariable Long projectId) {
-//        return ResponseEntity.ok(aiSummaryService.summarizeProject(projectId));
+//    public ResponseEntity<String> summarizeProject(@PathVariable Long projectId,
+//                                                   @RequestParam(required = false) String lang) {
+//        return ResponseEntity.ok(aiSummaryService.summarizeProject(projectId, Language.from(lang)));
 //    }
 
     @Operation(summary = "팀장 양도 (MASTER)", description = """

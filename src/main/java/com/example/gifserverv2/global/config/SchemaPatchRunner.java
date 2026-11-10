@@ -77,6 +77,16 @@ public class SchemaPatchRunner implements ApplicationRunner {
     };
 
     /**
+     * 이미 있는 테이블에 나중에 추가한 인덱스. ddl-auto=update 는 기존 테이블에 인덱스를 추가하지 않는다.
+     * 테이블이 없으면 건너뛴다. (그때는 엔티티로 테이블을 만들 때 인덱스도 함께 생긴다)
+     */
+    private static final TableIndexSpec[] REQUIRED_INDEXES = {
+            // 마이페이지 내가 쓴 댓글·좋아요한 프로젝트 목록 (#248)
+            new TableIndexSpec("project_comment", new IndexSpec("idx_project_comment_user", "user_id, created_at")),
+            new TableIndexSpec("project_like", new IndexSpec("idx_project_like_user", "user_id, created_at")),
+    };
+
+    /**
      * 없으면 추가한다. backfillSql 은 컬럼이 이미 있어도 매번 실행해서, 이전 실행에서 백필만 실패했어도 다시 시도한다.
      * 그래서 backfillSql 은 여러 번 실행해도 결과가 같아야 한다. (예: WHERE 새컬럼 IS NULL)
      */
@@ -104,6 +114,10 @@ public class SchemaPatchRunner implements ApplicationRunner {
                     "UPDATE users SET github_connected_at = CURRENT_TIMESTAMP(6) " +
                             "WHERE github_username IS NOT NULL AND github_connected_at IS NULL"),
             new ColumnSpec("coin_account", "last_commit_synced_at", "DATETIME(6) NULL"),
+            // 프로젝트 소개·AI 요약 일본어 번역 (#257)
+            new ColumnSpec("project", "description_ja", "VARCHAR(2000) NULL"),
+            new ColumnSpec("project", "description_ja_source_hash", "VARCHAR(64) NULL"),
+            new ColumnSpec("project", "ai_summary_ja", "VARCHAR(1000) NULL"),
     };
 
     /**
@@ -136,6 +150,9 @@ public class SchemaPatchRunner implements ApplicationRunner {
             for (TableSpec spec : REQUIRED_TABLES) {
                 ensureTable(connection, spec);
             }
+            for (TableIndexSpec spec : REQUIRED_INDEXES) {
+                ensureIndexIfTableExists(connection, spec);
+            }
             for (ColumnSpec spec : REQUIRED_COLUMNS) {
                 ensureColumn(connection, spec);
             }
@@ -163,6 +180,18 @@ public class SchemaPatchRunner implements ApplicationRunner {
         for (IndexSpec index : spec.indexes()) {
             ensureIndex(connection, spec.table(), index);
         }
+    }
+
+    private void ensureIndexIfTableExists(Connection connection, TableIndexSpec spec) {
+        try {
+            if (!tableExists(connection, spec.table())) {
+                return;
+            }
+        } catch (Exception e) {
+            log.error("[SchemaPatch] {} 테이블 확인 중 오류가 발생했습니다.", spec.table(), e);
+            return;
+        }
+        ensureIndex(connection, spec.table(), spec.index());
     }
 
     private void ensureIndex(Connection connection, String table, IndexSpec index) {
@@ -312,6 +341,9 @@ public class SchemaPatchRunner implements ApplicationRunner {
     }
 
     private record IndexSpec(String name, String columns) {
+    }
+
+    private record TableIndexSpec(String table, IndexSpec index) {
     }
 
     private record ColumnTypeSpec(String table, String column, String definition) {
