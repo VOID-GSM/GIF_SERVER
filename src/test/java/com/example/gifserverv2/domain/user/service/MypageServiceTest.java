@@ -8,6 +8,7 @@ import com.example.gifserverv2.domain.user.dto.request.UpdateMypageRequest;
 import com.example.gifserverv2.domain.user.dto.request.UserLinkRequest;
 import com.example.gifserverv2.domain.user.dto.response.MypageResponse;
 import com.example.gifserverv2.domain.user.dto.response.UserLinkResponse;
+import com.example.gifserverv2.domain.user.dto.response.UserProfileResponse;
 import com.example.gifserverv2.domain.user.entity.ClientRole;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
@@ -112,6 +113,37 @@ class MypageServiceTest {
         assertThat(mypage.profileImageUrl()).isNull();
         assertThat(mypage.major()).isEqualTo("디자인");
         assertThat(mypage.techStacks()).containsExactly("Figma");
+    }
+
+    @Test
+    void 다른_학생의_공개_프로필을_조회한다() {
+        Project member = projectRepository.save(Project.builder().name("VOID").teamName("보이드").build());
+        Project leader = projectRepository.save(Project.builder().name("GIF").teamName("더모먼트").build());
+        memberRepository.save(ProjectMember.builder().project(member).userId(userId).role(ClientRole.MEMBER).part("백엔드").build());
+        memberRepository.save(ProjectMember.builder().project(leader).userId(userId).role(ClientRole.LEADER).part("프론트엔드").build());
+        service.updateMypage(userId, new UpdateMypageRequest("백엔드", List.of("Spring")));
+        service.addLink(userId, new UserLinkRequest("블로그", "https://blog.example.com"));
+
+        UserProfileResponse profile = service.getProfile(userId);
+
+        assertThat(profile.name()).isEqualTo("김학생");
+        assertThat(profile.studentNumber()).isEqualTo("1203");
+        assertThat(profile.grade()).isEqualTo(1);
+        assertThat(profile.classNo()).isEqualTo(2);
+        assertThat(profile.major()).isEqualTo("백엔드");
+        assertThat(profile.techStacks()).containsExactly("Spring");
+        assertThat(profile.teams()).extracting(MypageResponse.TeamInfo::teamName).containsExactly("더모먼트", "보이드");
+        assertThat(profile.links()).extracting(UserLinkResponse::url).containsExactly("https://blog.example.com");
+    }
+
+    @Test
+    void 학생이_아닌_계정이나_없는_사용자의_프로필은_404() {
+        Long teacherId = userRepository.save(new UserEntity("teacher@gsm.hs.kr", "김선생", null, Role.ADMIN, null)).getId();
+        Long externalId = userRepository.save(new UserEntity("visitor@gmail.com", "방문객", null, Role.EXTERNAL)).getId();
+
+        assertStatus(HttpStatus.NOT_FOUND, () -> service.getProfile(teacherId));
+        assertStatus(HttpStatus.NOT_FOUND, () -> service.getProfile(externalId));
+        assertStatus(HttpStatus.NOT_FOUND, () -> service.getProfile(externalId + 1000));
     }
 
     @Test
