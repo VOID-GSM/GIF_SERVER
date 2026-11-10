@@ -97,6 +97,24 @@ class MypageServiceTest {
     }
 
     @Test
+    void 외부_사용자는_학번_정보가_null이고_팀은_빈_배열이다() {
+        Long externalId = userRepository.save(new UserEntity("visitor@gmail.com", "방문객", null, Role.EXTERNAL)).getId();
+        Project project = projectRepository.save(Project.builder().name("GIF").teamName("더모먼트").build());
+        memberRepository.save(ProjectMember.builder().project(project).userId(externalId).role(ClientRole.MEMBER).part("디자인").build());
+
+        MypageResponse mypage = service.updateMypage(externalId, new UpdateMypageRequest("디자인", List.of("Figma")));
+
+        assertThat(mypage.name()).isEqualTo("방문객");
+        assertThat(mypage.studentNumber()).isNull();
+        assertThat(mypage.grade()).isNull();
+        assertThat(mypage.classNo()).isNull();
+        assertThat(mypage.teams()).isEmpty();
+        assertThat(mypage.profileImageUrl()).isNull();
+        assertThat(mypage.major()).isEqualTo("디자인");
+        assertThat(mypage.techStacks()).containsExactly("Figma");
+    }
+
+    @Test
     void 전공과_기술_스택을_수정한다() {
         MypageResponse updated = service.updateMypage(userId,
                 new UpdateMypageRequest("  백엔드  ", List.of(" Spring ", "React", "spring", "MySQL")));
@@ -201,7 +219,8 @@ class MypageServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"https://my_blog.tistory.com", "https://한글.kr/글", "HTTPS://Blog.Example.com/path?q=1"})
+    @ValueSource(strings = {"https://my_blog.tistory.com", "https://한글.kr/글", "HTTPS://Blog.Example.com/path?q=1",
+            "https://블로그.한국", "https://xn--hq1bm8jm9l.kr", "http://example.com:8080/a", "http://192.168.0.1:3000"})
     void 밑줄이나_한글_도메인도_정상_주소로_등록된다(String url) {
         assertThat(service.addLink(userId, new UserLinkRequest(null, url)).url()).isEqualTo(url);
     }
@@ -209,6 +228,15 @@ class MypageServiceTest {
     @ParameterizedTest
     @ValueSource(strings = {"http:/x", "javascript:alert(1)", "ftp://files.example.com", "blog.example.com", "https://", "http://exa mple.com"})
     void http_https가_아닌_링크는_400(String url) {
+        assertStatus(HttpStatus.BAD_REQUEST, () -> service.addLink(userId, new UserLinkRequest(null, url)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"http://:80", "https://@example.com", "https://google.com@evil.com", "https://localhost",
+            "https://example", "https://-bad.com", "https://bad-.com", "https://example..com", "https://.example.com",
+            "https://example.com.", "https://exa$mple.com", "https://example.123", "https://example.com:0",
+            "https://example.com:99999", "https://example.com:", "https://[::1]"})
+    void 호스트_형식이_잘못된_링크는_400(String url) {
         assertStatus(HttpStatus.BAD_REQUEST, () -> service.addLink(userId, new UserLinkRequest(null, url)));
     }
 

@@ -7,14 +7,19 @@ import com.example.gifserverv2.domain.form.controller.FormController;
 import com.example.gifserverv2.domain.form.service.AdminFormService;
 import com.example.gifserverv2.domain.form.service.ClientFormService;
 import com.example.gifserverv2.domain.form.service.FormFileService;
+import com.example.gifserverv2.domain.coin.service.CoinSyncService;
+import com.example.gifserverv2.domain.item.controller.ItemController;
+import com.example.gifserverv2.domain.item.service.ItemService;
 import com.example.gifserverv2.domain.project.controller.ProjectController;
 import com.example.gifserverv2.domain.project.service.CommandProjectService;
 import com.example.gifserverv2.domain.project.service.ProjectLinkService;
 import com.example.gifserverv2.domain.project.service.ProjectNoteService;
 import com.example.gifserverv2.domain.project.service.QueryProjectService;
 import com.example.gifserverv2.domain.user.controller.MypageController;
+import com.example.gifserverv2.domain.user.controller.UserController;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.service.MypageService;
+import com.example.gifserverv2.domain.user.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -34,12 +39,14 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import com.example.gifserverv2.domain.engagement.service.AnonymousViewService;
 
-@WebMvcTest({ProjectController.class, ProjectEngagementController.class, FormController.class, MypageController.class})
+@WebMvcTest({ProjectController.class, ProjectEngagementController.class, FormController.class, MypageController.class,
+        ItemController.class, UserController.class})
 @Import({SecurityConfig.class, TokenAuthenticationFilter.class})
 class AccountTypeAccessTest {
 
@@ -57,15 +64,47 @@ class AccountTypeAccessTest {
     @MockitoBean ClientFormService clientFormService;
     @MockitoBean FormFileService formFileService;
     @MockitoBean MypageService mypageService;
+    @MockitoBean ItemService itemService;
+    @MockitoBean UserService userService;
+    @MockitoBean CoinSyncService coinSyncService;
 
     @Test
-    void 외부_사용자는_마이페이지를_사용할_수_없다() throws Exception {
-        mockMvc.perform(get("/api/users/me/mypage").with(as(Role.EXTERNAL)))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value(AccessDeniedCode.EXTERNAL_USER_FORBIDDEN.name()));
+    void 외부_사용자는_마이페이지를_사용할_수_있다() throws Exception {
+        mockMvc.perform(get("/api/users/me/mypage").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(patch("/api/users/me/mypage").with(as(Role.EXTERNAL))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"major\":\"디자인\"}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(multipart(HttpMethod.PUT, "/api/users/me/profile-image")
+                        .file("file", new byte[]{1}).with(as(Role.EXTERNAL)))
+                .andExpect(status().isOk());
+        mockMvc.perform(delete("/api/users/me/profile-image").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/users/me/links").with(as(Role.EXTERNAL))).andExpect(status().isOk());
         mockMvc.perform(post("/api/users/me/links").with(as(Role.EXTERNAL))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"url\":\"https://blog.example.com\"}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isCreated());
+        mockMvc.perform(patch("/api/users/me/links/1").with(as(Role.EXTERNAL))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"url\":\"https://blog.example.com\"}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(delete("/api/users/me/links/1").with(as(Role.EXTERNAL))).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void 외부_사용자는_GitHub_연동을_사용할_수_없다() throws Exception {
+        mockMvc.perform(post("/api/users/me/github/sync").with(as(Role.EXTERNAL)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(AccessDeniedCode.EXTERNAL_USER_FORBIDDEN.name()));
+    }
+
+    @Test
+    void 외부_사용자는_Thyn_꾸미기를_사용할_수_있다() throws Exception {
+        mockMvc.perform(get("/api/items").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/items/category/HAIR").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(post("/api/items/buy").with(as(Role.EXTERNAL))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"itemId\":1}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/items/equip").with(as(Role.EXTERNAL))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"itemIds\":[]}"))
+                .andExpect(status().isOk());
     }
 
     @Test

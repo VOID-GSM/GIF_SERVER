@@ -7,6 +7,7 @@ import com.example.gifserverv2.domain.user.dto.request.UserLinkRequest;
 import com.example.gifserverv2.domain.user.dto.response.MypageResponse;
 import com.example.gifserverv2.domain.user.dto.response.UserLinkResponse;
 import com.example.gifserverv2.domain.user.entity.ClientRole;
+import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.entity.UserLink;
 import com.example.gifserverv2.domain.user.repository.UserLinkRepository;
@@ -21,6 +22,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.net.IDN;
 import java.net.URI;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -28,6 +30,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -38,6 +41,13 @@ public class MypageService {
     private static final long MAX_PROFILE_IMAGE_SIZE = 5L * 1024 * 1024;
     // svg 는 같은 도메인에서 서빙될 때 스크립트가 실행될 수 있어 제외한다.
     private static final Set<String> PROFILE_IMAGE_EXTENSIONS = Set.of("png", "jpg", "jpeg", "webp");
+
+    // 도메인 라벨. 하이픈으로 시작·끝날 수 없고, 실제로 쓰이는 밑줄(my_blog.tistory.com)은 허용한다.
+    private static final Pattern DOMAIN_LABEL = Pattern.compile("[a-z0-9_](?:[a-z0-9_-]{0,61}[a-z0-9_])?");
+    // 최상위 도메인. 영문이거나 한글 등을 punycode 로 바꾼 xn-- 형식
+    private static final Pattern TOP_LEVEL_DOMAIN = Pattern.compile("[a-z]{2,63}|xn--[a-z0-9-]{1,59}");
+    private static final Pattern IPV4 = Pattern.compile("((25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)");
+    private static final Pattern PORT = Pattern.compile("\\d{1,5}");
 
     private final UserRepository userRepository;
     private final UserLinkRepository userLinkRepository;
@@ -145,6 +155,11 @@ public class MypageService {
     }
 
     private MypageResponse buildMypage(UserEntity user) {
+        // 외부 사용자는 학번이 없고 팀에 소속될 수 없다
+        if (user.getEffectiveRole() == Role.EXTERNAL) {
+            return toResponse(user, null, null, null, List.of());
+        }
+
         String studentNumber = user.getStudentNumber();
         boolean validStudentNumber = studentNumber != null && studentNumber.matches("\\d{4}");
         Integer grade = validStudentNumber ? Character.getNumericValue(studentNumber.charAt(0)) : parseIntOrNull(user.getGrade());
@@ -161,6 +176,11 @@ public class MypageService {
                         m.getPart()))
                 .toList();
 
+        return toResponse(user, studentNumber, grade, classNo, teams);
+    }
+
+    private MypageResponse toResponse(UserEntity user, String studentNumber, Integer grade, Integer classNo,
+                                      List<MypageResponse.TeamInfo> teams) {
         return new MypageResponse(
                 user.getId(),
                 user.getName(),
@@ -215,16 +235,58 @@ public class MypageService {
         try {
             URI uri = new URI(trimmed);
             String scheme = uri.getScheme();
-            // getHost() 는 "_"가 있거나 한글 도메인이면 null 이라, 호스트 존재 여부는 authority 로 확인한다.
-            String authority = uri.getRawAuthority();
-            if (scheme == null || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))
-                    || authority == null || authority.isBlank()) {
+            if (scheme == null || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "http 또는 https 주소만 등록할 수 있습니다.");
+            }
+            // getHost() 는 "_"가 있거나 한글 도메인이면 null 이라, authority 에서 호스트를 직접 꺼내 검사한다.
+            if (!isValidAuthority(uri.getAuthority())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바른 링크 주소가 아닙니다.");
             }
             return trimmed;
         } catch (java.net.URISyntaxException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "올바른 링크 주소가 아닙니다.");
         }
+    }
+
+    /** 호스트[:포트] 형식인지 확인한다. 호스트는 도메인(한글 도메인 포함) 또는 IPv4 */
+    static boolean isValidAuthority(String authority) {
+        // 사용자 정보(https://google.com@evil.com)는 실제 접속 주소를 속이는 데 쓰일 수 있어 받지 않는다
+        if (authority == null || authority.isBlank() || authority.contains("@")) {
+            return false;
+        }
+        String host = authority;
+        int colon = authority.lastIndexOf(':');
+        if (colon >= 0) {
+            String port = authority.substring(colon + 1);
+            if (!PORT.matcher(port).matches() || Integer.parseInt(port) < 1 || Integer.parseInt(port) > 65535) {
+                return false;
+            }
+            host = authority.substring(0, colon);
+        }
+        return IPV4.matcher(host).matches() || isValidDomain(host);
+    }
+
+    private static boolean isValidDomain(String host) {
+        String ascii;
+        try {
+            // 한글 등 국제화 도메인을 punycode 로 바꿔 영문 도메인과 같은 규칙으로 검사한다
+            ascii = IDN.toASCII(host).toLowerCase(Locale.ROOT);
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+        if (ascii.isEmpty() || ascii.length() > 253) {
+            return false;
+        }
+        String[] labels = ascii.split("\\.", -1);
+        if (labels.length < 2 || !TOP_LEVEL_DOMAIN.matcher(labels[labels.length - 1]).matches()) {
+            return false;
+        }
+        for (String label : labels) {
+            if (!DOMAIN_LABEL.matcher(label).matches()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static String normalizeTitle(String title) {

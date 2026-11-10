@@ -37,7 +37,7 @@ import java.util.List;
  */
 @Tag(name = "마이페이지", description = """
         프로필 이미지·전공·기술 스택·개인 링크 관리. 활동 기록·북마크 목록은 `GET /api/retrospective?mine=true` / `?bookmarkedOnly=true`를 사용한다.
-        외부 사용자도 호출할 수 있다.""")
+        외부 사용자(`role=EXTERNAL`)도 호출할 수 있다. 외부 사용자는 `studentNumber`·`grade`·`classNo`가 null, `teams`가 빈 배열이다.""")
 @RestController
 @RequestMapping("/api/users/me")
 @RequiredArgsConstructor
