@@ -130,19 +130,7 @@ public class ProjectEngagementService {
                 .findByProjectIdAndHiddenFalseAndDeletedAtIsNullOrderByCreatedAtDescIdDesc(
                         projectId, PageRequest.of(safePage, safeSize));
 
-        // 작성자 프로필을 한 번에 조회한다. (댓글마다 따로 조회하면 N+1)
-        Set<Long> authorIds = comments.getContent().stream()
-                .map(ProjectComment::getUserId)
-                .collect(Collectors.toSet());
-        Map<Long, UserEntity> authors = userRepository.findAllById(authorIds).stream()
-                .collect(Collectors.toMap(UserEntity::getId, u -> u));
-
-        return CommentPageResponse.from(comments.map(c -> {
-            UserEntity author = authors.get(c.getUserId());
-            String profileImage = author != null ? author.getDisplayProfileImageUrl() : null;
-            boolean mine = userId != null && c.isOwnedBy(userId); // 비로그인이면 항상 false
-            return CommentResponse.from(c, profileImage, mine);
-        }));
+        return CommentPageResponse.of(toResponses(comments.getContent(), userId), comments.getTotalElements(), comments.hasNext());
     }
 
     /**
@@ -164,21 +152,26 @@ public class ProjectEngagementService {
         boolean hasNext = fetched.size() > safeSize;
         List<ProjectComment> comments = hasNext ? fetched.subList(0, safeSize) : fetched;
 
-        // 작성자 프로필을 한 번에 조회한다. (댓글마다 따로 조회하면 N+1)
+        long total = commentRepository.countByProjectIdAndHiddenFalseAndDeletedAtIsNull(projectId);
+        return CommentPageResponse.of(toResponses(comments, userId), total, hasNext);
+    }
+
+    /** 댓글 목록을 응답으로 바꾼다. 작성자 프로필은 한 번에 조회한다. (댓글마다 따로 조회하면 N+1) */
+    private List<CommentResponse> toResponses(List<ProjectComment> comments, Long userId) {
         Set<Long> authorIds = comments.stream()
                 .map(ProjectComment::getUserId)
                 .collect(Collectors.toSet());
         Map<Long, UserEntity> authors = userRepository.findAllById(authorIds).stream()
                 .collect(Collectors.toMap(UserEntity::getId, u -> u));
-        List<CommentResponse> content = comments.stream()
+
+        return comments.stream()
                 .map(c -> {
                     UserEntity author = authors.get(c.getUserId());
                     String profileImage = author != null ? author.getDisplayProfileImageUrl() : null;
-                    return CommentResponse.from(c, profileImage, userId != null && c.isOwnedBy(userId));
+                    boolean mine = userId != null && c.isOwnedBy(userId); // 비로그인이면 항상 false
+                    return CommentResponse.from(c, profileImage, mine);
                 })
                 .toList();
-        long total = commentRepository.countByProjectIdAndHiddenFalseAndDeletedAtIsNull(projectId);
-        return CommentPageResponse.of(content, total, hasNext);
     }
 
     @Transactional
