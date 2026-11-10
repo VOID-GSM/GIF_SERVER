@@ -15,6 +15,7 @@ import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserLinkRepository;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.global.file.FileStorageService;
+import org.hibernate.Hibernate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -134,6 +135,18 @@ class MypageServiceTest {
         assertThat(profile.techStacks()).containsExactly("Spring");
         assertThat(profile.teams()).extracting(MypageResponse.TeamInfo::teamName).containsExactly("더모먼트", "보이드");
         assertThat(profile.links()).extracting(UserLinkResponse::url).containsExactly("https://blog.example.com");
+    }
+
+    @Test
+    void 팀_목록은_프로젝트를_함께_조회한다() {
+        Project project = projectRepository.save(Project.builder().name("GIF").teamName("더모먼트").build());
+        memberRepository.save(ProjectMember.builder().project(project).userId(userId).role(ClientRole.LEADER).part("백엔드").build());
+
+        // 트랜잭션 밖에서 조회해도 프로젝트가 이미 로딩돼 있어야 멤버마다 추가 쿼리가 나가지 않는다
+        List<ProjectMember> members = memberRepository.findAllByUserId(userId);
+
+        assertThat(members).hasSize(1)
+                .allSatisfy(member -> assertThat(Hibernate.isInitialized(member.getProject())).isTrue());
     }
 
     @Test
