@@ -71,6 +71,8 @@ file:
 springdoc:
   default-consumes-media-type: application/json
   default-produces-media-type: application/json
+  # @RestControllerAdvice 의 모든 에러 응답이 API마다 붙지 않도록, API별 @ApiResponse 만 노출한다.
+  override-with-generic-response: false
   swagger-ui:
     path: /swagger-ui.html
     operations-sorter: alpha
