@@ -82,6 +82,7 @@ class RoadMakingServiceTest {
         assertThat(problem).isNull();
         RoadMakingRoundResultResponse result = response.result();
         assertThat(result).isNotNull();
+        assertThat(result.questionCount()).isEqualTo(3);
         assertThat(result.completed()).isTrue();
         assertThat(result.solvedCount() + result.wrongCount()).isEqualTo(3);
         assertThat(result.earnedCoin()).isEqualTo(result.solvedCount() > 0 ? 20 + 10 * result.solvedCount() : 0);
@@ -127,6 +128,43 @@ class RoadMakingServiceTest {
         assertThat(result.completed()).isFalse();
         assertThat(result.earnedCoin()).isZero();
         assertThat(balanceOf(userId)).isZero();
+    }
+
+    @Test
+    void 같은_문항_수로_다시_시작하면_진행_중인_라운드를_이어간다() {
+        var first = service.startRound(userId, new StartAssessmentRoundRequest(3));
+        service.submit(userId, first.roundId(), first.problem().problemId(), anyFences(first.problem()));
+
+        var again = service.startRound(userId, new StartAssessmentRoundRequest(3));
+
+        assertThat(again.roundId()).isEqualTo(first.roundId());
+        assertThat(again.questionCount()).isEqualTo(3);
+        assertThat(again.problem().sequence()).isEqualTo(2);
+    }
+
+    @Test
+    void 다른_문항_수로_시작하면_진행_중인_라운드는_이탈로_끝나고_새_라운드가_시작된다() {
+        var first = service.startRound(userId, new StartAssessmentRoundRequest(5));
+        service.submit(userId, first.roundId(), first.problem().problemId(), anyFences(first.problem()));
+
+        var second = service.startRound(userId, new StartAssessmentRoundRequest(3));
+
+        assertThat(second.roundId()).isNotEqualTo(first.roundId());
+        assertThat(second.questionCount()).isEqualTo(3);
+        assertThat(second.problem().sequence()).isEqualTo(1);
+
+        RoadMakingRoundResultResponse abandoned = service.finishRound(userId, first.roundId());
+        assertThat(abandoned.questionCount()).isEqualTo(5);
+        assertThat(abandoned.completed()).isFalse();
+        assertThat(abandoned.earnedCoin()).isZero();
+        assertThat(balanceOf(userId)).isZero();
+    }
+
+    @Test
+    void 라운드_결과에_문항_수가_담긴다() {
+        var start = service.startRound(userId, new StartAssessmentRoundRequest(4));
+
+        assertThat(service.finishRound(userId, start.roundId()).questionCount()).isEqualTo(4);
     }
 
     /** 빈 칸에 요구 개수만큼 울타리를 놓는다 (정답 여부는 상관없음) */
