@@ -3,6 +3,7 @@ package com.example.gifserverv2.domain.assessment.catchase.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,6 +68,10 @@ public class CatChaseQuestion {
 
     public boolean hasMouseAt(int position) {
         return mousePositions.contains(position);
+    }
+
+    public boolean isTimedOut(LocalDateTime now, Duration limit) {
+        return now.isAfter(createdAt.plus(limit));
     }
 
     public void answer(boolean correct, LocalDateTime now) {

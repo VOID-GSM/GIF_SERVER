@@ -77,6 +77,32 @@ class SchemaPatchRunnerTest {
         assertThatCode(() -> runner.run(null)).doesNotThrowAnyException();
     }
 
+    @Test
+    void 고양이_술래잡기_판단_컬럼을_VARCHAR로_바꾸고_확신도를_NULL_허용으로_바꾼다() {
+        // Hibernate 6 가 MySQL 에 만든 enum NOT NULL 컬럼
+        jdbc.execute("CREATE TABLE cat_chase_judgment (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, "
+                + "judgment ENUM('FOUND','MISSED') NOT NULL, "
+                + "confidence ENUM('VERY_CONFIDENT','CONFIDENT','SOMEWHAT_UNSURE','UNSURE') NOT NULL)");
+
+        runner.run(null);
+
+        jdbc.update("INSERT INTO cat_chase_judgment (judgment, confidence) VALUES ('TIMEOUT', NULL)");
+        assertThat(jdbc.queryForObject("SELECT judgment FROM cat_chase_judgment", String.class)).isEqualTo("TIMEOUT");
+        assertThatCode(() -> runner.run(null)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void VARCHAR_NOT_NULL인_확신도_컬럼도_NULL_허용으로_바꾼다() {
+        jdbc.execute("CREATE TABLE cat_chase_judgment (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, "
+                + "judgment VARCHAR(20) NOT NULL, confidence VARCHAR(20) NOT NULL)");
+
+        runner.run(null);
+
+        jdbc.update("INSERT INTO cat_chase_judgment (judgment, confidence) VALUES ('TIMEOUT', NULL)");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM cat_chase_judgment WHERE confidence IS NULL", Integer.class))
+                .isEqualTo(1);
+    }
+
     private java.util.List<String> indexNames(String table) {
         return jdbc.queryForList(
                 "SELECT UPPER(INDEX_NAME) FROM INFORMATION_SCHEMA.INDEXES WHERE UPPER(TABLE_NAME) = ?", String.class, table);

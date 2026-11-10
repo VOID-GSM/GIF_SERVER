@@ -21,6 +21,7 @@ import com.example.gifserverv2.domain.project.service.ProjectNoteService;
 import com.example.gifserverv2.domain.project.service.QueryProjectService;
 import com.example.gifserverv2.domain.user.controller.MypageController;
 import com.example.gifserverv2.domain.user.controller.UserController;
+import com.example.gifserverv2.domain.user.controller.UserProfileController;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.service.MypageService;
 import com.example.gifserverv2.domain.user.service.UserService;
@@ -49,8 +50,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import com.example.gifserverv2.domain.engagement.service.AnonymousViewService;
 
-@WebMvcTest({ProjectController.class, ProjectEngagementController.class, FormController.class, MypageController.class,
-        ItemController.class, UserController.class, CatChaseController.class, RoadMakingController.class})
+@WebMvcTest({
+        ProjectController.class,
+        ProjectEngagementController.class,
+        FormController.class,
+        MypageController.class,
+        ItemController.class,
+        UserController.class,
+        UserProfileController.class,
+        CatChaseController.class,
+        RoadMakingController.class
+})
 @Import({SecurityConfig.class, TokenAuthenticationFilter.class})
 class AccountTypeAccessTest {
 
@@ -92,6 +102,14 @@ class AccountTypeAccessTest {
                         .contentType(MediaType.APPLICATION_JSON).content("{\"url\":\"https://blog.example.com\"}"))
                 .andExpect(status().isOk());
         mockMvc.perform(delete("/api/users/me/links/1").with(as(Role.EXTERNAL))).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void 로그인한_사용자는_누구나_다른_사용자_프로필을_조회할_수_있다() throws Exception {
+        for (Role role : Role.values()) {
+            mockMvc.perform(get("/api/users/2/profile").with(as(role))).andExpect(status().isOk());
+        }
+        mockMvc.perform(get("/api/users/2/profile")).andExpect(status().isUnauthorized());
     }
 
     @Test

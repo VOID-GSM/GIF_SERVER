@@ -5,6 +5,7 @@ import com.example.gifserverv2.domain.engagement.dto.response.CommentPageRespons
 import com.example.gifserverv2.domain.engagement.dto.response.CommentResponse;
 import com.example.gifserverv2.domain.engagement.dto.response.EngagementResponse;
 import com.example.gifserverv2.domain.engagement.dto.response.LikeResponse;
+import com.example.gifserverv2.domain.engagement.entity.ProjectComment;
 import com.example.gifserverv2.domain.engagement.repository.ProjectCommentRepository;
 import com.example.gifserverv2.domain.engagement.repository.ProjectLikeRepository;
 import com.example.gifserverv2.domain.engagement.repository.ProjectViewCountRepository;
@@ -21,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -144,6 +146,66 @@ class ProjectEngagementServiceTest {
 
         EngagementResponse engagement = service.getEngagement(projectId, userId);
         assertThat(engagement.commentsCount()).isEqualTo(2);
+    }
+
+    @Test
+    void 커서로_이어서_조회하면_사이에_댓글이_등록_삭제돼도_중복_누락이_없다() {
+        Instant base = Instant.parse("2026-11-10T00:00:00Z");
+        // c1 이 가장 오래됨. c3·c4 는 작성 시각이 같아 ID 로 순서가 정해진다
+        ProjectComment c1 = saveComment("c1", base);
+        ProjectComment c2 = saveComment("c2", base.plusSeconds(1));
+        ProjectComment c3 = saveComment("c3", base.plusSeconds(2));
+        ProjectComment c4 = saveComment("c4", base.plusSeconds(2));
+        ProjectComment c5 = saveComment("c5", base.plusSeconds(3));
+
+        CommentPageResponse first = service.getComments(projectId, userId, 1, 2);
+        assertThat(first.content()).extracting(CommentResponse::content).containsExactly("c5", "c4");
+        assertThat(first.nextCursor()).isEqualTo(c4.getId());
+
+        // 더보기 전에 새 댓글이 달리고, 첫 페이지의 c4 와 다음 페이지 첫 댓글 c3 이 삭제된다
+        saveComment("new", base.plusSeconds(10));
+        c4.softDelete();
+        c3.softDelete();
+        commentRepository.saveAll(List.of(c4, c3));
+
+        CommentPageResponse second = service.getCommentsAfter(projectId, userId, first.nextCursor(), 2);
+        assertThat(second.content()).extracting(CommentResponse::content).containsExactly("c2", "c1");
+        assertThat(second.hasNext()).isFalse();
+        assertThat(second.nextCursor()).isNull();
+        assertThat(second.totalElements()).isEqualTo(4); // new, c5, c2, c1
+    }
+
+    @Test
+    void 커서_조회는_다음_페이지가_있으면_마지막_댓글_ID를_커서로_준다() {
+        Instant base = Instant.parse("2026-11-10T00:00:00Z");
+        saveComment("c1", base);
+        ProjectComment c2 = saveComment("c2", base.plusSeconds(1));
+        ProjectComment c3 = saveComment("c3", base.plusSeconds(2));
+
+        CommentPageResponse page = service.getCommentsAfter(projectId, userId, c3.getId(), 1);
+
+        assertThat(page.content()).extracting(CommentResponse::content).containsExactly("c2");
+        assertThat(page.hasNext()).isTrue();
+        assertThat(page.nextCursor()).isEqualTo(c2.getId());
+    }
+
+    @Test
+    void 없는_댓글이나_다른_프로젝트_댓글을_커서로_보내면_400() {
+        Long otherProjectId = projectRepository.save(Project.builder().name("other").teamName("다른팀").build()).getId();
+        ProjectComment others = commentRepository.save(new ProjectComment(otherProjectId, userId, "홍길동", "다른 프로젝트"));
+
+        assertThatThrownBy(() -> service.getCommentsAfter(projectId, userId, others.getId(), 10))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+        assertThatThrownBy(() -> service.getCommentsAfter(projectId, userId, others.getId() + 1000, 10))
+                .isInstanceOfSatisfying(ResponseStatusException.class,
+                        e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
+    private ProjectComment saveComment(String content, Instant createdAt) {
+        ProjectComment comment = new ProjectComment(projectId, userId, "홍길동", content);
+        ReflectionTestUtils.setField(comment, "createdAt", createdAt);
+        return commentRepository.save(comment);
     }
 
     @Test
