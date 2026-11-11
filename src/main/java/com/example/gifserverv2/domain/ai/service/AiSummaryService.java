@@ -6,7 +6,9 @@ import com.example.gifserverv2.global.ai.OpenAiService;
 import com.example.gifserverv2.global.i18n.Language;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -21,7 +23,6 @@ public class AiSummaryService {
     private final OpenAiService openAiService;
     private final AiTranslationService translationService;
 
-    // GET /api/project/{projectId}/summary 는 비용 문제로 아직 주석 처리되어 있다. (#202)
     public String summarizeProject(Long projectId, Language lang) {
         String summary = summarizeProjectInKorean(projectId);
         if (lang != Language.JA) {
@@ -36,9 +37,28 @@ public class AiSummaryService {
             return context.cachedSummary();
         }
 
-        String summary = openAiService.summarize(context.prompt());
+        if (!openAiService.isConfigured()) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "AI 기능이 아직 설정되지 않았습니다.");
+        }
+
+        String summary;
+        try {
+            summary = openAiService.summarize(context.prompt());
+        } catch (RuntimeException e) {
+            log.warn("프로젝트 {} AI 요약 호출 실패", projectId, e);
+            throw aiFailed();
+        }
+        if (summary == null || summary.isBlank()) {
+            throw aiFailed();
+        }
+
+        summary = summary.strip();
         persistenceService.saveProjectSummary(projectId, summary);
         return summary;
+    }
+
+    private static ResponseStatusException aiFailed() {
+        return new ResponseStatusException(HttpStatus.BAD_GATEWAY, "AI 응답을 받지 못했습니다. 잠시 후 다시 시도해주세요.");
     }
 
     // 일본어 요약은 한국어 요약을 번역해 따로 저장한다. 번역에 실패하면 한국어 요약을 준다.
