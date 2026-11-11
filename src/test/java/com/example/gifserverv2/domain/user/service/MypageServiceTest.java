@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
@@ -185,7 +186,7 @@ class MypageServiceTest {
     @Test
     void 프로필_이미지를_올리면_기존_이미지를_지우고_삭제하면_GitHub_아바타로_돌아간다() {
         UserEntity user = userRepository.findById(userId).orElseThrow();
-        user.connectGithub("octocat", "https://avatars/octocat", "token", 0);
+        user.connectGithub("octocat", "https://avatars/octocat", "token", Instant.now());
         userRepository.save(user);
         given(fileStorageService.save(any(), eq("users/profile")))
                 .willReturn("https://files/users/profile/a.png", "https://files/users/profile/b.png");

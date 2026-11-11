@@ -64,7 +64,7 @@ public class UserController {
         return userService.updateCurrentUser(currentUser, request);
     }
 
-    @Operation(summary = "GitHub 계정 연동", description = "GitHub OAuth로 받은 인가 코드로 계정을 연동한다. 연동 시점의 커밋 수가 기준점이 되어, 이후 새 커밋만 코인으로 적립된다.")
+    @Operation(summary = "GitHub 계정 연동", description = "GitHub OAuth로 받은 인가 코드로 계정을 연동한다. 연동한 시각 이후에 푸시한 커밋만 코인으로 적립된다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "연동 성공"),
             @ApiResponse(responseCode = "400", description = "잘못되었거나 만료된 code"),
@@ -98,12 +98,18 @@ public class UserController {
     }
 
     @Operation(summary = "GitHub 커밋 코인 동기화", description = """
-            마지막 동기화(또는 연동) 이후 새로 생긴 커밋 1개당 10코인을 적립한다. 내 정보 필드에 이번에 얻은 코인(`earnedCoin`)이 더해진 형태로 응답한다.
-            새 커밋이 없으면 `earnedCoin`은 0이다.""")
+            GitHub 연동 이후 **모든 브랜치**에 푸시한 내 커밋 중 아직 지급하지 않은 커밋 1개당 10코인을 적립한다.
+            내 정보 필드에 이번에 얻은 코인(`earnedCoin`)이 더해진 형태로 응답한다. 새 커밋이 없으면 `earnedCoin`은 0이다.
+
+            - 같은 커밋은 여러 브랜치에 푸시하거나 리베이스·다시 동기화해도 한 번만 지급한다. 머지 커밋은 지급하지 않는다.
+            - GitHub 계정과 연결된 이메일로 만든 내 커밋만 집계한다. 다른 사람·포크 저장소에 푸시한 내 커밋도 포함한다.
+            - GitHub Events API 기준이라 푸시가 반영되기까지 몇 분~몇 시간 걸릴 수 있다. 최근 90일·이벤트 300개까지만 조회되므로 오래 동기화하지 않으면 일부 커밋이 빠질 수 있다.
+            - GitHub API 호출에 실패하면 0코인이 아니라 502 를 반환한다. (토큰 만료 시 다시 연동 안내)""")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "동기화 성공"),
             @ApiResponse(responseCode = "401", description = "로그인하지 않음"),
-            @ApiResponse(responseCode = "500", description = "GitHub 계정이 연동되지 않음")
+            @ApiResponse(responseCode = "500", description = "GitHub 계정이 연동되지 않음"),
+            @ApiResponse(responseCode = "502", description = "GitHub API 호출 실패 (토큰 만료, 호출 한도 초과, 통신 실패)")
     })
     @PostMapping("/me/github/sync")
     public GithubSyncResponse syncGithubCoins(@AuthenticationPrincipal AuthenticatedUser currentUser) {

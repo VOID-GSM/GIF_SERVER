@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -59,8 +60,8 @@ public class UserEntity {
     @Column(name = "github_access_token")
     private String githubAccessToken;
 
-    @Column(name = "initial_commit_count")
-    private Integer initialCommitCount = 0;
+    @Column(name = "github_connected_at")
+    private Instant githubConnectedAt;
 
     @Column(name = "coin_balance", nullable = false, columnDefinition = "int default 0")
     private int coinBalance = 0;
@@ -148,8 +149,8 @@ public class UserEntity {
         return githubAccessToken;
     }
 
-    public Integer getInitialCommitCount() {
-        return initialCommitCount != null ? initialCommitCount : 0;
+    public Instant getGithubConnectedAt() {
+        return githubConnectedAt;
     }
 
     public int getCoinBalance() {
@@ -248,18 +249,22 @@ public class UserEntity {
         this.githubAvatarUrl = githubAvatarUrl;
     }
 
-    public void connectGithub(String githubUsername, String githubAvatarUrl, String githubAccessToken, int initialCommitCount) {
+    public void connectGithub(String githubUsername, String githubAvatarUrl, String githubAccessToken, Instant connectedAt) {
         this.githubUsername = githubUsername;
         this.githubAvatarUrl = githubAvatarUrl;
         this.githubAccessToken = githubAccessToken;
-        this.initialCommitCount = initialCommitCount;
+        this.githubConnectedAt = connectedAt;
+    }
+
+    public void markGithubConnectedAt(Instant connectedAt) {
+        this.githubConnectedAt = connectedAt;
     }
 
     public void disconnectGithub() {
         this.githubUsername = null;
         this.githubAvatarUrl = null;
         this.githubAccessToken = null;
-        this.initialCommitCount = 0;
+        this.githubConnectedAt = null;
     }
 
     public void updateCoinBalance(int newCoinBalance) {

@@ -4,7 +4,6 @@ import com.example.gifserverv2.domain.auth.dto.request.UpdateCurrentUserRequest;
 import com.example.gifserverv2.domain.auth.dto.response.CurrentUserResponse;
 import com.example.gifserverv2.domain.auth.dto.response.GithubUserInfo;
 import com.example.gifserverv2.domain.auth.service.GithubOAuthClient;
-import com.example.gifserverv2.domain.coin.service.GithubFetchService;
 import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.user.entity.AccountType;
@@ -23,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -31,7 +31,6 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final GithubOAuthClient githubOAuthClient;
-    private final GithubFetchService githubFetchService;
     private final ProjectMemberRepository projectMemberRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
@@ -124,9 +123,7 @@ public class UserService {
                     }
                 });
 
-        int initialCommitCount = githubFetchService.getCommitCount(githubUser.login(), githubAccessToken);
-
-        user.connectGithub(githubUser.login(), githubUser.avatarUrl(), githubAccessToken, initialCommitCount);
+        user.connectGithub(githubUser.login(), githubUser.avatarUrl(), githubAccessToken, Instant.now());
 
         return buildCurrentUserResponse(user);
     }
