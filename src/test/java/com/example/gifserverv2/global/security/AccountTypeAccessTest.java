@@ -5,7 +5,10 @@ import com.example.gifserverv2.domain.assessment.catchase.controller.CatChaseCon
 import com.example.gifserverv2.domain.assessment.catchase.service.CatChaseService;
 import com.example.gifserverv2.domain.assessment.roadmaking.controller.RoadMakingController;
 import com.example.gifserverv2.domain.assessment.roadmaking.service.RoadMakingService;
+import com.example.gifserverv2.domain.engagement.controller.MyEngagementController;
 import com.example.gifserverv2.domain.engagement.controller.ProjectEngagementController;
+import com.example.gifserverv2.domain.engagement.service.AnonymousViewService;
+import com.example.gifserverv2.domain.engagement.service.MyEngagementService;
 import com.example.gifserverv2.domain.engagement.service.ProjectEngagementService;
 import com.example.gifserverv2.domain.form.controller.FormController;
 import com.example.gifserverv2.domain.form.service.AdminFormService;
@@ -48,7 +51,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import com.example.gifserverv2.domain.engagement.service.AnonymousViewService;
 
 @WebMvcTest({
         ProjectController.class,
@@ -58,6 +60,7 @@ import com.example.gifserverv2.domain.engagement.service.AnonymousViewService;
         ItemController.class,
         UserController.class,
         UserProfileController.class,
+        MyEngagementController.class,
         CatChaseController.class,
         RoadMakingController.class
 })
@@ -78,6 +81,7 @@ class AccountTypeAccessTest {
     @MockitoBean ClientFormService clientFormService;
     @MockitoBean FormFileService formFileService;
     @MockitoBean MypageService mypageService;
+    @MockitoBean MyEngagementService myEngagementService;
     @MockitoBean ItemService itemService;
     @MockitoBean UserService userService;
     @MockitoBean CoinSyncService coinSyncService;
@@ -102,6 +106,14 @@ class AccountTypeAccessTest {
                         .contentType(MediaType.APPLICATION_JSON).content("{\"url\":\"https://blog.example.com\"}"))
                 .andExpect(status().isOk());
         mockMvc.perform(delete("/api/users/me/links/1").with(as(Role.EXTERNAL))).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void 외부_사용자도_내가_쓴_댓글과_좋아요한_프로젝트를_조회할_수_있다() throws Exception {
+        mockMvc.perform(get("/api/users/me/comments").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/users/me/likes").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/users/me/comments")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/users/me/likes")).andExpect(status().isUnauthorized());
     }
 
     @Test
