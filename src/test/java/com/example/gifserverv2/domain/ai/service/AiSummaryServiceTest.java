@@ -9,11 +9,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
@@ -76,5 +79,57 @@ class AiSummaryServiceTest {
         assertThat(service.summarizeProject(PROJECT_ID, Language.JA)).isEqualTo(SUMMARY);
 
         verify(persistenceService, never()).saveProjectSummaryJa(any(), any(), any());
+    }
+
+    @Test
+    void 저장된_요약이_없으면_AI로_만들어_저장한다() {
+        given(persistenceService.loadProjectContext(PROJECT_ID)).willReturn(new SummaryContext(null, "prompt"));
+        given(openAiService.isConfigured()).willReturn(true);
+        given(openAiService.summarize("prompt")).willReturn(" " + SUMMARY + "\n");
+
+        assertThat(service.summarizeProject(PROJECT_ID, Language.KO)).isEqualTo(SUMMARY);
+
+        verify(persistenceService).saveProjectSummary(PROJECT_ID, SUMMARY);
+    }
+
+    @Test
+    void AI가_설정되지_않았으면_503을_던진다() {
+        given(persistenceService.loadProjectContext(PROJECT_ID)).willReturn(new SummaryContext(null, "prompt"));
+        given(openAiService.isConfigured()).willReturn(false);
+
+        assertThatThrownBy(() -> service.summarizeProject(PROJECT_ID, Language.KO))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(e -> ((ResponseStatusException) e).getStatusCode())
+                .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+
+        verify(openAiService, never()).summarize(anyString());
+    }
+
+    @Test
+    void AI_호출에_실패하면_502를_던지고_저장하지_않는다() {
+        given(persistenceService.loadProjectContext(PROJECT_ID)).willReturn(new SummaryContext(null, "prompt"));
+        given(openAiService.isConfigured()).willReturn(true);
+        given(openAiService.summarize("prompt")).willThrow(new ResourceAccessException("timeout"));
+
+        assertThatThrownBy(() -> service.summarizeProject(PROJECT_ID, Language.KO))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(e -> ((ResponseStatusException) e).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_GATEWAY);
+
+        verify(persistenceService, never()).saveProjectSummary(any(), any());
+    }
+
+    @Test
+    void AI_응답이_비어_있으면_502를_던진다() {
+        given(persistenceService.loadProjectContext(PROJECT_ID)).willReturn(new SummaryContext(null, "prompt"));
+        given(openAiService.isConfigured()).willReturn(true);
+        given(openAiService.summarize("prompt")).willReturn(" ");
+
+        assertThatThrownBy(() -> service.summarizeProject(PROJECT_ID, Language.KO))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(e -> ((ResponseStatusException) e).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_GATEWAY);
+
+        verify(persistenceService, never()).saveProjectSummary(any(), any());
     }
 }

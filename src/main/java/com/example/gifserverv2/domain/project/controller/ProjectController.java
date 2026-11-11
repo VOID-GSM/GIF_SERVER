@@ -1,5 +1,6 @@
 package com.example.gifserverv2.domain.project.controller;
 
+import com.example.gifserverv2.domain.ai.service.AiSummaryService;
 import com.example.gifserverv2.domain.project.dto.request.*;
 import com.example.gifserverv2.domain.project.dto.response.*;
 import com.example.gifserverv2.domain.project.service.CommandProjectService;
@@ -40,6 +41,7 @@ public class ProjectController {
     private final CommandProjectService projectCommandService;
     private final ProjectNoteService projectNoteService;
     private final ProjectLinkService projectLinkService;
+    private final AiSummaryService aiSummaryService;
 
     @Operation(summary = "프로젝트 생성", description = """
             `multipart/form-data`로 보낸다. 호출한 사용자가 팀장(LEADER)이 되고 `memberIds`의 사용자는 팀원(MEMBER)이 된다.
@@ -199,11 +201,23 @@ public class ProjectController {
         return ResponseEntity.ok(projectQueryService.searchUsers(keyword));
     }
 
-    //    @GetMapping("/{projectId}/summary")
-//    public ResponseEntity<String> summarizeProject(@PathVariable Long projectId,
-//                                                   @RequestParam(required = false) String lang) {
-//        return ResponseEntity.ok(aiSummaryService.summarizeProject(projectId, Language.from(lang)));
-//    }
+    @Operation(summary = "프로젝트 AI 요약", description = """
+            프로젝트명·팀명·설명을 AI가 한 문장으로 요약해 문자열로 반환한다. 만든 요약은 저장해 두고 다음부터 그대로 준다.
+            설명을 수정하면 저장된 요약이 초기화되어 다음 호출 때 새로 만든다.
+            `lang=ja`면 한국어 요약을 일본어로 번역해 준다. 번역에 실패하면 한국어 요약을 준다.""")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "요약 성공"),
+            @ApiResponse(responseCode = "404", description = "존재하지 않는 프로젝트"),
+            @ApiResponse(responseCode = "502", description = "AI 응답을 받지 못함"),
+            @ApiResponse(responseCode = "503", description = "AI 기능이 설정되지 않음")
+    })
+    @GetMapping("/{projectId}/summary")
+    public ResponseEntity<String> summarizeProject(
+            @Parameter(description = "프로젝트 ID", example = "1") @PathVariable Long projectId,
+            @Parameter(description = "응답 언어. ko(기본) / ja", example = "ja") @RequestParam(required = false) String lang
+    ) {
+        return ResponseEntity.ok(aiSummaryService.summarizeProject(projectId, Language.from(lang)));
+    }
 
     @Operation(summary = "팀장 양도 (MASTER)", description = """
             아이디어 페스티벌 담당(`adminRole=MASTER`) 선생님만 호출할 수 있다. 같은 프로젝트의 팀원을 새 팀장으로 지정하고 기존 팀장은 팀원이 된다.
