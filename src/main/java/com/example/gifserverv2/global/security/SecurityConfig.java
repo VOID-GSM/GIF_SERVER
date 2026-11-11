@@ -76,7 +76,9 @@ public class SecurityConfig {
                         // 마이페이지. GitHub 연동(/api/users/me/github/**)은 재학생 전용이라 열지 않는다.
                         .requestMatchers("/api/users/me/mypage", "/api/users/me/profile-image",
                                 "/api/users/me/links", "/api/users/me/items", "/api/users/me/links/*").authenticated()
-// 다른 사용자의 공개 프로필
+                        // 마이페이지 내가 쓴 댓글·좋아요한 프로젝트
+                        .requestMatchers(HttpMethod.GET, "/api/users/me/comments", "/api/users/me/likes").authenticated()
+                        // 다른 사용자의 공개 프로필
                         .requestMatchers(HttpMethod.GET, "/api/users/{userId:\\d+}/profile").authenticated()
                         .requestMatchers("/api/notifications/**", "/api/push/**").authenticated()
                         .anyRequest().hasAnyRole(SCHOOL_ROLES))
