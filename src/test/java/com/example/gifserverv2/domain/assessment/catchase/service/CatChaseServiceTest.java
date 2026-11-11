@@ -114,6 +114,36 @@ class CatChaseServiceTest {
     }
 
     @Test
+    void 같은_문항_수로_다시_시작하면_진행_중인_라운드를_이어간다() {
+        var first = service.startRound(userId, new StartAssessmentRoundRequest(3));
+        service.submitJudgments(userId, first.roundId(), first.question().questionId(), answer(first.question(), true));
+
+        var again = service.startRound(userId, new StartAssessmentRoundRequest(3));
+
+        assertThat(again.roundId()).isEqualTo(first.roundId());
+        assertThat(again.questionCount()).isEqualTo(3);
+        assertThat(again.question().sequence()).isEqualTo(2);
+        assertThat(roundRepository.findAllByUserIdOrderByCreatedAtDesc(userId)).hasSize(1);
+    }
+
+    @Test
+    void 다른_문항_수로_시작하면_진행_중인_라운드는_이탈로_끝나고_새_라운드가_시작된다() {
+        var first = service.startRound(userId, new StartAssessmentRoundRequest(5));
+        service.submitJudgments(userId, first.roundId(), first.question().questionId(), answer(first.question(), true));
+
+        var second = service.startRound(userId, new StartAssessmentRoundRequest(3));
+
+        assertThat(second.roundId()).isNotEqualTo(first.roundId());
+        assertThat(second.questionCount()).isEqualTo(3);
+        assertThat(second.question().sequence()).isEqualTo(1);
+
+        CatChaseRoundResultResponse abandoned = service.finishRound(userId, first.roundId());
+        assertThat(abandoned.completed()).isFalse();
+        assertThat(abandoned.earnedCoin()).isZero();
+        assertThat(balanceOf(userId)).isZero();
+    }
+
+    @Test
     void 문항마다_고양이는_서로_다른_칸에_정확히_2마리다() {
         var start = service.startRound(userId, new StartAssessmentRoundRequest(10));
         CatChaseQuestionResponse question = start.question();

@@ -37,7 +37,10 @@ public class CatChaseController {
 
     private final CatChaseService catChaseService;
 
-    @Operation(summary = "라운드 시작", description = "새 라운드를 만들고 첫 문항을 함께 반환한다. 칸 번호는 0~35이다.")
+    @Operation(summary = "라운드 시작", description = """
+            진행 중인 라운드가 같은 문항 수(`questionCount`)면 새로 만들지 않고 그 라운드와 현재 문항을 반환한다.
+            문항 수가 다르면 진행 중이던 라운드는 이탈로 종료하고(코인 없음, `/finish`와 같음) 새 라운드를 만들어 첫 문항을 함께 반환한다.
+            칸 번호는 0~35이다.""")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "시작 성공"),
             @ApiResponse(responseCode = "400", description = "문항 수가 3~10이 아님"),

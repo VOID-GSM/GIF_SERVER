@@ -54,11 +54,15 @@ public class RoadMakingService {
                 roundRepository.findFirstByUserIdAndStatus(userId, RoundStatus.IN_PROGRESS);
         if (active.isPresent()) {
             RoadMakingRound round = active.get();
-            if (!round.isExpired(now)) {
+            if (round.isExpired(now)) {
+                closeExpiredRound(round, now);
+            } else if (round.getQuestionCount() == request.questionCount()) {
                 RoadMakingProblem current = findCurrentProblem(round);
                 return StartRoadMakingRoundResponse.of(round, toProblemResponse(current), now);
+            } else {
+                // 다른 문항 수로 다시 시작하면 진행 중이던 라운드는 직접 종료한 것과 같이 이탈로 처리한다 (#262)
+                round.abandon(now);
             }
-            closeExpiredRound(round, now);
         }
 
         RoadMakingRound round = roundRepository.save(
