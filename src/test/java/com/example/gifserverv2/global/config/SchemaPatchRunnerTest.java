@@ -9,6 +9,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 마이페이지 테이블이 ddl-auto 없이도 만들어지는지 MySQL 호환 모드 H2 로 확인한다.
@@ -53,6 +54,24 @@ class SchemaPatchRunnerTest {
     }
 
     @Test
+    void 커밋_코인_지급_테이블을_만들고_기존_연동_계정의_연동_시각을_채운다() {
+        jdbc.execute("ALTER TABLE users ADD COLUMN github_username VARCHAR(255) NULL");
+        jdbc.execute("CREATE TABLE coin_account (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id BIGINT NOT NULL, "
+                + "balance INT NOT NULL, last_synced_commit_count INT NOT NULL)");
+        jdbc.update("INSERT INTO users (id, email, github_username) VALUES (1, 'a@gsm.hs.kr', 'octocat'), (2, 'b@gsm.hs.kr', NULL)");
+
+        runner.run(null);
+
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM users WHERE id = 1 AND github_connected_at IS NOT NULL", Integer.class)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM users WHERE id = 2 AND github_connected_at IS NULL", Integer.class)).isEqualTo(1);
+        // 엔티티에서 빠진 커밋 수 컬럼 없이도 계정을 만들 수 있다
+        jdbc.update("INSERT INTO coin_account (user_id, balance, last_commit_synced_at) VALUES (1, 0, NULL)");
+        jdbc.update("INSERT INTO rewarded_commit (user_id, sha, fingerprint, created_at) VALUES (1, 'abc', 'fp', CURRENT_TIMESTAMP)");
+        assertThatThrownBy(() -> jdbc.update("INSERT INTO rewarded_commit (user_id, sha, fingerprint, created_at) "
+                + "VALUES (1, 'abc', 'fp2', CURRENT_TIMESTAMP)")).isInstanceOf(Exception.class);
+    }
+
+    @Test
     void 여러_번_실행해도_기존_데이터를_유지한다() {
         runner.run(null);
         jdbc.update("INSERT INTO users (id, email) VALUES (1, 'a@gsm.hs.kr')");
@@ -74,6 +93,20 @@ class SchemaPatchRunnerTest {
 
         assertThat(indexNames("TEAM_JOIN_REQUEST"))
                 .contains("IDX_TEAM_JOIN_REQUEST_USER_STATUS", "IDX_TEAM_JOIN_REQUEST_PROJECT_STATUS");
+        assertThatCode(() -> runner.run(null)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void 이미_있는_댓글_좋아요_테이블에_사용자별_조회_인덱스를_추가한다() {
+        jdbc.execute("CREATE TABLE project_comment (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, "
+                + "project_id BIGINT NOT NULL, user_id BIGINT NOT NULL, created_at DATETIME(6) NOT NULL)");
+        jdbc.execute("CREATE TABLE project_like (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, "
+                + "project_id BIGINT NOT NULL, user_id BIGINT NOT NULL, created_at DATETIME(6) NOT NULL)");
+
+        runner.run(null);
+
+        assertThat(indexNames("PROJECT_COMMENT")).contains("IDX_PROJECT_COMMENT_USER");
+        assertThat(indexNames("PROJECT_LIKE")).contains("IDX_PROJECT_LIKE_USER");
         assertThatCode(() -> runner.run(null)).doesNotThrowAnyException();
     }
 

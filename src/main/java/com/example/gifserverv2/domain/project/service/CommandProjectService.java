@@ -5,6 +5,7 @@ import com.example.gifserverv2.domain.project.dto.request.TransferLeaderRequest;
 import com.example.gifserverv2.domain.project.dto.request.UpdateProjectDescriptionRequest;
 import com.example.gifserverv2.domain.project.dto.request.UpdateProjectRequest;
 import com.example.gifserverv2.domain.project.entity.Project;
+import com.example.gifserverv2.domain.project.event.ProjectTranslationRequestedEvent;
 import com.example.gifserverv2.domain.project.exception.ProjectException;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.push.entity.PushMessageTemplate;
@@ -12,6 +13,7 @@ import com.example.gifserverv2.domain.push.service.PushSenderService;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,6 +30,7 @@ public class CommandProjectService {
     private final UserRepository userRepository;
     private final PushSenderService pushSenderService;
     private final ProjectWriterService projectWriter;
+    private final ApplicationEventPublisher eventPublisher;
 
     public void updateProject(Long projectId, Long userId, UpdateProjectRequest request, MultipartFile logo) {
         ProjectWriterService.ProjectMutationResult coreResult =
@@ -112,6 +115,9 @@ public class CommandProjectService {
         if (request != null && request.description() != null) {
             project.updateDescription(request.description());
             project.clearAiSummary();
+            if (!request.description().isBlank()) {
+                eventPublisher.publishEvent(new ProjectTranslationRequestedEvent(projectId));
+            }
         }
     }
 

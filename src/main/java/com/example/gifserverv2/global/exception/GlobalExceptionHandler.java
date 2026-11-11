@@ -9,9 +9,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
@@ -43,6 +45,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, message, request);
     }
 
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handleTypeMismatch(MethodArgumentTypeMismatchException e, HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "요청 값 '" + e.getName() + "'의 형식이 올바르지 않습니다.", request);
+    }
+
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Map<String, Object>> handleResponseStatus(ResponseStatusException e, HttpServletRequest request) {
         HttpStatus status = HttpStatus.valueOf(e.getStatusCode().value());
@@ -64,6 +71,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleUnexpected(Exception e, HttpServletRequest request) {
+        // 없는 경로(NoResourceFoundException), 지원하지 않는 메서드, 필수 파라미터 누락처럼 Spring MVC 가 상태 코드를 정해 둔 예외는
+        // 그 상태로 응답한다. (모두 500 으로 내려가면 클라이언트가 서버 오류와 구분할 수 없다)
+        if (e instanceof ErrorResponse errorResponse) {
+            HttpStatus status = HttpStatus.valueOf(errorResponse.getStatusCode().value());
+            log.warn("{} on {} {}: {}", status.value(), request.getMethod(), request.getRequestURI(), e.getMessage());
+            return buildResponse(status, errorResponse.getBody().getDetail(), request);
+        }
         log.error("Unhandled exception on {} {}", request.getMethod(), request.getRequestURI(), e);
         String message = e.getClass().getSimpleName() + (e.getMessage() != null ? ": " + e.getMessage() : "");
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, message, request);
