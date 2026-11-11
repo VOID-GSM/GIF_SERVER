@@ -3,6 +3,7 @@ package com.example.gifserverv2.domain.assessment.common;
 import com.example.gifserverv2.domain.coin.entity.CoinAccount;
 import com.example.gifserverv2.domain.coin.repository.CoinAccountRepository;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +17,7 @@ public class AssessmentCoinRewarder {
     private final CoinAccountRepository coinAccountRepository;
     private final UserRepository userRepository;
 
+    @Transactional
     public void reward(Long userId, int amount) {
         if (amount <= 0) {
             return;
@@ -26,4 +28,4 @@ public class AssessmentCoinRewarder {
         userRepository.findById(userId)
                 .ifPresent(user -> user.updateCoinBalance(account.getBalance()));
     }
-}
+    }

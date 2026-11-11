@@ -1,7 +1,14 @@
 package com.example.gifserverv2.global.security;
 
 import com.example.gifserverv2.domain.ai.service.AiSummaryService;
+import com.example.gifserverv2.domain.assessment.catchase.controller.CatChaseController;
+import com.example.gifserverv2.domain.assessment.catchase.service.CatChaseService;
+import com.example.gifserverv2.domain.assessment.roadmaking.controller.RoadMakingController;
+import com.example.gifserverv2.domain.assessment.roadmaking.service.RoadMakingService;
+import com.example.gifserverv2.domain.engagement.controller.MyEngagementController;
 import com.example.gifserverv2.domain.engagement.controller.ProjectEngagementController;
+import com.example.gifserverv2.domain.engagement.service.AnonymousViewService;
+import com.example.gifserverv2.domain.engagement.service.MyEngagementService;
 import com.example.gifserverv2.domain.engagement.service.ProjectEngagementService;
 import com.example.gifserverv2.domain.form.controller.FormController;
 import com.example.gifserverv2.domain.form.service.AdminFormService;
@@ -44,12 +51,19 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import com.example.gifserverv2.domain.engagement.service.AnonymousViewService;
-import com.example.gifserverv2.domain.engagement.controller.MyEngagementController;
-import com.example.gifserverv2.domain.engagement.service.MyEngagementService;
 
-@WebMvcTest({ProjectController.class, ProjectEngagementController.class, FormController.class, MypageController.class,
-        ItemController.class, UserController.class, UserProfileController.class, MyEngagementController.class})
+@WebMvcTest({
+        ProjectController.class,
+        ProjectEngagementController.class,
+        FormController.class,
+        MypageController.class,
+        ItemController.class,
+        UserController.class,
+        UserProfileController.class,
+        MyEngagementController.class,
+        CatChaseController.class,
+        RoadMakingController.class
+})
 @Import({SecurityConfig.class, TokenAuthenticationFilter.class})
 class AccountTypeAccessTest {
 
@@ -71,6 +85,8 @@ class AccountTypeAccessTest {
     @MockitoBean ItemService itemService;
     @MockitoBean UserService userService;
     @MockitoBean CoinSyncService coinSyncService;
+    @MockitoBean CatChaseService catChaseService;
+    @MockitoBean RoadMakingService roadMakingService;
 
     @Test
     void 외부_사용자는_마이페이지를_사용할_수_있다() throws Exception {
@@ -125,6 +141,28 @@ class AccountTypeAccessTest {
         mockMvc.perform(post("/api/items/equip").with(as(Role.EXTERNAL))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"itemIds\":[]}"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void 외부_사용자는_역량검사를_사용할_수_있다() throws Exception {
+        mockMvc.perform(post("/api/assessment/cat-chase/rounds").with(as(Role.EXTERNAL))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"questionCount\":3}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/assessment/cat-chase/rounds").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/assessment/cat-chase/ranking").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/assessment/road-making/ranking").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+    }
+
+    @Test
+    void 재학생은_역량검사를_사용할_수_있다() throws Exception {
+        mockMvc.perform(get("/api/assessment/cat-chase/ranking").with(as(Role.USER))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/assessment/road-making/ranking").with(as(Role.USER))).andExpect(status().isOk());
+    }
+
+    @Test
+    void 로그인하지_않으면_역량검사를_사용할_수_없다() throws Exception {
+        mockMvc.perform(get("/api/assessment/cat-chase/ranking")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/assessment/road-making/ranking")).andExpect(status().isUnauthorized());
     }
 
     @Test

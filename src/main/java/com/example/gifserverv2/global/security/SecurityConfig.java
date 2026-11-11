@@ -59,32 +59,46 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/signin").permitAll()
                         .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/files/**").permitAll()
-                        // 비로그인 방문자도 조회수를 올릴 수 있다. 아래 POST 인증 규칙보다 반드시 먼저 와야 한다.
+
+                        // 비로그인 방문자도 조회수를 올릴 수 있다.
+                        // 아래 POST 인증 규칙보다 반드시 먼저 와야 한다.
                         .requestMatchers(HttpMethod.POST, "/api/project/*/view").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/project/filter").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/project/{projectId:\\d+}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/project/{projectId:\\d+}/comments").permitAll()
+
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
+
                         // 외부 사용자(EXTERNAL)는 아래 조회·참여 API만 사용할 수 있다.
                         .requestMatchers(HttpMethod.GET, "/api/project/me", "/api/project/admin").hasAnyRole(SCHOOL_ROLES)
                         .requestMatchers(HttpMethod.GET, "/api/project/*", "/api/project/*/links",
                                 "/api/project/*/engagement", "/api/project/*/comments").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/project/*/comments", "/api/project/*/like").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/project/*/comments/*", "/api/project/*/like").authenticated()
+
                         .requestMatchers(HttpMethod.GET, "/api/users/me").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/users/me").authenticated()
+
                         // 마이페이지. GitHub 연동(/api/users/me/github/**)은 재학생 전용이라 열지 않는다.
                         .requestMatchers("/api/users/me/mypage", "/api/users/me/profile-image",
                                 "/api/users/me/links", "/api/users/me/links/*").authenticated()
+
                         // 마이페이지 내가 쓴 댓글·좋아요한 프로젝트
                         .requestMatchers(HttpMethod.GET, "/api/users/me/comments", "/api/users/me/likes").authenticated()
+
                         // 다른 사용자의 공개 프로필
                         .requestMatchers(HttpMethod.GET, "/api/users/{userId:\\d+}/profile").authenticated()
+
                         // Thyn 꾸미기(아이템)
                         .requestMatchers("/api/items/**").authenticated()
+
+                        // 역량검사: 일반 사용자(USER)와 외부 사용자(EXTERNAL)만 접근 가능
+                        .requestMatchers("/api/assessment/**").hasAnyRole("USER", "EXTERNAL")
+
                         .requestMatchers("/api/notifications/**", "/api/push/**").authenticated()
                         .anyRequest().hasAnyRole(SCHOOL_ROLES))
                 .addFilterBefore(tokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 

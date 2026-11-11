@@ -32,7 +32,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/assessment/cat-chase")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('USER')")
+@PreAuthorize("hasAnyRole('USER', 'EXTERNAL')")
 public class CatChaseController {
 
     private final CatChaseService catChaseService;
