@@ -31,19 +31,33 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import com.example.gifserverv2.domain.item.dto.response.MyItemsResponse;
+import com.example.gifserverv2.domain.item.service.ItemService;
 
 /**
  * 마이페이지 (#142). 활동 기록·북마크 목록은 기존 GET /api/retrospective?mine=true / ?bookmarkedOnly=true 를 사용한다.
  */
 @Tag(name = "마이페이지", description = """
         프로필 이미지·전공·기술 스택·개인 링크 관리. 활동 기록·북마크 목록은 `GET /api/retrospective?mine=true` / `?bookmarkedOnly=true`를 사용한다.
-        외부 사용자도 호출할 수 있다.""")
+        외부 사용자(`role=EXTERNAL`)도 호출할 수 있다. 외부 사용자는 `studentNumber`·`grade`·`classNo`가 null, `teams`가 빈 배열이다.""")
 @RestController
 @RequestMapping("/api/users/me")
 @RequiredArgsConstructor
 public class MypageController {
 
     private final MypageService mypageService;
+    private final ItemService itemService;
+
+
+    @Operation(summary = "내 Thyn 꾸미기 내역", description = "보유한 아이템을 최신 구매순으로 전부 반환한다. `equipped`는 카테고리별 현재 장착 아이템이다. 외부 사용자도 호출할 수 있다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "로그인하지 않았거나 사용자를 찾을 수 없음")
+    })
+    @GetMapping("/items")
+    public MyItemsResponse getMyItems(@AuthenticationPrincipal AuthenticatedUser user) {
+        return itemService.getMyItems(requireUserId(user));
+    }
 
     @Operation(summary = "마이페이지 조회")
     @ApiResponses({

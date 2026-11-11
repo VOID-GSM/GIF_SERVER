@@ -1,20 +1,33 @@
 package com.example.gifserverv2.global.security;
 
 import com.example.gifserverv2.domain.ai.service.AiSummaryService;
+import com.example.gifserverv2.domain.assessment.catchase.controller.CatChaseController;
+import com.example.gifserverv2.domain.assessment.catchase.service.CatChaseService;
+import com.example.gifserverv2.domain.assessment.roadmaking.controller.RoadMakingController;
+import com.example.gifserverv2.domain.assessment.roadmaking.service.RoadMakingService;
+import com.example.gifserverv2.domain.engagement.controller.MyEngagementController;
 import com.example.gifserverv2.domain.engagement.controller.ProjectEngagementController;
+import com.example.gifserverv2.domain.engagement.service.AnonymousViewService;
+import com.example.gifserverv2.domain.engagement.service.MyEngagementService;
 import com.example.gifserverv2.domain.engagement.service.ProjectEngagementService;
 import com.example.gifserverv2.domain.form.controller.FormController;
 import com.example.gifserverv2.domain.form.service.AdminFormService;
 import com.example.gifserverv2.domain.form.service.ClientFormService;
 import com.example.gifserverv2.domain.form.service.FormFileService;
+import com.example.gifserverv2.domain.coin.service.CoinSyncService;
+import com.example.gifserverv2.domain.item.controller.ItemController;
+import com.example.gifserverv2.domain.item.service.ItemService;
 import com.example.gifserverv2.domain.project.controller.ProjectController;
 import com.example.gifserverv2.domain.project.service.CommandProjectService;
 import com.example.gifserverv2.domain.project.service.ProjectLinkService;
 import com.example.gifserverv2.domain.project.service.ProjectNoteService;
 import com.example.gifserverv2.domain.project.service.QueryProjectService;
 import com.example.gifserverv2.domain.user.controller.MypageController;
+import com.example.gifserverv2.domain.user.controller.UserController;
+import com.example.gifserverv2.domain.user.controller.UserProfileController;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.service.MypageService;
+import com.example.gifserverv2.domain.user.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -34,12 +47,23 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import com.example.gifserverv2.domain.engagement.service.AnonymousViewService;
 
-@WebMvcTest({ProjectController.class, ProjectEngagementController.class, FormController.class, MypageController.class})
+@WebMvcTest({
+        ProjectController.class,
+        ProjectEngagementController.class,
+        FormController.class,
+        MypageController.class,
+        ItemController.class,
+        UserController.class,
+        UserProfileController.class,
+        MyEngagementController.class,
+        CatChaseController.class,
+        RoadMakingController.class
+})
 @Import({SecurityConfig.class, TokenAuthenticationFilter.class})
 class AccountTypeAccessTest {
 
@@ -57,15 +81,88 @@ class AccountTypeAccessTest {
     @MockitoBean ClientFormService clientFormService;
     @MockitoBean FormFileService formFileService;
     @MockitoBean MypageService mypageService;
+    @MockitoBean MyEngagementService myEngagementService;
+    @MockitoBean ItemService itemService;
+    @MockitoBean UserService userService;
+    @MockitoBean CoinSyncService coinSyncService;
+    @MockitoBean CatChaseService catChaseService;
+    @MockitoBean RoadMakingService roadMakingService;
 
     @Test
-    void 외부_사용자는_마이페이지를_사용할_수_없다() throws Exception {
-        mockMvc.perform(get("/api/users/me/mypage").with(as(Role.EXTERNAL)))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value(AccessDeniedCode.EXTERNAL_USER_FORBIDDEN.name()));
+    void 외부_사용자는_마이페이지를_사용할_수_있다() throws Exception {
+        mockMvc.perform(get("/api/users/me/mypage").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(patch("/api/users/me/mypage").with(as(Role.EXTERNAL))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"major\":\"디자인\"}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(multipart(HttpMethod.PUT, "/api/users/me/profile-image")
+                        .file("file", new byte[]{1}).with(as(Role.EXTERNAL)))
+                .andExpect(status().isOk());
+        mockMvc.perform(delete("/api/users/me/profile-image").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/users/me/links").with(as(Role.EXTERNAL))).andExpect(status().isOk());
         mockMvc.perform(post("/api/users/me/links").with(as(Role.EXTERNAL))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"url\":\"https://blog.example.com\"}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isCreated());
+        mockMvc.perform(patch("/api/users/me/links/1").with(as(Role.EXTERNAL))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"url\":\"https://blog.example.com\"}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(delete("/api/users/me/links/1").with(as(Role.EXTERNAL))).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void 외부_사용자도_내가_쓴_댓글과_좋아요한_프로젝트를_조회할_수_있다() throws Exception {
+        mockMvc.perform(get("/api/users/me/comments").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/users/me/likes").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/users/me/comments")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/users/me/likes")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void 로그인한_사용자는_누구나_다른_사용자_프로필을_조회할_수_있다() throws Exception {
+        for (Role role : Role.values()) {
+            mockMvc.perform(get("/api/users/2/profile").with(as(role))).andExpect(status().isOk());
+        }
+        mockMvc.perform(get("/api/users/2/profile")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void 외부_사용자는_GitHub_연동을_사용할_수_없다() throws Exception {
+        mockMvc.perform(post("/api/users/me/github/sync").with(as(Role.EXTERNAL)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(AccessDeniedCode.EXTERNAL_USER_FORBIDDEN.name()));
+    }
+
+    @Test
+    void 외부_사용자는_Thyn_꾸미기를_사용할_수_있다() throws Exception {
+        mockMvc.perform(get("/api/items").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/items/category/HAIR").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(post("/api/items/buy").with(as(Role.EXTERNAL))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"itemId\":1}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(post("/api/items/equip").with(as(Role.EXTERNAL))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"itemIds\":[]}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void 외부_사용자는_역량검사를_사용할_수_있다() throws Exception {
+        mockMvc.perform(post("/api/assessment/cat-chase/rounds").with(as(Role.EXTERNAL))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"questionCount\":3}"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/assessment/cat-chase/rounds").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/assessment/cat-chase/ranking").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/assessment/road-making/ranking").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+    }
+
+    @Test
+    void 재학생은_역량검사를_사용할_수_있다() throws Exception {
+        mockMvc.perform(get("/api/assessment/cat-chase/ranking").with(as(Role.USER))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/assessment/road-making/ranking").with(as(Role.USER))).andExpect(status().isOk());
+    }
+
+    @Test
+    void 로그인하지_않으면_역량검사를_사용할_수_없다() throws Exception {
+        mockMvc.perform(get("/api/assessment/cat-chase/ranking")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/assessment/road-making/ranking")).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -118,6 +215,13 @@ class AccountTypeAccessTest {
                 .andExpect(status().isCreated());
         mockMvc.perform(delete("/api/project/1/comments/1").with(as(Role.EXTERNAL)))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void 외부_사용자는_내_꾸미기_내역을_조회할_수_있다() throws Exception {
+        mockMvc.perform(get("/api/users/me/items").with(as(Role.EXTERNAL))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/users/me/items").with(as(Role.USER))).andExpect(status().isOk());
+        mockMvc.perform(get("/api/users/me/items")).andExpect(status().isUnauthorized());
     }
 
     @Test

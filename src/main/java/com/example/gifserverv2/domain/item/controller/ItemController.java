@@ -20,7 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
-@Tag(name = "아이템", description = "코인으로 캐릭터 꾸미기 아이템을 사고 장착한다. 코인은 GitHub 커밋 동기화와 역량검사로 얻는다.")
+@Tag(name = "아이템", description = "코인으로 캐릭터 꾸미기 아이템을 사고 장착한다. 코인은 GitHub 커밋 동기화와 역량검사로 얻는다. 외부 사용자(`role=EXTERNAL`)도 호출할 수 있으며, 외부 사용자는 GitHub 연동을 할 수 없어 역량검사로만 코인을 얻는다.")
 @RestController
 @RequestMapping("/api/items")
 @RequiredArgsConstructor

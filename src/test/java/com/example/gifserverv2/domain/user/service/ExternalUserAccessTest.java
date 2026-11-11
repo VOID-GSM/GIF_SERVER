@@ -2,7 +2,6 @@ package com.example.gifserverv2.domain.user.service;
 
 import com.example.gifserverv2.domain.auth.dto.request.UpdateCurrentUserRequest;
 import com.example.gifserverv2.domain.auth.service.GithubOAuthClient;
-import com.example.gifserverv2.domain.coin.service.GithubFetchService;
 import com.example.gifserverv2.domain.notice.controller.NoticeController;
 import com.example.gifserverv2.domain.notice.service.NoticeService;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
@@ -70,7 +69,7 @@ class ExternalUserAccessTest {
     void setUp() {
         userRepository = mock(UserRepository.class);
         jwtTokenProvider = new JwtTokenProvider(SECRET, 60);
-        userService = new UserService(userRepository, mock(GithubOAuthClient.class), mock(GithubFetchService.class),
+        userService = new UserService(userRepository, mock(GithubOAuthClient.class),
                 mock(ProjectMemberRepository.class), jwtTokenProvider);
 
         external = new UserEntity("visitor@gmail.com", "방문객", null, Role.EXTERNAL);

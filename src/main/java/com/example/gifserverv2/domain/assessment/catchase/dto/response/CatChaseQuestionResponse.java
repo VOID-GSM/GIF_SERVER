@@ -13,7 +13,7 @@ public record CatChaseQuestionResponse(
         int sequence,
         @Schema(description = "쥐가 있는 칸 번호 (0~35)", example = "[3, 14, 20]")
         List<Integer> mousePositions,
-        @Schema(description = "고양이가 있는 칸 번호 (0~35). 이 칸마다 판단을 제출한다", example = "[5, 14, 30]")
+        @Schema(description = "고양이가 있는 칸 번호 (0~35), 항상 2개. [0] = 빨간 고양이, [1] = 파란 고양이. 이 칸마다 판단을 제출한다", example = "[14, 30]")
         List<Integer> catPositions
 ) {
     public static CatChaseQuestionResponse from(CatChaseQuestion question) {

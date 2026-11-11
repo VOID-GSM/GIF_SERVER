@@ -64,6 +64,26 @@ public class SchemaPatchRunner implements ApplicationRunner {
                             "PRIMARY KEY (id))",
                     new IndexSpec("idx_team_join_request_user_status", "user_id, status"),
                     new IndexSpec("idx_team_join_request_project_status", "project_id, status")),
+            new TableSpec("rewarded_commit",
+                    "CREATE TABLE IF NOT EXISTS rewarded_commit (" +
+                            "id BIGINT NOT NULL AUTO_INCREMENT, " +
+                            "user_id BIGINT NOT NULL, " +
+                            "sha VARCHAR(40) NOT NULL, " +
+                            "fingerprint VARCHAR(64) NOT NULL, " +
+                            "created_at DATETIME(6) NOT NULL, " +
+                            "PRIMARY KEY (id), " +
+                            "CONSTRAINT uk_rewarded_commit_user_sha UNIQUE (user_id, sha))",
+                    new IndexSpec("idx_rewarded_commit_user_fingerprint", "user_id, fingerprint")),
+    };
+
+    /**
+     * 이미 있는 테이블에 나중에 추가한 인덱스. ddl-auto=update 는 기존 테이블에 인덱스를 추가하지 않는다.
+     * 테이블이 없으면 건너뛴다. (그때는 엔티티로 테이블을 만들 때 인덱스도 함께 생긴다)
+     */
+    private static final TableIndexSpec[] REQUIRED_INDEXES = {
+            // 마이페이지 내가 쓴 댓글·좋아요한 프로젝트 목록 (#248)
+            new TableIndexSpec("project_comment", new IndexSpec("idx_project_comment_user", "user_id, created_at")),
+            new TableIndexSpec("project_like", new IndexSpec("idx_project_like_user", "user_id, created_at")),
     };
 
     /**
@@ -74,6 +94,7 @@ public class SchemaPatchRunner implements ApplicationRunner {
             new ColumnSpec("form", "created_by_user_id", "BIGINT NULL"),
             new ColumnSpec("form_field", "required", "TINYINT(1) NOT NULL DEFAULT 0"),
             new ColumnSpec("form_field", "allowed_extensions", "VARCHAR(200) NULL"),
+            new ColumnSpec("user_item", "created_at", "DATETIME(6) NULL"),
             new ColumnSpec("form_submit", "deadline_complied_override", "TINYINT(1) NULL"),
             new ColumnSpec("form_field_answer", "project_id", "BIGINT NULL",
                     "UPDATE form_field_answer ffa " +
@@ -89,6 +110,15 @@ public class SchemaPatchRunner implements ApplicationRunner {
             new ColumnSpec("project_comment", "deleted_at", "DATETIME(6) NULL"),
             new ColumnSpec("users", "major", "VARCHAR(50) NULL"),
             new ColumnSpec("users", "profile_image_url", "VARCHAR(500) NULL"),
+            // 커밋 코인을 푸시 이벤트 기준으로 바꾸기 전(#250)에 연동한 계정은 배포 시각부터 집계한다
+            new ColumnSpec("users", "github_connected_at", "DATETIME(6) NULL",
+                    "UPDATE users SET github_connected_at = CURRENT_TIMESTAMP(6) " +
+                            "WHERE github_username IS NOT NULL AND github_connected_at IS NULL"),
+            new ColumnSpec("coin_account", "last_commit_synced_at", "DATETIME(6) NULL"),
+            // 프로젝트 소개·AI 요약 일본어 번역 (#257)
+            new ColumnSpec("project", "description_ja", "VARCHAR(2000) NULL"),
+            new ColumnSpec("project", "description_ja_source_hash", "VARCHAR(64) NULL"),
+            new ColumnSpec("project", "ai_summary_ja", "VARCHAR(1000) NULL"),
     };
 
     /**
@@ -100,6 +130,19 @@ public class SchemaPatchRunner implements ApplicationRunner {
             new ColumnTypeSpec("users", "role", "VARCHAR(20) NOT NULL"),
             new ColumnTypeSpec("users", "admin_role", "VARCHAR(20) NULL"),
             new ColumnTypeSpec("users", "client_role", "VARCHAR(20) NULL"),
+            new ColumnTypeSpec("cat_chase_judgment", "judgment", "VARCHAR(20) NOT NULL"),
+            new ColumnTypeSpec("cat_chase_judgment", "confidence", "VARCHAR(20) NULL"),
+    };
+
+    /**
+     * ddl-auto=update 는 NOT NULL 컬럼을 NULL 허용으로 바꾸지 않는다. NOT NULL 로 남아 있는 컬럼을 NULL 허용으로 바꾼다.
+     * enum 변환보다 뒤에 실행된다.
+     */
+    private static final ColumnTypeSpec[] COLUMNS_TO_NULLABLE = {
+            // 고양이 술래잡기 TIMEOUT 판단은 확신도가 없다
+            new ColumnTypeSpec("cat_chase_judgment", "confidence", "VARCHAR(20) NULL"),
+            // 커밋 수 기반 동기화(#250 이전)에서 쓰던 컬럼. 엔티티에서 빠져서 NOT NULL 이면 계정 생성이 실패한다
+            new ColumnTypeSpec("coin_account", "last_synced_commit_count", "INT NULL"),
     };
 
     @Override
@@ -108,11 +151,17 @@ public class SchemaPatchRunner implements ApplicationRunner {
             for (TableSpec spec : REQUIRED_TABLES) {
                 ensureTable(connection, spec);
             }
+            for (TableIndexSpec spec : REQUIRED_INDEXES) {
+                ensureIndexIfTableExists(connection, spec);
+            }
             for (ColumnSpec spec : REQUIRED_COLUMNS) {
                 ensureColumn(connection, spec);
             }
             for (ColumnTypeSpec spec : ENUM_COLUMNS_TO_VARCHAR) {
                 convertEnumColumn(connection, spec);
+            }
+            for (ColumnTypeSpec spec : COLUMNS_TO_NULLABLE) {
+                makeColumnNullable(connection, spec);
             }
         } catch (Exception e) {
             log.error("[SchemaPatch] 스키마 점검 중 DB 연결에 실패했습니다.", e);
@@ -132,6 +181,18 @@ public class SchemaPatchRunner implements ApplicationRunner {
         for (IndexSpec index : spec.indexes()) {
             ensureIndex(connection, spec.table(), index);
         }
+    }
+
+    private void ensureIndexIfTableExists(Connection connection, TableIndexSpec spec) {
+        try {
+            if (!tableExists(connection, spec.table())) {
+                return;
+            }
+        } catch (Exception e) {
+            log.error("[SchemaPatch] {} 테이블 확인 중 오류가 발생했습니다.", spec.table(), e);
+            return;
+        }
+        ensureIndex(connection, spec.table(), spec.index());
     }
 
     private void ensureIndex(Connection connection, String table, IndexSpec index) {
@@ -192,7 +253,8 @@ public class SchemaPatchRunner implements ApplicationRunner {
     private void convertEnumColumn(Connection connection, ColumnTypeSpec spec) {
         try {
             String typeName = columnTypeName(connection, spec.table(), spec.column());
-            if (!"ENUM".equalsIgnoreCase(typeName)) {
+            // MySQL 은 ENUM, H2 는 ENUM(...) 형태로 알려준다
+            if (typeName == null || !typeName.toUpperCase().startsWith("ENUM")) {
                 return;
             }
             execute(connection, "ALTER TABLE " + spec.table() + " MODIFY COLUMN " + spec.column() + " " + spec.definition());
@@ -200,6 +262,32 @@ public class SchemaPatchRunner implements ApplicationRunner {
         } catch (Exception e) {
             log.error("[SchemaPatch] {}.{} 컬럼 타입 확인/변경 중 오류가 발생했습니다.", spec.table(), spec.column(), e);
         }
+    }
+
+    private void makeColumnNullable(Connection connection, ColumnTypeSpec spec) {
+        try {
+            if (!"NO".equalsIgnoreCase(columnNullable(connection, spec.table(), spec.column()))) {
+                return;
+            }
+            execute(connection, "ALTER TABLE " + spec.table() + " MODIFY COLUMN " + spec.column() + " " + spec.definition());
+            log.warn("[SchemaPatch] {}.{} 컬럼을 NULL 허용({})으로 변경했습니다.", spec.table(), spec.column(), spec.definition());
+        } catch (Exception e) {
+            log.error("[SchemaPatch] {}.{} 컬럼 NULL 허용 확인/변경 중 오류가 발생했습니다.", spec.table(), spec.column(), e);
+        }
+    }
+
+    /** IS_NULLABLE 값(YES/NO). 컬럼이 없으면 null */
+    private String columnNullable(Connection connection, String table, String column) throws Exception {
+        DatabaseMetaData metaData = connection.getMetaData();
+        // DB 마다 식별자 대소문자 처리가 달라 소문자·대문자 모두 확인한다.
+        for (String[] name : List.of(new String[]{table, column}, new String[]{table.toUpperCase(), column.toUpperCase()})) {
+            try (ResultSet resultSet = metaData.getColumns(connection.getCatalog(), null, name[0], name[1])) {
+                if (resultSet.next()) {
+                    return resultSet.getString("IS_NULLABLE");
+                }
+            }
+        }
+        return null;
     }
 
     /** 컬럼이 없으면 null */
@@ -254,6 +342,9 @@ public class SchemaPatchRunner implements ApplicationRunner {
     }
 
     private record IndexSpec(String name, String columns) {
+    }
+
+    private record TableIndexSpec(String table, IndexSpec index) {
     }
 
     private record ColumnTypeSpec(String table, String column, String definition) {

@@ -6,6 +6,9 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import java.time.LocalDateTime;
+import jakarta.persistence.PrePersist;
+
 
 @Entity
 @Table(name = "user_item")
@@ -35,6 +38,17 @@ public class UserItem {
         this.isEquipped = isEquipped;
     }
 
+    // 필드 추가 (기존 데이터는 null)
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+
     public void equip() {
         this.isEquipped = true;
     }
@@ -42,4 +56,5 @@ public class UserItem {
     public void unequip() {
         this.isEquipped = false;
     }
+
 }

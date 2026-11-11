@@ -17,6 +17,16 @@ public interface ProjectCommentRepository extends JpaRepository<ProjectComment, 
     Page<ProjectComment> findByProjectIdAndHiddenFalseAndDeletedAtIsNullOrderByCreatedAtDescIdDesc(
             Long projectId, Pageable pageable);
 
+    // 커서 목록: (createdAt, id) 가 커서 댓글보다 앞서는(더 오래된) 댓글을 최신순으로. 숨김·삭제 제외
+    @Query("SELECT c FROM ProjectComment c WHERE c.projectId = :projectId " +
+            "AND c.hidden = false AND c.deletedAt IS NULL " +
+            "AND (c.createdAt < :createdAt OR (c.createdAt = :createdAt AND c.id < :id)) " +
+            "ORDER BY c.createdAt DESC, c.id DESC")
+    List<ProjectComment> findVisibleBefore(@Param("projectId") Long projectId,
+                                           @Param("createdAt") Instant createdAt,
+                                           @Param("id") Long id,
+                                           Pageable pageable);
+
     // 기존 메서드는 유지한다. (기존 테스트 등이 쓸 수 있음)
     Page<ProjectComment> findByProjectIdOrderByCreatedAtDescIdDesc(Long projectId, Pageable pageable);
     long countByProjectId(Long projectId);
@@ -37,6 +47,14 @@ public interface ProjectCommentRepository extends JpaRepository<ProjectComment, 
         Long getProjectId();
         long getCommentCount();
     }
+
+    // 마이페이지 내가 쓴 댓글: 숨김 포함(숨김 여부를 함께 내려준다), 삭제 제외. 없는 프로젝트의 댓글은 제외한다.
+    @Query(value = "SELECT c FROM ProjectComment c WHERE c.userId = :userId AND c.deletedAt IS NULL " +
+            "AND EXISTS (SELECT 1 FROM Project p WHERE p.id = c.projectId) " +
+            "ORDER BY c.createdAt DESC, c.id DESC",
+            countQuery = "SELECT COUNT(c) FROM ProjectComment c WHERE c.userId = :userId AND c.deletedAt IS NULL " +
+                    "AND EXISTS (SELECT 1 FROM Project p WHERE p.id = c.projectId)")
+    Page<ProjectComment> findMine(@Param("userId") Long userId, Pageable pageable);
 
     // 관리자 목록: 숨김 댓글 포함, 삭제된 댓글 제외. 프로젝트·작성자 필터는 값이 없으면 무시한다.
     @Query("SELECT c FROM ProjectComment c WHERE c.deletedAt IS NULL " +

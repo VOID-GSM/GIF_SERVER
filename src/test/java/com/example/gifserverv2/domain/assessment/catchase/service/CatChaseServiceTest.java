@@ -3,6 +3,7 @@ package com.example.gifserverv2.domain.assessment.catchase.service;
 import com.example.gifserverv2.domain.assessment.catchase.dto.request.SubmitCatChaseJudgmentsRequest;
 import com.example.gifserverv2.domain.assessment.catchase.dto.request.SubmitCatChaseJudgmentsRequest.JudgmentItem;
 import com.example.gifserverv2.domain.assessment.catchase.dto.response.CatChaseQuestionResponse;
+import com.example.gifserverv2.domain.assessment.catchase.dto.response.CatChaseRoundDetailResponse;
 import com.example.gifserverv2.domain.assessment.catchase.dto.response.CatChaseRoundResultResponse;
 import com.example.gifserverv2.domain.assessment.catchase.dto.response.SubmitCatChaseJudgmentsResponse;
 import com.example.gifserverv2.domain.assessment.catchase.entity.ConfidenceLevel;
@@ -25,8 +26,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,6 +46,7 @@ class CatChaseServiceTest {
     @Autowired UserRepository userRepository;
     @Autowired CoinAccountRepository coinAccountRepository;
     @Autowired CatChaseRoundRepository roundRepository;
+    @Autowired TestEntityManager em;
 
     Long userId;
     Long otherUserId;
@@ -107,6 +111,132 @@ class CatChaseServiceTest {
         assertThat(coinAccountRepository.findByUserId(userId)).isEmpty();
         assertThatThrownBy(() -> service.getCurrentQuestion(userId, start.roundId()))
                 .isInstanceOf(CatChaseException.class);
+    }
+
+    @Test
+    void 같은_문항_수로_다시_시작하면_진행_중인_라운드를_이어간다() {
+        var first = service.startRound(userId, new StartAssessmentRoundRequest(3));
+        service.submitJudgments(userId, first.roundId(), first.question().questionId(), answer(first.question(), true));
+
+        var again = service.startRound(userId, new StartAssessmentRoundRequest(3));
+
+        assertThat(again.roundId()).isEqualTo(first.roundId());
+        assertThat(again.questionCount()).isEqualTo(3);
+        assertThat(again.question().sequence()).isEqualTo(2);
+        assertThat(roundRepository.findAllByUserIdOrderByCreatedAtDesc(userId)).hasSize(1);
+    }
+
+    @Test
+    void 다른_문항_수로_시작하면_진행_중인_라운드는_이탈로_끝나고_새_라운드가_시작된다() {
+        var first = service.startRound(userId, new StartAssessmentRoundRequest(5));
+        service.submitJudgments(userId, first.roundId(), first.question().questionId(), answer(first.question(), true));
+
+        var second = service.startRound(userId, new StartAssessmentRoundRequest(3));
+
+        assertThat(second.roundId()).isNotEqualTo(first.roundId());
+        assertThat(second.questionCount()).isEqualTo(3);
+        assertThat(second.question().sequence()).isEqualTo(1);
+
+        CatChaseRoundResultResponse abandoned = service.finishRound(userId, first.roundId());
+        assertThat(abandoned.completed()).isFalse();
+        assertThat(abandoned.earnedCoin()).isZero();
+        assertThat(balanceOf(userId)).isZero();
+    }
+
+    @Test
+    void 문항마다_고양이는_서로_다른_칸에_정확히_2마리다() {
+        var start = service.startRound(userId, new StartAssessmentRoundRequest(10));
+        CatChaseQuestionResponse question = start.question();
+        while (question != null) {
+            assertThat(question.catPositions()).hasSize(2).doesNotHaveDuplicates()
+                    .allSatisfy(position -> assertThat(position).isBetween(0, CatChaseRound.GRID_SIZE - 1));
+            assertThat(question.mousePositions()).hasSizeBetween(1, 13);
+            question = service.submitJudgments(userId, start.roundId(), question.questionId(), answer(question, true))
+                    .nextQuestion();
+        }
+    }
+
+    @Test
+    void TIMEOUT_판단은_쥐_유무와_관계없이_오답이고_문항도_오답이다() {
+        var start = service.startRound(userId, new StartAssessmentRoundRequest(3));
+        CatChaseQuestionResponse question = start.question();
+        int red = question.catPositions().get(0);
+        int blue = question.catPositions().get(1);
+        // 파란 고양이는 맞히고 빨간 고양이만 시간 초과
+        JudgmentItem blueItem = answer(question, true).judgments().stream()
+                .filter(item -> item.position() == blue).findFirst().orElseThrow();
+        var request = new SubmitCatChaseJudgmentsRequest(List.of(new JudgmentItem(red, Judgment.TIMEOUT, null), blueItem));
+
+        SubmitCatChaseJudgmentsResponse response = service.submitJudgments(userId, start.roundId(), question.questionId(), request);
+
+        assertThat(response.correct()).isFalse();
+        assertThat(response.correctCount()).isZero();
+        CatChaseRoundDetailResponse.QuestionResult detail = service.getRound(userId, start.roundId()).questions().get(0);
+        assertThat(detail.correct()).isFalse();
+        CatChaseRoundDetailResponse.JudgmentResult timeout = detail.responses().stream()
+                .filter(r -> r.position() == red).findFirst().orElseThrow();
+        assertThat(timeout.judgment()).isEqualTo(Judgment.TIMEOUT);
+        assertThat(timeout.confidence()).isNull();
+        assertThat(timeout.correct()).isFalse();
+    }
+
+    @Test
+    void 제한_시간을_넘겨_제출하면_보낸_판단과_관계없이_TIMEOUT으로_기록한다() {
+        var start = service.startRound(userId, new StartAssessmentRoundRequest(3));
+        CatChaseQuestionResponse question = start.question();
+        // 고양이 2마리 x 10초 + 여유 2초를 넘긴 상태로 만든다
+        em.flush();
+        em.getEntityManager()
+                .createNativeQuery("update cat_chase_question set created_at = ? where id = ?")
+                .setParameter(1, LocalDateTime.now().minusSeconds(23))
+                .setParameter(2, question.questionId())
+                .executeUpdate();
+        em.clear();
+
+        SubmitCatChaseJudgmentsResponse response =
+                service.submitJudgments(userId, start.roundId(), question.questionId(), answer(question, true));
+
+        assertThat(response.correct()).isFalse();
+        assertThat(service.getRound(userId, start.roundId()).questions().get(0).responses())
+                .allSatisfy(r -> {
+                    assertThat(r.judgment()).isEqualTo(Judgment.TIMEOUT);
+                    assertThat(r.confidence()).isNull();
+                });
+    }
+
+    @Test
+    void TIMEOUT이면_확신도를_보내도_저장하지_않는다() {
+        var start = service.startRound(userId, new StartAssessmentRoundRequest(3));
+        CatChaseQuestionResponse question = start.question();
+        var request = new SubmitCatChaseJudgmentsRequest(question.catPositions().stream()
+                .map(position -> new JudgmentItem(position, Judgment.TIMEOUT, ConfidenceLevel.CONFIDENT))
+                .toList());
+
+        service.submitJudgments(userId, start.roundId(), question.questionId(), request);
+
+        assertThat(service.getRound(userId, start.roundId()).questions().get(0).responses())
+                .allSatisfy(r -> assertThat(r.confidence()).isNull());
+    }
+
+    @Test
+    void 확신도는_TIMEOUT일_때만_생략할_수_있다() {
+        Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
+
+        assertThat(validator.validate(request(new JudgmentItem(7, Judgment.TIMEOUT, null)))).isEmpty();
+        assertThat(validator.validate(request(new JudgmentItem(7, Judgment.FOUND, null)))).isNotEmpty();
+        assertThat(validator.validate(request(new JudgmentItem(7, Judgment.MISSED, null)))).isNotEmpty();
+        assertThat(validator.validate(request(new JudgmentItem(7, Judgment.FOUND, ConfidenceLevel.UNSURE)))).isEmpty();
+    }
+
+    @Test
+    void 판단이_2개가_아니면_거절한다() {
+        var start = service.startRound(userId, new StartAssessmentRoundRequest(3));
+        CatChaseQuestionResponse question = start.question();
+        var onlyRed = new SubmitCatChaseJudgmentsRequest(List.of(answer(question, true).judgments().get(0)));
+
+        assertThatThrownBy(() -> service.submitJudgments(userId, start.roundId(), question.questionId(), onlyRed))
+                .isInstanceOf(CatChaseException.class)
+                .hasMessageContaining("개수");
     }
 
     @Test
@@ -181,6 +311,10 @@ class CatChaseServiceTest {
                 })
                 .toList();
         return new SubmitCatChaseJudgmentsRequest(items);
+    }
+
+    private SubmitCatChaseJudgmentsRequest request(JudgmentItem... items) {
+        return new SubmitCatChaseJudgmentsRequest(List.of(items));
     }
 
     private int balanceOf(Long user) {

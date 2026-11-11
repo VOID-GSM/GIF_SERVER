@@ -17,6 +17,9 @@ public interface UserItemRepository extends JpaRepository<UserItem, Long> {
     @Query("SELECT ui.item.id FROM UserItem ui WHERE ui.user.id = :userId")
     List<Long> findItemIdsByUserId(@Param("userId") Long userId);
 
+    @Query("SELECT ui FROM UserItem ui JOIN FETCH ui.item WHERE ui.user.id = :userId ORDER BY ui.createdAt DESC, ui.id DESC")
+    List<UserItem> findAllByUserIdWithItemRecentFirst(@Param("userId") Long userId);
+
     boolean existsByUserIdAndItemId(Long userId, Long itemId);
 
     Optional<UserItem> findByUserIdAndItemId(Long userId, Long itemId);

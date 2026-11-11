@@ -3,6 +3,7 @@ package com.example.gifserverv2.domain.auth.service;
 import com.example.gifserverv2.domain.auth.dto.response.OAuthSignInResponse;
 import com.example.gifserverv2.domain.user.entity.AccountType;
 import com.example.gifserverv2.domain.user.entity.AdminRole;
+import com.example.gifserverv2.domain.user.entity.ClientRole;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
@@ -95,6 +96,48 @@ class AuthServiceTest {
         assertThat(existing.getAdminRole()).isEqualTo(AdminRole.MAJOR_TEACHER);
         assertThat(existing.getAdminTeam()).isEqualTo("1팀");
         assertThat(existing.isGradeHead()).isTrue();
+    }
+
+    @Test
+    void 관리자_테스트_이메일의_학생_계정은_선생님으로_가입된다() {
+        ReflectionTestUtils.setField(authService, "adminEmails", List.of(" Student@GSM.hs.kr "));
+        // 3학년이어도 차단하지 않는다
+        givenUserInfo(studentInfo(3, 3101));
+        when(userRepository.findByEmail("student@gsm.hs.kr")).thenReturn(Optional.empty());
+
+        OAuthSignInResponse response = signIn();
+
+        assertThat(response.name()).isEqualTo("김학생");
+        assertThat(response.role()).isEqualTo(Role.ADMIN.name());
+        assertThat(response.accountType()).isEqualTo(AccountType.TEACHER.name());
+        assertThat(response.studentNumber()).isNull();
+        assertThat(response.grade()).isNull();
+        assertThat(response.adminRole()).isNull();
+    }
+
+    @Test
+    void 기존_학생_계정을_관리자_테스트_이메일로_등록하면_선생님으로_전환된다() {
+        ReflectionTestUtils.setField(authService, "adminEmails", List.of("student@gsm.hs.kr"));
+        UserEntity existing = new UserEntity("student@gsm.hs.kr", "김학생", "2101", Role.USER, "2");
+        existing.updateClientAdditionalInfo(ClientRole.LEADER);
+        givenUserInfo(studentInfo(2, 2101));
+        when(userRepository.findByEmail("student@gsm.hs.kr")).thenReturn(Optional.of(existing));
+
+        OAuthSignInResponse response = signIn();
+
+        assertThat(response.role()).isEqualTo(Role.ADMIN.name());
+        assertThat(existing.getEffectiveRole()).isEqualTo(Role.ADMIN);
+        assertThat(existing.getClientRole()).isNull();
+        assertThat(existing.getStudentNumber()).isNull();
+    }
+
+    @Test
+    void 관리자_테스트_이메일이_아니면_학생은_그대로_USER다() {
+        ReflectionTestUtils.setField(authService, "adminEmails", List.of("someone-else@gsm.hs.kr"));
+        givenUserInfo(studentInfo(2, 2101));
+        when(userRepository.findByEmail("student@gsm.hs.kr")).thenReturn(Optional.empty());
+
+        assertThat(signIn().role()).isEqualTo(Role.USER.name());
     }
 
     @Test

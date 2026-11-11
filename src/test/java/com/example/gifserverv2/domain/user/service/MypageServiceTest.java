@@ -8,12 +8,14 @@ import com.example.gifserverv2.domain.user.dto.request.UpdateMypageRequest;
 import com.example.gifserverv2.domain.user.dto.request.UserLinkRequest;
 import com.example.gifserverv2.domain.user.dto.response.MypageResponse;
 import com.example.gifserverv2.domain.user.dto.response.UserLinkResponse;
+import com.example.gifserverv2.domain.user.dto.response.UserProfileResponse;
 import com.example.gifserverv2.domain.user.entity.ClientRole;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserLinkRepository;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.global.file.FileStorageService;
+import org.hibernate.Hibernate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +31,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
@@ -97,6 +100,67 @@ class MypageServiceTest {
     }
 
     @Test
+    void 외부_사용자는_학번_정보가_null이고_팀은_빈_배열이다() {
+        Long externalId = userRepository.save(new UserEntity("visitor@gmail.com", "방문객", null, Role.EXTERNAL)).getId();
+        Project project = projectRepository.save(Project.builder().name("GIF").teamName("더모먼트").build());
+        memberRepository.save(ProjectMember.builder().project(project).userId(externalId).role(ClientRole.MEMBER).part("디자인").build());
+
+        MypageResponse mypage = service.updateMypage(externalId, new UpdateMypageRequest("디자인", List.of("Figma")));
+
+        assertThat(mypage.name()).isEqualTo("방문객");
+        assertThat(mypage.studentNumber()).isNull();
+        assertThat(mypage.grade()).isNull();
+        assertThat(mypage.classNo()).isNull();
+        assertThat(mypage.teams()).isEmpty();
+        assertThat(mypage.profileImageUrl()).isNull();
+        assertThat(mypage.major()).isEqualTo("디자인");
+        assertThat(mypage.techStacks()).containsExactly("Figma");
+    }
+
+    @Test
+    void 다른_학생의_공개_프로필을_조회한다() {
+        Project member = projectRepository.save(Project.builder().name("VOID").teamName("보이드").build());
+        Project leader = projectRepository.save(Project.builder().name("GIF").teamName("더모먼트").build());
+        memberRepository.save(ProjectMember.builder().project(member).userId(userId).role(ClientRole.MEMBER).part("백엔드").build());
+        memberRepository.save(ProjectMember.builder().project(leader).userId(userId).role(ClientRole.LEADER).part("프론트엔드").build());
+        service.updateMypage(userId, new UpdateMypageRequest("백엔드", List.of("Spring")));
+        service.addLink(userId, new UserLinkRequest("블로그", "https://blog.example.com"));
+
+        UserProfileResponse profile = service.getProfile(userId);
+
+        assertThat(profile.name()).isEqualTo("김학생");
+        assertThat(profile.studentNumber()).isEqualTo("1203");
+        assertThat(profile.grade()).isEqualTo(1);
+        assertThat(profile.classNo()).isEqualTo(2);
+        assertThat(profile.major()).isEqualTo("백엔드");
+        assertThat(profile.techStacks()).containsExactly("Spring");
+        assertThat(profile.teams()).extracting(MypageResponse.TeamInfo::teamName).containsExactly("더모먼트", "보이드");
+        assertThat(profile.links()).extracting(UserLinkResponse::url).containsExactly("https://blog.example.com");
+    }
+
+    @Test
+    void 팀_목록은_프로젝트를_함께_조회한다() {
+        Project project = projectRepository.save(Project.builder().name("GIF").teamName("더모먼트").build());
+        memberRepository.save(ProjectMember.builder().project(project).userId(userId).role(ClientRole.LEADER).part("백엔드").build());
+
+        // 트랜잭션 밖에서 조회해도 프로젝트가 이미 로딩돼 있어야 멤버마다 추가 쿼리가 나가지 않는다
+        List<ProjectMember> members = memberRepository.findAllByUserId(userId);
+
+        assertThat(members).hasSize(1)
+                .allSatisfy(member -> assertThat(Hibernate.isInitialized(member.getProject())).isTrue());
+    }
+
+    @Test
+    void 학생이_아닌_계정이나_없는_사용자의_프로필은_404() {
+        Long teacherId = userRepository.save(new UserEntity("teacher@gsm.hs.kr", "김선생", null, Role.ADMIN, null)).getId();
+        Long externalId = userRepository.save(new UserEntity("visitor@gmail.com", "방문객", null, Role.EXTERNAL)).getId();
+
+        assertStatus(HttpStatus.NOT_FOUND, () -> service.getProfile(teacherId));
+        assertStatus(HttpStatus.NOT_FOUND, () -> service.getProfile(externalId));
+        assertStatus(HttpStatus.NOT_FOUND, () -> service.getProfile(externalId + 1000));
+    }
+
+    @Test
     void 전공과_기술_스택을_수정한다() {
         MypageResponse updated = service.updateMypage(userId,
                 new UpdateMypageRequest("  백엔드  ", List.of(" Spring ", "React", "spring", "MySQL")));
@@ -122,7 +186,7 @@ class MypageServiceTest {
     @Test
     void 프로필_이미지를_올리면_기존_이미지를_지우고_삭제하면_GitHub_아바타로_돌아간다() {
         UserEntity user = userRepository.findById(userId).orElseThrow();
-        user.connectGithub("octocat", "https://avatars/octocat", "token", 0);
+        user.connectGithub("octocat", "https://avatars/octocat", "token", Instant.now());
         userRepository.save(user);
         given(fileStorageService.save(any(), eq("users/profile")))
                 .willReturn("https://files/users/profile/a.png", "https://files/users/profile/b.png");
@@ -201,7 +265,8 @@ class MypageServiceTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"https://my_blog.tistory.com", "https://한글.kr/글", "HTTPS://Blog.Example.com/path?q=1"})
+    @ValueSource(strings = {"https://my_blog.tistory.com", "https://한글.kr/글", "HTTPS://Blog.Example.com/path?q=1",
+            "https://블로그.한국", "https://xn--hq1bm8jm9l.kr", "http://example.com:8080/a", "http://192.168.0.1:3000"})
     void 밑줄이나_한글_도메인도_정상_주소로_등록된다(String url) {
         assertThat(service.addLink(userId, new UserLinkRequest(null, url)).url()).isEqualTo(url);
     }
@@ -209,6 +274,15 @@ class MypageServiceTest {
     @ParameterizedTest
     @ValueSource(strings = {"http:/x", "javascript:alert(1)", "ftp://files.example.com", "blog.example.com", "https://", "http://exa mple.com"})
     void http_https가_아닌_링크는_400(String url) {
+        assertStatus(HttpStatus.BAD_REQUEST, () -> service.addLink(userId, new UserLinkRequest(null, url)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"http://:80", "https://@example.com", "https://google.com@evil.com", "https://localhost",
+            "https://example", "https://-bad.com", "https://bad-.com", "https://example..com", "https://.example.com",
+            "https://example.com.", "https://exa$mple.com", "https://example.123", "https://example.com:0",
+            "https://example.com:99999", "https://example.com:", "https://[::1]"})
+    void 호스트_형식이_잘못된_링크는_400(String url) {
         assertStatus(HttpStatus.BAD_REQUEST, () -> service.addLink(userId, new UserLinkRequest(null, url)));
     }
 

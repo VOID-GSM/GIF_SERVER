@@ -28,11 +28,15 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/assessment/road-making")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('USER')")
+@PreAuthorize("hasAnyRole('USER', 'EXTERNAL')")
 public class RoadMakingController {
     private final RoadMakingService roadMakingService;
 
-    @Operation(summary = "라운드 시작", description = "진행 중이고 시간이 남은 라운드가 있으면 새로 만들지 않고 그 라운드와 현재 문항을 반환한다. 시간이 지난 라운드는 정리한 뒤 새로 시작한다.")
+    @Operation(summary = "라운드 시작", description = """
+            진행 중이고 시간이 남은 라운드가 같은 문항 수(`questionCount`)면 새로 만들지 않고 그 라운드와 현재 문항을 반환한다.
+            문항 수가 다르면 진행 중이던 라운드는 이탈로 종료하고(코인 없음, `/finish`와 같음) 새 문항 수로 새 라운드를 시작한다.
+            시간이 지난 라운드는 정리한 뒤 새로 시작한다.
+            `questionCount`만큼 응답하면 마지막 제출 응답에 `nextProblem=null`과 `result`가 담겨 라운드가 끝난다.""")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "시작 성공"),
             @ApiResponse(responseCode = "400", description = "문항 수가 3~10이 아님"),

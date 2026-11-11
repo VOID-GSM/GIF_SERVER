@@ -2,6 +2,7 @@ package com.example.gifserverv2.domain.project.repository;
 
 import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.user.entity.ClientRole;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,6 +18,8 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, Lo
 
     List<ProjectMember> findAllByProjectId(Long projectId);
 
+    // 팀 목록에서 프로젝트 이름 등을 바로 쓰므로 프로젝트를 함께 가져온다. (멤버마다 프로젝트 조회 쿼리가 나가지 않게)
+    @EntityGraph(attributePaths = "project")
     List<ProjectMember> findAllByUserId(Long userId);
 
     Optional<ProjectMember> findByProjectIdAndUserId(Long projectId, Long userId);
