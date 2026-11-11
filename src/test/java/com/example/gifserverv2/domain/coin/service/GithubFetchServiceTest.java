@@ -97,6 +97,21 @@ class GithubFetchServiceTest {
     }
 
     @Test
+    void 새_브랜치_푸시의_저장소가_사라졌으면_그_푸시만_건너뛴다() {
+        expectJson(EVENTS, "[" + String.join(",",
+                push("2026-11-07T09:00:00Z", "o/deleted", "0000000000000000000000000000000000000000", "head1"),
+                push("2026-11-06T09:00:00Z", "o/r", "a", "b")) + "]");
+        server.expect(requestTo("https://api.github.com/repos/o/deleted"))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+        expectJson("https://api.github.com/repos/o/r/compare/a...b",
+                "{\"commits\": [" + commit("c1", "octocat", "2026-11-06T08:00:00Z", 1) + "]}");
+
+        assertThat(service.fetchPushedCommits("octocat", "token", SINCE)).extracting(PushedCommit::sha)
+                .containsExactly("c1");
+        server.verify();
+    }
+
+    @Test
     void GitHub_API_호출에_실패하면_502를_던진다() {
         server.expect(requestTo(EVENTS)).andRespond(withStatus(HttpStatus.UNAUTHORIZED));
 

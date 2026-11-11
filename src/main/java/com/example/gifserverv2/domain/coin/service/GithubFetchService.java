@@ -102,10 +102,19 @@ public class GithubFetchService {
         return pushes;
     }
 
+    /** 저장소가 지워졌거나 접근 권한이 사라졌으면 null (그 푸시는 건너뛴다) */
     private String fetchDefaultBranch(String repo, String accessToken) {
         String[] ownerAndName = repo.split("/", 2);
-        JsonNode repository = get(API + "/repos/{owner}/{repo}", accessToken, ownerAndName[0], ownerAndName[1]);
-        return repository == null ? null : repository.path("default_branch").asText(null);
+        try {
+            JsonNode repository = get(API + "/repos/{owner}/{repo}", accessToken, ownerAndName[0], ownerAndName[1]);
+            return repository == null ? null : repository.path("default_branch").asText(null);
+        } catch (ResponseStatusException e) {
+            if (e.getCause() instanceof HttpStatusCodeException cause && cause.getStatusCode().value() == 404) {
+                log.info("GitHub 저장소 조회를 건너뜁니다 (repo: {}): {}", repo, cause.getStatusCode());
+                return null;
+            }
+            throw e;
+        }
     }
 
     /** 저장소·브랜치가 지워졌거나 force push 로 before 커밋이 사라졌으면 null (그 푸시는 건너뛴다) */
