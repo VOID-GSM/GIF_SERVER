@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
@@ -55,6 +56,17 @@ public class CatChaseService {
 
     @Transactional
     public StartCatChaseRoundResponse startRound(Long userId, StartAssessmentRoundRequest request) {
+        Optional<CatChaseRound> active =
+                roundRepository.findFirstByUserIdAndFinishedAtIsNullAndQuestionCountGreaterThanOrderByCreatedAtDesc(userId, 0);
+        if (active.isPresent()) {
+            CatChaseRound round = active.get();
+            if (round.getQuestionCount() == request.questionCount()) {
+                return StartCatChaseRoundResponse.of(round, CatChaseQuestionResponse.from(findCurrentQuestion(round)));
+            }
+            // 다른 문항 수로 다시 시작하면 진행 중이던 라운드는 직접 종료한 것과 같이 이탈로 처리한다 (#262)
+            round.abandon(LocalDateTime.now());
+        }
+
         CatChaseRound round = roundRepository.save(CatChaseRound.start(userId, request.questionCount()));
         CatChaseQuestion first = issueQuestion(round);
         return StartCatChaseRoundResponse.of(round, CatChaseQuestionResponse.from(first));
