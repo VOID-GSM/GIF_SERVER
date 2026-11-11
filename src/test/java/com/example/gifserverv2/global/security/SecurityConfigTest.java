@@ -1,5 +1,6 @@
 package com.example.gifserverv2.global.security;
 
+import com.example.gifserverv2.domain.ai.service.AiSummaryService;
 import com.example.gifserverv2.domain.engagement.controller.ProjectEngagementController;
 import com.example.gifserverv2.domain.engagement.service.AnonymousViewService;
 import com.example.gifserverv2.domain.engagement.service.ProjectEngagementService;
@@ -34,6 +35,7 @@ class SecurityConfigTest {
     @MockitoBean CommandProjectService commandProjectService;
     @MockitoBean ProjectNoteService projectNoteService;
     @MockitoBean ProjectLinkService projectLinkService;
+    @MockitoBean AiSummaryService aiSummaryService;
     @MockitoBean JpaMetamodelMappingContext jpaMetamodelMappingContext;
 
     @Test
