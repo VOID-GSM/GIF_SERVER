@@ -7,7 +7,9 @@ import com.example.gifserverv2.domain.assessment.ranking.service.AssessmentRanki
 import com.example.gifserverv2.domain.assessment.ranking.service.AssessmentRecord;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.request.FencePosition;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingProblemResponse;
+import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingRoundDetailResponse;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingRoundResultResponse;
+import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingRoundSummaryResponse;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.StartRoadMakingRoundResponse;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.request.SubmitRoadMakingAnswerRequest;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.SubmitRoadMakingAnswerResponse;
@@ -119,11 +121,14 @@ public class RoadMakingService {
 
         // 한 문항은 한 번만 응답할 수 있고, 맞히든 틀리든 다음 문항으로 넘어간다
         problem.increaseAttempt();
+        String submittedFences = boardMapper.toFencesJson(request.fences().stream()
+                .map(position -> new Position(position.row(), position.col()))
+                .toList());
         if (correct) {
-            problem.markSolved(now);
+            problem.markSolved(now, submittedFences);
             round.markSolved();
         } else {
-            problem.markWrong();
+            problem.markWrong(submittedFences);
             round.markWrong();
         }
 
@@ -150,6 +155,35 @@ public class RoadMakingService {
             }
         }
         return RoadMakingRoundResultResponse.from(round);
+    }
+
+    /** 내 라운드 목록 (최신순). 제한 시간이 지난 진행 중 라운드는 종료 처리한 뒤 보여 준다 */
+    @Transactional
+    public List<RoadMakingRoundSummaryResponse> getMyRounds(Long userId) {
+        LocalDateTime now = LocalDateTime.now();
+        roundRepository.findFirstByUserIdAndStatus(userId, RoundStatus.IN_PROGRESS)
+                .filter(round -> round.isExpired(now))
+                .ifPresent(round -> closeExpiredRound(round, now));
+        return roundRepository.findAllByUserIdOrderByStartedAtDescIdDesc(userId).stream()
+                .map(RoadMakingRoundSummaryResponse::from)
+                .toList();
+    }
+
+    /** 내 라운드 상세. 본인 라운드가 아니거나 없으면 404 */
+    @Transactional
+    public RoadMakingRoundDetailResponse getRound(Long userId, Long roundId) {
+        LocalDateTime now = LocalDateTime.now();
+        RoadMakingRound round = getOwnedRound(userId, roundId);
+        if (round.isInProgress() && round.isExpired(now)) {
+            closeExpiredRound(round, now);
+        }
+        List<RoadMakingRoundDetailResponse.ProblemResult> problems = problemRepository.findAllByRoundIdOrderBySequenceAsc(roundId).stream()
+                .map(problem -> RoadMakingRoundDetailResponse.ProblemResult.of(
+                        problem,
+                        boardMapper.fromJson(problem.getBoardJson()),
+                        problem.getSubmittedFencesJson() == null ? null : boardMapper.fencesFromJson(problem.getSubmittedFencesJson())))
+                .toList();
+        return RoadMakingRoundDetailResponse.of(round, problems);
     }
 
     @Transactional(readOnly = true)

@@ -8,8 +8,11 @@ import com.example.gifserverv2.domain.assessment.roadmaking.repository.RoadMakin
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.request.FencePosition;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.request.SubmitRoadMakingAnswerRequest;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingProblemResponse;
+import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingRoundDetailResponse;
+import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingRoundSummaryResponse;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingRoundResultResponse;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.SubmitRoadMakingAnswerResponse;
+import com.example.gifserverv2.domain.assessment.roadmaking.exception.RoadMakingErrorCode;
 import com.example.gifserverv2.domain.assessment.roadmaking.exception.RoadMakingException;
 import com.example.gifserverv2.domain.assessment.roadmaking.model.Person;
 import com.example.gifserverv2.domain.assessment.roadmaking.model.Position;
@@ -27,6 +30,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -165,6 +169,90 @@ class RoadMakingServiceTest {
         var start = service.startRound(userId, new StartAssessmentRoundRequest(4));
 
         assertThat(service.finishRound(userId, start.roundId()).questionCount()).isEqualTo(4);
+    }
+
+    @Test
+    void 내_라운드_목록은_최신순이고_진행_중인_라운드를_구분한다() {
+        var abandoned = service.startRound(userId, new StartAssessmentRoundRequest(5));
+        service.submit(userId, abandoned.roundId(), abandoned.problem().problemId(), anyFences(abandoned.problem()));
+        service.finishRound(userId, abandoned.roundId());
+        var inProgress = service.startRound(userId, new StartAssessmentRoundRequest(3));
+        Long otherUserId = userRepository.save(new UserEntity("b@gsm.hs.kr", "김철수", "1102", Role.USER, "1")).getId();
+        service.startRound(otherUserId, new StartAssessmentRoundRequest(3));
+
+        List<RoadMakingRoundSummaryResponse> rounds = service.getMyRounds(userId);
+
+        assertThat(rounds).extracting(RoadMakingRoundSummaryResponse::roundId)
+                .containsExactly(inProgress.roundId(), abandoned.roundId());
+        RoadMakingRoundSummaryResponse current = rounds.get(0);
+        assertThat(current.finished()).isFalse();
+        assertThat(current.elapsedSeconds()).isNull();
+        RoadMakingRoundSummaryResponse finished = rounds.get(1);
+        assertThat(finished.finished()).isTrue();
+        assertThat(finished.completed()).isFalse();
+        assertThat(finished.questionCount()).isEqualTo(5);
+        assertThat(finished.solvedCount() + finished.wrongCount()).isEqualTo(1);
+        assertThat(finished.accuracy()).isEqualTo(finished.solvedCount() == 1 ? 100.0 : 0.0);
+        assertThat(finished.elapsedSeconds()).isNotNull();
+        assertThat(finished.earnedCoin()).isZero();
+    }
+
+    @Test
+    void 제한_시간이_지난_라운드는_목록_조회_시_종료되고_코인이_지급된다() {
+        var start = service.startRound(userId, new StartAssessmentRoundRequest(5));
+        var submitted = service.submit(userId, start.roundId(), start.problem().problemId(), anyFences(start.problem()));
+        RoadMakingRound round = roundRepository.findById(start.roundId()).orElseThrow();
+        ReflectionTestUtils.setField(round, "startedAt", LocalDateTime.now().minusMinutes(10));
+        ReflectionTestUtils.setField(round, "expiresAt", LocalDateTime.now().minusMinutes(5));
+        roundRepository.saveAndFlush(round);
+
+        RoadMakingRoundSummaryResponse summary = service.getMyRounds(userId).get(0);
+
+        assertThat(summary.finished()).isTrue();
+        assertThat(summary.completed()).isTrue();
+        assertThat(summary.elapsedSeconds()).isEqualTo(300);
+        assertThat(summary.earnedCoin()).isEqualTo(submitted.correct() ? 30 : 0);
+        assertThat(balanceOf(userId)).isEqualTo(summary.earnedCoin());
+    }
+
+    @Test
+    void 라운드_상세에_문항별_문제와_제출한_울타리와_정답_여부가_담긴다() {
+        var start = service.startRound(userId, new StartAssessmentRoundRequest(3));
+        SubmitRoadMakingAnswerRequest firstAnswer = anyFences(start.problem());
+        var first = service.submit(userId, start.roundId(), start.problem().problemId(), firstAnswer);
+
+        RoadMakingRoundDetailResponse detail = service.getRound(userId, start.roundId());
+
+        assertThat(detail.roundId()).isEqualTo(start.roundId());
+        assertThat(detail.finished()).isFalse();
+        assertThat(detail.problems()).hasSize(2);
+        RoadMakingRoundDetailResponse.ProblemResult answered = detail.problems().get(0);
+        assertThat(answered.problemId()).isEqualTo(start.problem().problemId());
+        assertThat(answered.sequence()).isEqualTo(1);
+        assertThat(answered.vehicles()).isEqualTo(start.problem().vehicles());
+        assertThat(answered.people()).isEqualTo(start.problem().people());
+        assertThat(answered.minFenceCount()).isEqualTo(start.problem().minFenceCount());
+        assertThat(answered.answered()).isTrue();
+        assertThat(answered.correct()).isEqualTo(first.correct());
+        assertThat(answered.submittedFences()).containsExactlyElementsOf(firstAnswer.fences().stream()
+                .map(fence -> new Position(fence.row(), fence.col()))
+                .toList());
+        RoadMakingRoundDetailResponse.ProblemResult current = detail.problems().get(1);
+        assertThat(current.answered()).isFalse();
+        assertThat(current.submittedFences()).isNull();
+    }
+
+    @Test
+    void 다른_사용자의_라운드나_없는_라운드의_상세는_404() {
+        var start = service.startRound(userId, new StartAssessmentRoundRequest(3));
+        Long otherUserId = userRepository.save(new UserEntity("b@gsm.hs.kr", "김철수", "1102", Role.USER, "1")).getId();
+
+        assertThatThrownBy(() -> service.getRound(otherUserId, start.roundId()))
+                .isInstanceOfSatisfying(RoadMakingException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(RoadMakingErrorCode.ROUND_NOT_FOUND));
+        assertThatThrownBy(() -> service.getRound(userId, start.roundId() + 1000))
+                .isInstanceOfSatisfying(RoadMakingException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(RoadMakingErrorCode.ROUND_NOT_FOUND));
     }
 
     /** 빈 칸에 요구 개수만큼 울타리를 놓는다 (정답 여부는 상관없음) */

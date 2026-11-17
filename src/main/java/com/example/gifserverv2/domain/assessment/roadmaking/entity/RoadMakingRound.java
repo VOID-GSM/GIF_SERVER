@@ -83,6 +83,17 @@ public class RoadMakingRound {
         return solvedCount + wrongCount;
     }
 
+    /** 정답률 (%, 소수 첫째 자리). 응답한 문항이 없으면 0 */
+    public double getAccuracy() {
+        int answered = getAnsweredCount();
+        return answered == 0 ? 0 : Math.round(solvedCount * 1000.0 / answered) / 10.0;
+    }
+
+    /** 소요 시간 (초). 진행 중이면 null */
+    public Long getElapsedSeconds() {
+        return finishedAt == null ? null : Duration.between(startedAt, finishedAt).getSeconds();
+    }
+
     public boolean isAllAnswered() {
         return getAnsweredCount() >= questionCount;
     }

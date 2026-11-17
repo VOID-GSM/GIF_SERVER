@@ -18,4 +18,6 @@ public interface RoadMakingRoundRepository extends JpaRepository<RoadMakingRound
     Optional<RoadMakingRound> findFirstByUserIdAndStatus(Long userId, RoundStatus status);
 
     List<RoadMakingRound> findAllByCompletedTrueAndQuestionCount(int questionCount);
+
+    List<RoadMakingRound> findAllByUserIdOrderByStartedAtDescIdDesc(Long userId);
 }
