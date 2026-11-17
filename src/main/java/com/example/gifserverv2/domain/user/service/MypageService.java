@@ -68,9 +68,12 @@ public class MypageService {
     @Transactional(readOnly = true)
     public UserProfileResponse getProfile(Long userId) {
         UserEntity user = userRepository.findById(userId)
-                .filter(found -> AccountType.of(found) != AccountType.TEACHER)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
-        return UserProfileResponse.from(buildMypage(user), AccountType.of(user));
+        AccountType accountType = AccountType.of(user);
+        if (accountType == AccountType.TEACHER) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다.");
+        }
+        return UserProfileResponse.from(buildMypage(user), accountType);
     }
 
     @Transactional
