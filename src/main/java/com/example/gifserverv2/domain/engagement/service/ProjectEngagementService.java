@@ -166,10 +166,8 @@ public class ProjectEngagementService {
 
         return comments.stream()
                 .map(c -> {
-                    UserEntity author = authors.get(c.getUserId());
-                    String profileImage = author != null ? author.getDisplayProfileImageUrl() : null;
                     boolean mine = userId != null && c.isOwnedBy(userId); // 비로그인이면 항상 false
-                    return CommentResponse.from(c, profileImage, mine);
+                    return CommentResponse.from(c, authors.get(c.getUserId()), mine);
                 })
                 .toList();
     }
@@ -183,7 +181,7 @@ public class ProjectEngagementService {
         ProjectComment saved = commentRepository.save(
                 new ProjectComment(projectId, userId, author.getName(), request.content().trim()));
         // 방금 작성한 댓글이라 본인 댓글이다.
-        return CommentResponse.from(saved, author.getDisplayProfileImageUrl(), true);
+        return CommentResponse.from(saved, author, true);
     }
 
     @Transactional

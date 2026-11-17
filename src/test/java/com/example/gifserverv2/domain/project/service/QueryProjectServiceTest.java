@@ -10,6 +10,7 @@ import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.event.ProjectTranslationRequestedEvent;
 import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.user.entity.AccountType;
 import com.example.gifserverv2.domain.user.entity.ClientRole;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
@@ -71,18 +72,23 @@ class QueryProjectServiceTest {
     }
 
     @Test
-    void 공개_상세의_팀원에는_프로필_조회용_userId가_담긴다() {
+    void 상세의_팀원에는_프로필_조회용_userId와_계정_유형이_담긴다() {
         Long memberId = userRepository.save(new UserEntity("s24001@gsm.hs.kr", "김학생", "1203", Role.USER)).getId();
         Project project = projectRepository.findById(likedProjectId).orElseThrow();
         memberRepository.save(ProjectMember.builder().project(project).userId(memberId).role(ClientRole.LEADER).part("백엔드").build());
 
-        PublicDetailProjectResponse detail = service.getPublicProject(likedProjectId, null, Language.KO);
+        PublicDetailProjectResponse publicDetail = service.getPublicProject(likedProjectId, null, Language.KO);
+        DetailProjectResponse detail = service.getProject(likedProjectId, USER_ID, Language.KO);
 
-        assertThat(detail.members())
+        assertThat(publicDetail.members())
                 .extracting(PublicDetailProjectResponse.PublicMemberInfo::userId,
                         PublicDetailProjectResponse.PublicMemberInfo::name,
-                        PublicDetailProjectResponse.PublicMemberInfo::role)
-                .containsExactly(tuple(memberId, "김학생", "LEADER"));
+                        PublicDetailProjectResponse.PublicMemberInfo::role,
+                        PublicDetailProjectResponse.PublicMemberInfo::accountType)
+                .containsExactly(tuple(memberId, "김학생", "LEADER", AccountType.STUDENT));
+        assertThat(detail.members())
+                .extracting(DetailProjectResponse.MemberInfo::userId, DetailProjectResponse.MemberInfo::accountType)
+                .containsExactly(tuple(memberId, AccountType.STUDENT));
     }
 
     @Test

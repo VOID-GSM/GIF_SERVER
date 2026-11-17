@@ -12,6 +12,7 @@ import com.example.gifserverv2.domain.engagement.repository.ProjectViewCountRepo
 import com.example.gifserverv2.domain.engagement.repository.ProjectViewRepository;
 import com.example.gifserverv2.domain.project.entity.Project;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.user.entity.AccountType;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.example.gifserverv2.domain.user.repository.UserRepository;
@@ -135,13 +136,14 @@ class ProjectEngagementServiceTest {
         service.createComment(projectId, otherUserId, new CreateCommentRequest("두 번째"));
 
         assertThat(created.content()).isEqualTo("멋진 프로젝트네요!");
-        assertThat(created.author()).isEqualTo(new CommentResponse.Author(userId, "홍길동", null));
+        assertThat(created.author()).isEqualTo(new CommentResponse.Author(userId, "홍길동", null, AccountType.STUDENT));
         assertThat(created.isMine()).isTrue(); // 방금 작성한 댓글은 본인 댓글
 
         CommentPageResponse firstPage = service.getComments(projectId, userId, 1, 1);
         assertThat(firstPage.totalElements()).isEqualTo(2);
         assertThat(firstPage.hasNext()).isTrue();
         assertThat(firstPage.content()).extracting(CommentResponse::content).containsExactly("두 번째");
+        assertThat(firstPage.content().get(0).author().accountType()).isEqualTo(AccountType.STUDENT);
         assertThat(service.getComments(projectId, userId, 2, 1).hasNext()).isFalse();
 
         EngagementResponse engagement = service.getEngagement(projectId, userId);
