@@ -22,13 +22,14 @@ public class UserProfileController {
     private final MypageService mypageService;
 
     @Operation(summary = "공개 프로필 조회", description = """
-            프로젝트 팀원 등 다른 사용자의 프로필을 조회한다. 마이페이지 응답에서 `email`, `customProfileImage`를 뺀 형태이며,
+            프로젝트 팀원·댓글 작성자 등 다른 사용자의 프로필을 조회한다. 마이페이지 응답에서 `email`, `customProfileImage`를 빼고 `accountType`을 더한 형태이며,
             프로필 이미지와 팀 정렬 규칙(팀장인 팀 먼저)은 마이페이지와 같다.
-            학생 계정만 조회할 수 있다. 선생님·외부 사용자 계정은 존재 여부를 드러내지 않도록 없는 사용자와 같이 404를 반환한다.""")
+            학생(`STUDENT`)·외부 사용자(`EXTERNAL`) 계정을 조회할 수 있다. 외부 사용자는 `studentNumber`·`grade`·`classNo`가 null, `teams`가 빈 배열이다.
+            선생님 계정은 존재 여부를 드러내지 않도록 없는 사용자와 같이 404를 반환한다.""")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "401", description = "로그인하지 않음"),
-            @ApiResponse(responseCode = "404", description = "없는 사용자이거나 학생 계정이 아님")
+            @ApiResponse(responseCode = "404", description = "없는 사용자이거나 선생님 계정")
     })
     @GetMapping("/{userId:\\d+}/profile")
     public UserProfileResponse getProfile(@Parameter(description = "조회할 사용자 ID", example = "12") @PathVariable Long userId) {
