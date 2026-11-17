@@ -119,11 +119,14 @@ public class RoadMakingService {
 
         // 한 문항은 한 번만 응답할 수 있고, 맞히든 틀리든 다음 문항으로 넘어간다
         problem.increaseAttempt();
+        String submittedFences = boardMapper.toFencesJson(request.fences().stream()
+                .map(position -> new Position(position.row(), position.col()))
+                .toList());
         if (correct) {
-            problem.markSolved(now);
+            problem.markSolved(now, submittedFences);
             round.markSolved();
         } else {
-            problem.markWrong();
+            problem.markWrong(submittedFences);
             round.markWrong();
         }
 

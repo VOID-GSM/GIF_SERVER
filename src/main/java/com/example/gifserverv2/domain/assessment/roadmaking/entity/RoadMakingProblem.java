@@ -49,6 +49,10 @@ public class RoadMakingProblem {
     @Column(nullable = false)
     private int attemptCount;
 
+    // 제출한 울타리 위치 (Position 목록 JSON). 응답 전이거나 저장 도입 이전에 응답한 문항은 null
+    @Column(name = "submitted_fences", columnDefinition = "TEXT")
+    private String submittedFencesJson;
+
     @Column(nullable = false)
     private LocalDateTime issuedAt;
 
@@ -77,13 +81,15 @@ public class RoadMakingProblem {
         return answered || solved;
     }
 
-    public void markSolved(LocalDateTime now) {
+    public void markSolved(LocalDateTime now, String submittedFencesJson) {
+        this.submittedFencesJson = submittedFencesJson;
         this.solved = true;
         this.answered = true;
         this.solvedAt = now;
     }
 
-    public void markWrong() {
+    public void markWrong(String submittedFencesJson) {
+        this.submittedFencesJson = submittedFencesJson;
         this.answered = true;
     }
 }
