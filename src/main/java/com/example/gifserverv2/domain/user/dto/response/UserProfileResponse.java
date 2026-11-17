@@ -16,7 +16,8 @@ public record UserProfileResponse(
         String name,
         @Schema(description = "프로필 이미지 URL. 업로드한 이미지 > GitHub 아바타 > null 순")
         String profileImageUrl,
-        @Schema(description = "계정 유형. STUDENT(학교) / EXTERNAL(외부)", example = "STUDENT")
+        @Schema(description = "계정 유형. STUDENT(학교) / EXTERNAL(외부)", example = "STUDENT",
+                allowableValues = {"STUDENT", "EXTERNAL"})
         AccountType accountType,
         @Schema(description = "학번. 외부 사용자는 null", example = "2101")
         String studentNumber,
