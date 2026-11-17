@@ -88,7 +88,7 @@ public class ProjectController {
     @Operation(summary = "프로젝트 상세 조회", description = """
             로그인 없이 호출할 수 있다(토큰은 선택). 호출자에 따라 응답 형태가 다르다.
             - 학생·선생님: `DetailProjectResponse` (팀원의 `userId`, `studentNumber` 포함)
-            - 비로그인·외부 사용자: `PublicDetailProjectResponse` (팀원 이름·역할만)
+            - 비로그인·외부 사용자: `PublicDetailProjectResponse` (팀원 `userId`·이름·역할만)
 
             조회만으로는 조회수가 늘지 않는다. 조회수 증가는 `POST /api/project/{projectId}/view`를 따로 호출한다.
             비로그인이면 `isLiked`는 항상 false다.

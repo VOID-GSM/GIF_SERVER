@@ -6,8 +6,14 @@ import com.example.gifserverv2.domain.project.dto.response.DetailProjectResponse
 import com.example.gifserverv2.domain.project.dto.response.ListProjectResponse;
 import com.example.gifserverv2.domain.project.dto.response.PublicDetailProjectResponse;
 import com.example.gifserverv2.domain.project.entity.Project;
+import com.example.gifserverv2.domain.project.entity.ProjectMember;
 import com.example.gifserverv2.domain.project.event.ProjectTranslationRequestedEvent;
+import com.example.gifserverv2.domain.project.repository.ProjectMemberRepository;
 import com.example.gifserverv2.domain.project.repository.ProjectRepository;
+import com.example.gifserverv2.domain.user.entity.ClientRole;
+import com.example.gifserverv2.domain.user.entity.Role;
+import com.example.gifserverv2.domain.user.entity.UserEntity;
+import com.example.gifserverv2.domain.user.repository.UserRepository;
 import com.example.gifserverv2.global.i18n.Language;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -41,6 +47,8 @@ class QueryProjectServiceTest {
     @Autowired QueryProjectService service;
     @Autowired ProjectRepository projectRepository;
     @Autowired ProjectLikeRepository likeRepository;
+    @Autowired ProjectMemberRepository memberRepository;
+    @Autowired UserRepository userRepository;
     @Autowired ApplicationEvents events;
 
     Long likedProjectId;
@@ -57,7 +65,24 @@ class QueryProjectServiceTest {
     @AfterEach
     void tearDown() {
         likeRepository.deleteAll();
+        memberRepository.deleteAll();
         projectRepository.deleteAll();
+        userRepository.deleteAll();
+    }
+
+    @Test
+    void 공개_상세의_팀원에는_프로필_조회용_userId가_담긴다() {
+        Long memberId = userRepository.save(new UserEntity("s24001@gsm.hs.kr", "김학생", "1203", Role.USER)).getId();
+        Project project = projectRepository.findById(likedProjectId).orElseThrow();
+        memberRepository.save(ProjectMember.builder().project(project).userId(memberId).role(ClientRole.LEADER).part("백엔드").build());
+
+        PublicDetailProjectResponse detail = service.getPublicProject(likedProjectId, null, Language.KO);
+
+        assertThat(detail.members())
+                .extracting(PublicDetailProjectResponse.PublicMemberInfo::userId,
+                        PublicDetailProjectResponse.PublicMemberInfo::name,
+                        PublicDetailProjectResponse.PublicMemberInfo::role)
+                .containsExactly(tuple(memberId, "김학생", "LEADER"));
     }
 
     @Test

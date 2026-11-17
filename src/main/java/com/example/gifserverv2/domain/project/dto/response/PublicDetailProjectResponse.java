@@ -8,8 +8,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.Map;
 
-// 비로그인/외부 사용자용 응답. 팀원의 학번, userId는 담지 않는다.
-@Schema(description = "프로젝트 상세 (비로그인·외부 사용자용). 팀원의 userId·학번은 포함하지 않는다")
+// 비로그인/외부 사용자용 응답. 팀원의 학번은 담지 않는다. userId는 프로필 진입용으로 담는다.
+@Schema(description = "프로젝트 상세 (비로그인·외부 사용자용). 팀원의 학번은 포함하지 않는다")
 public record PublicDetailProjectResponse(
         @Schema(description = "프로젝트 ID", example = "1")
         Long id,
@@ -39,6 +39,8 @@ public record PublicDetailProjectResponse(
 
     @Schema(description = "팀원 정보 (공개용)")
     public record PublicMemberInfo(
+            @Schema(description = "팀원 userId (프로필 조회용)", example = "12")
+            Long userId,
             @Schema(description = "이름", example = "홍길동")
             String name,
             @Schema(description = "팀 내 역할. LEADER / MEMBER", example = "MEMBER")
@@ -51,7 +53,7 @@ public record PublicDetailProjectResponse(
         List<PublicMemberInfo> members = project.getMembers().stream()
                 .map(m -> {
                     UserEntity user = userMap.get(m.getUserId());
-                    return new PublicMemberInfo(user != null ? user.getName() : null, m.getRole().name());
+                    return new PublicMemberInfo(m.getUserId(), user != null ? user.getName() : null, m.getRole().name());
                 })
                 .toList();
 
