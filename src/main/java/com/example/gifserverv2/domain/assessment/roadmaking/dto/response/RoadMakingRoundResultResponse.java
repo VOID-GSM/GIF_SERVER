@@ -3,8 +3,6 @@ package com.example.gifserverv2.domain.assessment.roadmaking.dto.response;
 import com.example.gifserverv2.domain.assessment.roadmaking.entity.RoadMakingRound;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.Duration;
-
 @Schema(description = "길 만들기 라운드 결과")
 public record RoadMakingRoundResultResponse(
         @Schema(description = "라운드 ID", example = "11")
@@ -25,10 +23,7 @@ public record RoadMakingRoundResultResponse(
         int earnedCoin
 ) {
     public static RoadMakingRoundResultResponse from(RoadMakingRound round) {
-        int attempts = round.getAnsweredCount();
-        double accuracy = attempts == 0 ? 0 : Math.round(round.getSolvedCount() * 1000.0 / attempts) / 10.0;
-        long elapsed = Duration.between(round.getStartedAt(), round.getFinishedAt()).getSeconds();
         return new RoadMakingRoundResultResponse(round.getId(), round.getQuestionCount(), round.getSolvedCount(),
-                round.getWrongCount(), accuracy, elapsed, round.isCompleted(), round.getEarnedCoin());
+                round.getWrongCount(), round.getAccuracy(), round.getElapsedSeconds(), round.isCompleted(), round.getEarnedCoin());
     }
 }

@@ -4,7 +4,9 @@ import com.example.gifserverv2.domain.assessment.common.dto.StartAssessmentRound
 import com.example.gifserverv2.domain.assessment.ranking.dto.AssessmentRankingResponse;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.request.SubmitRoadMakingAnswerRequest;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingProblemResponse;
+import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingRoundDetailResponse;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingRoundResultResponse;
+import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.RoadMakingRoundSummaryResponse;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.StartRoadMakingRoundResponse;
 import com.example.gifserverv2.domain.assessment.roadmaking.dto.response.SubmitRoadMakingAnswerResponse;
 import com.example.gifserverv2.domain.assessment.roadmaking.service.RoadMakingService;
@@ -21,6 +23,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Tag(name = "역량검사 - 길 만들기", description = """
         격자에 차량(위치·방향)과 같은 색 사람이 주어지면, 정확히 `minFenceCount`개의 울타리를 놓아 모든 차량이 같은 색 사람에게 도착하게 한다.
@@ -116,5 +120,33 @@ public class RoadMakingController {
             @Parameter(description = "라운드 ID", example = "11") @PathVariable Long roundId
     ) {
         return ResponseEntity.ok(roadMakingService.finishRound(user.userId(), roundId));
+    }
+
+    @Operation(summary = "내 라운드 목록", description = """
+            최신순으로 반환한다. 진행 중인 라운드는 `finished=false`, `elapsedSeconds=null`이다.
+            제한 시간이 지났는데 아직 종료되지 않은 라운드는 조회 시 종료 처리한다(1문항 이상 응답했으면 완료, 아니면 이탈).""")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "403", description = "학생이 아님")
+    })
+    @GetMapping("/rounds")
+    public ResponseEntity<List<RoadMakingRoundSummaryResponse>> getMyRounds(@AuthenticationPrincipal AuthenticatedUser user) {
+        return ResponseEntity.ok(roadMakingService.getMyRounds(user.userId()));
+    }
+
+    @Operation(summary = "라운드 상세 결과", description = """
+            목록 항목과 함께 문항별 문제(격자·차량·사람·울타리 개수), 제출한 울타리 위치, 정답 여부를 반환한다.
+            제출 답 저장 이전에 응답한 문항은 `submittedFences`가 null이다.""")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "403", description = "학생이 아님"),
+            @ApiResponse(responseCode = "404", description = "라운드가 없거나 내 라운드가 아님")
+    })
+    @GetMapping("/rounds/{roundId}")
+    public ResponseEntity<RoadMakingRoundDetailResponse> getRound(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @Parameter(description = "라운드 ID", example = "11") @PathVariable Long roundId
+    ) {
+        return ResponseEntity.ok(roadMakingService.getRound(user.userId(), roundId));
     }
 }
