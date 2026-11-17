@@ -7,6 +7,7 @@ import com.example.gifserverv2.domain.user.dto.request.UserLinkRequest;
 import com.example.gifserverv2.domain.user.dto.response.MypageResponse;
 import com.example.gifserverv2.domain.user.dto.response.UserLinkResponse;
 import com.example.gifserverv2.domain.user.dto.response.UserProfileResponse;
+import com.example.gifserverv2.domain.user.entity.AccountType;
 import com.example.gifserverv2.domain.user.entity.ClientRole;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
@@ -63,13 +64,16 @@ public class MypageService {
         return buildMypage(requireUser(userId));
     }
 
-    /** 다른 사용자의 공개 프로필. 학생 계정만 조회할 수 있고, 그 외 계정은 없는 사용자와 같이 404 */
+    /** 다른 사용자의 공개 프로필. 학생·외부 사용자만 조회할 수 있고, 선생님 계정은 없는 사용자와 같이 404 */
     @Transactional(readOnly = true)
     public UserProfileResponse getProfile(Long userId) {
         UserEntity user = userRepository.findById(userId)
-                .filter(found -> found.getEffectiveRole() == Role.USER)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."));
-        return UserProfileResponse.from(buildMypage(user));
+        AccountType accountType = AccountType.of(user);
+        if (accountType == AccountType.TEACHER) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다.");
+        }
+        return UserProfileResponse.from(buildMypage(user), accountType);
     }
 
     @Transactional

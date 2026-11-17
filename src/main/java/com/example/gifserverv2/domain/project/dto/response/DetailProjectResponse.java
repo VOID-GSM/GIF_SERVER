@@ -2,6 +2,7 @@ package com.example.gifserverv2.domain.project.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.example.gifserverv2.domain.project.entity.Project;
+import com.example.gifserverv2.domain.user.entity.AccountType;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -44,7 +45,9 @@ public record DetailProjectResponse(
             @Schema(description = "학번", example = "2101")
             String studentNumber,
             @Schema(description = "팀 내 역할. LEADER / MEMBER", example = "LEADER")
-            String role
+            String role,
+            @Schema(description = "계정 유형. STUDENT / TEACHER / EXTERNAL. TEACHER는 프로필 조회가 404라 링크를 비활성화한다. 사용자를 찾을 수 없으면 null", example = "STUDENT", nullable = true)
+            AccountType accountType
     ) {}
 
     public static DetailProjectResponse from(Project project, LocalizedText description, Map<Long, UserEntity> userMap,
@@ -55,7 +58,8 @@ public record DetailProjectResponse(
                     UserEntity user = userMap.get(m.getUserId());
                     String name = user != null ? user.getName() : null;
                     String studentNumber = user != null ? user.getStudentNumber() : null;
-                    return new MemberInfo(m.getUserId(), name, studentNumber, m.getRole().name());
+                    AccountType accountType = user != null ? AccountType.of(user) : null;
+                    return new MemberInfo(m.getUserId(), name, studentNumber, m.getRole().name(), accountType);
                 })
                 .toList();
 

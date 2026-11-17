@@ -9,6 +9,7 @@ import com.example.gifserverv2.domain.user.dto.request.UserLinkRequest;
 import com.example.gifserverv2.domain.user.dto.response.MypageResponse;
 import com.example.gifserverv2.domain.user.dto.response.UserLinkResponse;
 import com.example.gifserverv2.domain.user.dto.response.UserProfileResponse;
+import com.example.gifserverv2.domain.user.entity.AccountType;
 import com.example.gifserverv2.domain.user.entity.ClientRole;
 import com.example.gifserverv2.domain.user.entity.Role;
 import com.example.gifserverv2.domain.user.entity.UserEntity;
@@ -129,6 +130,7 @@ class MypageServiceTest {
         UserProfileResponse profile = service.getProfile(userId);
 
         assertThat(profile.name()).isEqualTo("김학생");
+        assertThat(profile.accountType()).isEqualTo(AccountType.STUDENT);
         assertThat(profile.studentNumber()).isEqualTo("1203");
         assertThat(profile.grade()).isEqualTo(1);
         assertThat(profile.classNo()).isEqualTo(2);
@@ -151,13 +153,30 @@ class MypageServiceTest {
     }
 
     @Test
-    void 학생이_아닌_계정이나_없는_사용자의_프로필은_404() {
+    void 외부_사용자의_프로필은_학교_정보_없이_조회한다() {
+        UserEntity external = new UserEntity("visitor@gmail.com", "방문객", null, Role.EXTERNAL);
+        external.updateMajor("디자인");
+        Long externalId = userRepository.save(external).getId();
+        service.addLink(externalId, new UserLinkRequest(null, "https://portfolio.example.com"));
+
+        UserProfileResponse profile = service.getProfile(externalId);
+
+        assertThat(profile.accountType()).isEqualTo(AccountType.EXTERNAL);
+        assertThat(profile.name()).isEqualTo("방문객");
+        assertThat(profile.major()).isEqualTo("디자인");
+        assertThat(profile.studentNumber()).isNull();
+        assertThat(profile.grade()).isNull();
+        assertThat(profile.classNo()).isNull();
+        assertThat(profile.teams()).isEmpty();
+        assertThat(profile.links()).extracting(UserLinkResponse::url).containsExactly("https://portfolio.example.com");
+    }
+
+    @Test
+    void 선생님_계정이나_없는_사용자의_프로필은_404() {
         Long teacherId = userRepository.save(new UserEntity("teacher@gsm.hs.kr", "김선생", null, Role.ADMIN, null)).getId();
-        Long externalId = userRepository.save(new UserEntity("visitor@gmail.com", "방문객", null, Role.EXTERNAL)).getId();
 
         assertStatus(HttpStatus.NOT_FOUND, () -> service.getProfile(teacherId));
-        assertStatus(HttpStatus.NOT_FOUND, () -> service.getProfile(externalId));
-        assertStatus(HttpStatus.NOT_FOUND, () -> service.getProfile(externalId + 1000));
+        assertStatus(HttpStatus.NOT_FOUND, () -> service.getProfile(teacherId + 1000));
     }
 
     @Test

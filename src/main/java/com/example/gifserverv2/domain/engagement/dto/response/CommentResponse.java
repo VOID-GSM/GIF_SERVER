@@ -1,6 +1,8 @@
 package com.example.gifserverv2.domain.engagement.dto.response;
 
 import com.example.gifserverv2.domain.engagement.entity.ProjectComment;
+import com.example.gifserverv2.domain.user.entity.AccountType;
+import com.example.gifserverv2.domain.user.entity.UserEntity;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -27,13 +29,18 @@ public record CommentResponse(
             @Schema(description = "작성자 이름", example = "홍길동")
             String name,
             @Schema(description = "프로필 이미지 URL. 없으면 null")
-            String profileImage
+            String profileImage,
+            @Schema(description = "계정 유형. STUDENT / TEACHER / EXTERNAL. TEACHER는 프로필 조회가 404라 링크를 비활성화한다. 사용자를 찾을 수 없으면 null", example = "STUDENT", nullable = true)
+            AccountType accountType
     ) {}
 
-    public static CommentResponse from(ProjectComment c, String profileImage, boolean isMine) {
+    /** @param author 작성자. 찾을 수 없으면 null */
+    public static CommentResponse from(ProjectComment c, UserEntity author, boolean isMine) {
         return new CommentResponse(
                 c.getId(),
-                new Author(c.getUserId(), c.getAuthorName(), profileImage),
+                new Author(c.getUserId(), c.getAuthorName(),
+                        author != null ? author.getDisplayProfileImageUrl() : null,
+                        author != null ? AccountType.of(author) : null),
                 c.getContent(),
                 c.getCreatedAt(),
                 isMine);
