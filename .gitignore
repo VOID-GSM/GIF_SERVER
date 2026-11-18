@@ -66,3 +66,9 @@ out/
 ### 서버 배포 관련 (민감정보/로컬 산출물, 저장소에 포함 안 함) ###
 .env
 cloudflared.deb
+
+### Claude Code (개인 설정·로컬 산출물) ###
+.claude/settings.local.json
+.claude/.compile-ok
+.claude/.compile-attempts
+_workspace/
